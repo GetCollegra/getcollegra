@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -37,9 +38,11 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}
           >
-            <Button variant="hero" size="xl">
-              Unlock Full Matches
-            </Button>
+            <Link to="/survey">
+              <Button variant="hero" size="xl">
+                Unlock Full Matches
+              </Button>
+            </Link>
           </motion.div>
         </motion.div>
       </div>
