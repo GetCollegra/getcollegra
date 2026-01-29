@@ -16,7 +16,7 @@ const Survey = () => {
       
       <div className="w-full h-[calc(100vh-80px)]">
         <iframe
-          src="https://tally.so/embed/w7jYjN?alignLeft=1&hideTitle=1&transparentBackground=1"
+          src="https://tally.so/r/7RK08z"
           width="100%"
           height="100%"
           frameBorder="0"
