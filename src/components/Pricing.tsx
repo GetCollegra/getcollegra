@@ -26,8 +26,13 @@ const Pricing = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="relative bg-card rounded-2xl p-8 shadow-card hover:shadow-elevated transition-shadow duration-300"
+            className="relative bg-card rounded-2xl p-8 shadow-card hover:shadow-elevated transition-shadow duration-300 border-2 border-accent"
           >
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="bg-accent text-accent-foreground text-sm font-semibold px-4 py-1 rounded-full">
+                Most Popular
+              </span>
+            </div>
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-foreground mb-2">
                 Monthly Access
@@ -79,13 +84,8 @@ const Pricing = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative bg-card rounded-2xl p-8 shadow-card hover:shadow-elevated transition-shadow duration-300 border-2 border-accent"
+            className="relative bg-card rounded-2xl p-8 shadow-card hover:shadow-elevated transition-shadow duration-300"
           >
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-accent text-accent-foreground text-sm font-semibold px-4 py-1 rounded-full">
-                Best Value
-              </span>
-            </div>
 
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-foreground mb-2">
@@ -104,15 +104,19 @@ const Pricing = () => {
             <ul className="space-y-3 mb-8">
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Full personalized matches</span>
+                <span>One complete, personalized college roadmap</span>
               </li>
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Lifetime access</span>
+                <span>Clear safety, target, and reach school recommendations</span>
               </li>
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>No recurring fees</span>
+                <span>Action checklist you can use immediately</span>
+              </li>
+              <li className="flex items-center gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                <span>Pay once, no subscription required</span>
               </li>
             </ul>
 
