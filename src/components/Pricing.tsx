@@ -46,11 +46,19 @@ const Pricing = () => {
             <ul className="space-y-3 mb-8">
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Full personalized matches</span>
+                <span>Personalized college list that updates as your GPA, interests, or goals change</span>
               </li>
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Regular updates</span>
+                <span>Ongoing guidance through deadlines, applications, and decisions</span>
+              </li>
+              <li className="flex items-center gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                <span>Clear next steps so you always know what to do next</span>
+              </li>
+              <li className="flex items-center gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                <span>One platform that grows with you throughout the year</span>
               </li>
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
