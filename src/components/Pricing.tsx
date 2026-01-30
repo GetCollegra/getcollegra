@@ -36,10 +36,11 @@ const Pricing = () => {
                 <span className="text-4xl font-bold text-foreground">$9.99</span>
                 <span className="text-muted-foreground">per month</span>
               </div>
+              <p className="text-primary font-medium mt-2">14-day free trial</p>
             </div>
 
             <p className="text-muted-foreground mb-8">
-              Best for students who want flexibility and updates.
+              Try free for 14 days, then $9.99/month. Cancel anytime.
             </p>
 
             <ul className="space-y-3 mb-8">
