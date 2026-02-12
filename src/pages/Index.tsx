@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import ExplainerVideo from "@/components/ExplainerVideo";
 import Problem from "@/components/Problem";
 import Solution from "@/components/Solution";
 import Value from "@/components/Value";
@@ -14,6 +15,7 @@ const Index = () => {
       <Header />
       <main className="pt-16">
         <Hero />
+        <ExplainerVideo />
         <Problem />
         <Solution />
         <Value />
