@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import { Link } from "react-router-dom";
+
 
 const Pricing = () => {
   return (
@@ -71,11 +71,9 @@ const Pricing = () => {
               </li>
             </ul>
 
-            <Link to="/survey" className="w-full">
-              <Button variant="outline" size="lg" className="w-full">
-                Unlock Full Matches (Monthly)
-              </Button>
-            </Link>
+            <Button variant="outline" size="lg" className="w-full">
+              Unlock Full Matches (Monthly)
+            </Button>
           </motion.div>
 
           {/* One-Time Access */}
@@ -120,11 +118,9 @@ const Pricing = () => {
               </li>
             </ul>
 
-            <Link to="/survey" className="w-full">
-              <Button variant="hero" size="lg" className="w-full">
-                Get Full Matches (One-Time)
-              </Button>
-            </Link>
+            <Button variant="hero" size="lg" className="w-full">
+              Get Full Matches (One-Time)
+            </Button>
           </motion.div>
         </div>
       </div>
