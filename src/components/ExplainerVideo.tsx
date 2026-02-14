@@ -21,15 +21,15 @@ const ExplainerVideo = () => {
 
           {/* Video placeholder – replace the src below with your actual video embed */}
           <div className="relative aspect-video rounded-2xl overflow-hidden bg-muted shadow-elevated">
-            {/* Replace this div with an <iframe> or <video> when you have the real video */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                <Play className="w-8 h-8 text-primary ml-1" />
-              </div>
-              <span className="text-muted-foreground text-sm">
-                Your whiteboard explainer video goes here
-              </span>
-            </div>
+            <video
+              className="w-full h-full object-cover"
+              controls
+              playsInline
+              preload="metadata"
+            >
+              <source src="/videos/explainer.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </motion.div>
       </div>
