@@ -91,31 +91,57 @@ const Pricing = () => {
                 One-Time Access
               </h3>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-foreground">$59</span>
+                <span className="text-4xl font-bold text-foreground">$59.99</span>
                 <span className="text-muted-foreground">one-time</span>
               </div>
+              <p className="text-primary font-medium mt-2">No recurring fees</p>
+              <p className="text-muted-foreground text-sm mt-1">Unlike competitors that charge every month</p>
             </div>
 
-            <p className="text-muted-foreground mb-8">
-              Pay once and receive your personalized college matches.
+            <p className="text-muted-foreground mb-6">
+              Pay once and get everything you need to make a confident college decision.
             </p>
 
+            {/* Core Features */}
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Core Features</h4>
+            <ul className="space-y-3 mb-6">
+              <li className="flex items-start gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span>Personalized college matches based on major, location, campus vibe, budget & financial fit</span>
+              </li>
+              <li className="flex items-start gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span>Side-by-side college comparisons — not scattered across websites</span>
+              </li>
+              <li className="flex items-start gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span>Location-based insights: distance to grocery stores, hospitals, transportation</span>
+              </li>
+              <li className="flex items-start gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span>Simple pros & cons summaries written in student-friendly language</span>
+              </li>
+            </ul>
+
+            {/* Decision-Making Tools */}
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Decision-Making Tools</h4>
+            <ul className="space-y-3 mb-6">
+              <li className="flex items-start gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span>Final Decision Dashboard — rank schools, compare cost vs outcomes</span>
+              </li>
+              <li className="flex items-start gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span>Visual "best-fit" score for each college</span>
+              </li>
+            </ul>
+
+            {/* Stress Reduction */}
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Stress Reduction</h4>
             <ul className="space-y-3 mb-8">
-              <li className="flex items-center gap-3 text-foreground">
-                <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>One complete, personalized college roadmap</span>
-              </li>
-              <li className="flex items-center gap-3 text-foreground">
-                <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Clear safety, target, and reach school recommendations</span>
-              </li>
-              <li className="flex items-center gap-3 text-foreground">
-                <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Action checklist you can use immediately</span>
-              </li>
-              <li className="flex items-center gap-3 text-foreground">
-                <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Pay once, no subscription required</span>
+              <li className="flex items-start gap-3 text-foreground">
+                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span>Everything in one place instead of 5–6 platforms</span>
               </li>
             </ul>
 
