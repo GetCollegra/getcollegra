@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { trackClick } from "@/lib/analytics";
 
 
 const Pricing = () => {
@@ -72,7 +73,7 @@ const Pricing = () => {
               </li>
             </ul>
 
-            <Button variant="outline" size="lg" className="w-full">
+            <Button variant="outline" size="lg" className="w-full" onClick={() => trackClick("Unlock Full Matches (Monthly)", "Pricing")}>
               Unlock Full Matches (Monthly)
             </Button>
           </motion.div>
@@ -145,7 +146,7 @@ const Pricing = () => {
               </li>
             </ul>
 
-            <Button variant="hero" size="lg" className="w-full">
+            <Button variant="hero" size="lg" className="w-full" onClick={() => trackClick("Get Full Matches (One-Time)", "Pricing")}>
               Get Full Matches (One-Time)
             </Button>
           </motion.div>

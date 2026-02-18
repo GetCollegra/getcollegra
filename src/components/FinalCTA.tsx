@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { trackClick } from "@/lib/analytics";
 
 
 const FinalCTA = () => {
@@ -24,7 +25,7 @@ const FinalCTA = () => {
             Stop guessing. Start with colleges that fit you.
           </h2>
           
-          <Link to="/survey">
+          <Link to="/survey" onClick={() => trackClick("Unlock Full Matches", "FinalCTA")}>
             <Button 
               size="xl" 
               className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-elevated hover:shadow-elevated hover:-translate-y-0.5 transition-all"

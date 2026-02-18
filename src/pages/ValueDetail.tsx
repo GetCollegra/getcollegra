@@ -2,6 +2,7 @@ import { ArrowLeft, Target, Lightbulb, FolderCheck, Clock } from "lucide-react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { trackClick } from "@/lib/analytics";
 
 const valuePages = {
   "personalized-matches": {
@@ -53,7 +54,7 @@ const ValueDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-6">
-        <Link to="/">
+        <Link to="/" onClick={() => trackClick("Back to Home", "ValueDetail", { slug: slug ?? "" })}>
           <Button variant="ghost" size="sm" className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back to Home
@@ -84,7 +85,7 @@ const ValueDetail = () => {
             {page.subtext}
           </p>
 
-          <Link to={page.ctaLink}>
+          <Link to={page.ctaLink} onClick={() => trackClick(page.cta, "ValueDetail", { slug: slug ?? "" })}>
             <Button variant="hero" size="xl">
               {page.cta}
             </Button>

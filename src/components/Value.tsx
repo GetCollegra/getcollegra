@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Target, Lightbulb, FolderCheck, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
+import { trackClick } from "@/lib/analytics";
 
 const values = [
   {
@@ -44,7 +45,7 @@ const Value = () => {
         <div className="max-w-2xl mx-auto">
           <div className="grid gap-4">
             {values.map((item, index) => (
-              <Link to={`/value/${item.slug}`} key={index}>
+              <Link to={`/value/${item.slug}`} key={index} onClick={() => trackClick(item.text, "Value")}>
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
