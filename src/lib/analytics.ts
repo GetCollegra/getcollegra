@@ -1,8 +1,10 @@
-// Plausible Analytics click tracking utility
+// Clicky Analytics click tracking utility
 
 declare global {
   interface Window {
-    plausible?: (event: string, options?: { props?: Record<string, string> }) => void;
+    clicky?: {
+      log: (href: string, title: string, type?: string) => void;
+    };
   }
 }
 
@@ -11,14 +13,8 @@ export const trackClick = (
   section: string,
   extra?: Record<string, string>
 ) => {
-  if (typeof window !== "undefined" && window.plausible) {
-    window.plausible("Click", {
-      props: {
-        button: buttonName,
-        section,
-        ...extra,
-      },
-    });
+  if (typeof window !== "undefined" && window.clicky) {
+    window.clicky.log(`#${section}`, `Click: ${buttonName}`);
   }
   // Also log in dev for easy debugging
   if (import.meta.env.DEV) {
