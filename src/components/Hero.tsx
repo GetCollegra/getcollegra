@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { trackClick } from "@/lib/analytics";
 import { CheckCircle2 } from "lucide-react";
+import campusHero from "@/assets/campus-hero.jpeg";
 
 const features = [
   "Personalized College Matching",
@@ -18,12 +19,16 @@ const stats = [
 
 const Hero = () => {
   return (
-    <section className="relative min-h-[90vh] flex items-center bg-background overflow-hidden">
-      {/* Subtle light blue background blob */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -right-32 w-[600px] h-[600px] bg-primary/6 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/60 rounded-full blur-3xl" />
-      </div>
+    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+      {/* Campus background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${campusHero})` }}
+      />
+      {/* Blue gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/80 to-accent/85" />
+      {/* Additional dark vignette at edges */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
 
       <div className="container relative z-10 px-4 py-24 md:py-32">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -37,22 +42,22 @@ const Hero = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-sm font-semibold px-4 py-1.5 rounded-full mb-6"
+            className="inline-flex items-center gap-2 bg-white/15 border border-white/30 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-6"
             >
-              <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+              <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
               AI-Powered College Matching
             </motion.div>
 
-            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.05] mb-6">
+            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.05] mb-6">
               Find the college that{" "}
-              <span className="text-primary">actually fits you.</span>
+              <span className="text-white/90 italic">actually fits you.</span>
             </h1>
 
             <motion.p
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-              className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8 max-w-lg"
+              className="text-lg md:text-xl text-white/80 leading-relaxed mb-8 max-w-lg"
             >
               Collegra gives you personalized college matches based on your goals,
               interests, and preferences — so you can stop guessing and start with clarity.
@@ -66,8 +71,8 @@ const Hero = () => {
               className="space-y-3 mb-10"
             >
               {features.map((feature) => (
-                <li key={feature} className="flex items-center gap-3 text-foreground font-medium">
-                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
+                <li key={feature} className="flex items-center gap-3 text-white font-medium">
+                  <CheckCircle2 className="w-5 h-5 text-white/90 flex-shrink-0" />
                   {feature}
                 </li>
               ))}
@@ -80,12 +85,12 @@ const Hero = () => {
               className="flex flex-col sm:flex-row gap-4"
             >
               <Link to="/survey" onClick={() => trackClick("Unlock Full Matches", "Hero")}>
-                <Button size="lg" className="text-base px-8 py-6 rounded-lg font-semibold shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition-all">
+                <Button size="lg" className="text-base px-8 py-6 rounded-lg font-semibold bg-white text-primary hover:bg-white/90 shadow-lg hover:-translate-y-0.5 transition-all">
                   Get My College Matches
                 </Button>
               </Link>
               <a href="#how-it-works">
-                <Button variant="outline" size="lg" className="text-base px-8 py-6 rounded-lg font-medium">
+                <Button variant="outline" size="lg" className="text-base px-8 py-6 rounded-lg font-medium border-white/50 text-white hover:bg-white/10 hover:text-white">
                   See How It Works
                 </Button>
               </a>
@@ -141,7 +146,7 @@ const Hero = () => {
       </div>
 
       {/* Bottom border */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-border" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-white/20" />
     </section>
   );
 };
