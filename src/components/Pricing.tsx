@@ -2,9 +2,17 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { trackClick } from "@/lib/analytics";
+import { useNavigate } from "react-router-dom";
 
 
 const Pricing = () => {
+  const navigate = useNavigate();
+
+  const handlePricingClick = (label: string, section: string) => {
+    trackClick(label, section);
+    navigate("/coming-soon");
+  };
+
   return (
     <section className="py-20 md:py-28 bg-gradient-subtle">
       <div className="container px-4">
@@ -73,7 +81,7 @@ const Pricing = () => {
               </li>
             </ul>
 
-            <Button variant="outline" size="lg" className="w-full" onClick={() => trackClick("Unlock Full Matches (Monthly)", "Pricing")}>
+            <Button variant="outline" size="lg" className="w-full" onClick={() => handlePricingClick("Unlock Full Matches (Monthly)", "Pricing")}>
               Unlock Full Matches (Monthly)
             </Button>
           </motion.div>
@@ -146,7 +154,7 @@ const Pricing = () => {
               </li>
             </ul>
 
-            <Button variant="hero" size="lg" className="w-full" onClick={() => trackClick("Get Full Matches (One-Time)", "Pricing")}>
+            <Button variant="hero" size="lg" className="w-full" onClick={() => handlePricingClick("Get Full Matches (One-Time)", "Pricing")}>
               Get Full Matches (One-Time)
             </Button>
           </motion.div>
