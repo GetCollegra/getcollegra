@@ -21,16 +21,17 @@ const FinalCTA = () => {
           transition={{ duration: 0.6 }}
           className="max-w-2xl mx-auto text-center"
         >
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-6">
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
             Stop guessing. Start with colleges that fit you.
           </h2>
+          <p className="text-white/75 text-lg mb-8">Join students already finding their perfect college match.</p>
           
           <Link to="/survey" onClick={() => trackClick("Unlock Full Matches", "FinalCTA")}>
             <Button 
               size="xl" 
-              className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-elevated hover:shadow-elevated hover:-translate-y-0.5 transition-all"
+              className="bg-white text-primary hover:bg-white/90 font-semibold shadow-elevated hover:-translate-y-0.5 transition-all"
             >
-              Unlock Full Matches
+              Get My College Matches
             </Button>
           </Link>
         </motion.div>
