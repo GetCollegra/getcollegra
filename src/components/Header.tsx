@@ -7,7 +7,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           <a href="/" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center overflow-hidden">
-              <img src={logoIcon} alt="Collegra logo" className="w-7 h-7 object-contain brightness-0 invert" />
+              <img src={logoIcon} alt="Collegra logo" className="w-7 h-7 object-contain" />
             </div>
             <span className="text-xl font-bold text-foreground tracking-tight">
               Collegra
