@@ -1,9 +1,28 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { z } from "zod";
+
+const emailSchema = z.string().trim().email({ message: "Please enter a valid email address" }).max(255);
 
 const ComingSoon = () => {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = emailSchema.safeParse(email);
+    if (!result.success) {
+      setError(result.error.errors[0].message);
+      return;
+    }
+    setError("");
+    setSubmitted(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-6">
@@ -33,16 +52,50 @@ const ComingSoon = () => {
           </p>
 
           <p className="text-base text-foreground/70 font-medium mb-10">
-            Be the first to know when we launch — take our quick survey and we'll reach out as soon as we're live.
+            Drop your email and we'll reach out as soon as we're live.
           </p>
 
-          <Link to="/survey">
-            <Button variant="hero" size="xl">
-              Join the waitlist
-            </Button>
-          </Link>
+          <AnimatePresence mode="wait">
+            {submitted ? (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
+                className="flex flex-col items-center gap-3"
+              >
+                <CheckCircle className="w-12 h-12 text-primary" />
+                <p className="text-lg font-semibold text-foreground">You're on the list!</p>
+                <p className="text-muted-foreground text-sm">We'll email you the moment Collegra is ready.</p>
+              </motion.div>
+            ) : (
+              <motion.form
+                key="form"
+                onSubmit={handleSubmit}
+                className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+              >
+                <div className="flex-1">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                    placeholder="you@email.com"
+                    maxLength={255}
+                    className="w-full h-12 px-4 rounded-lg border-2 border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors duration-200"
+                  />
+                  {error && (
+                    <p className="text-destructive text-sm mt-1 text-left">{error}</p>
+                  )}
+                </div>
+                <Button type="submit" variant="hero" size="lg" className="gap-2 shrink-0">
+                  <Send className="w-4 h-4" />
+                  Notify me
+                </Button>
+              </motion.form>
+            )}
+          </AnimatePresence>
 
-          <p className="text-sm text-muted-foreground mt-4">Takes about 2 minutes</p>
+          <p className="text-sm text-muted-foreground mt-4">No spam, ever.</p>
         </motion.div>
       </div>
     </div>
