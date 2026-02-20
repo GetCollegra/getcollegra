@@ -5,10 +5,13 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-soft">
       <div className="container px-4">
         <div className="flex items-center justify-between h-16">
-          <a href="/" className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center overflow-hidden shadow-soft">
-              <img src={logoIcon} alt="Collegra logo" className="w-8 h-8 object-contain brightness-0 invert" />
-            </div>
+          <a href="/" className="flex items-center gap-2">
+            <img
+              src={logoIcon}
+              alt="Collegra logo"
+              className="w-10 h-10 object-contain"
+              style={{ filter: "brightness(0) saturate(100%) invert(39%) sepia(98%) saturate(500%) hue-rotate(185deg) brightness(95%)" }}
+            />
             <span className="text-xl font-bold text-foreground tracking-tight">
               Collegra
             </span>
