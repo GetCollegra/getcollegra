@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const emailSchema = z.string().trim().email({ message: "Please enter a valid email address" }).max(255);
 
@@ -11,8 +12,9 @@ const ComingSoon = () => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const result = emailSchema.safeParse(email);
     if (!result.success) {
@@ -20,6 +22,19 @@ const ComingSoon = () => {
       return;
     }
     setError("");
+    setLoading(true);
+    const { error: dbError } = await supabase
+      .from("waitlist_emails")
+      .insert({ email: result.data });
+    setLoading(false);
+    if (dbError) {
+      if (dbError.code === "23505") {
+        setError("You're already on the list!");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+      return;
+    }
     setSubmitted(true);
   };
 
@@ -87,9 +102,9 @@ const ComingSoon = () => {
                     <p className="text-destructive text-sm mt-1 text-left">{error}</p>
                   )}
                 </div>
-                <Button type="submit" variant="hero" size="lg" className="gap-2 shrink-0">
+                <Button type="submit" variant="hero" size="lg" className="gap-2 shrink-0" disabled={loading}>
                   <Send className="w-4 h-4" />
-                  Notify me
+                  {loading ? "Saving..." : "Notify me"}
                 </Button>
               </motion.form>
             )}
