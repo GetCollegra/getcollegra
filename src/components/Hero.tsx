@@ -24,10 +24,21 @@ const Hero = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 bg-white/15 border border-white/25 text-white text-sm font-medium px-4 py-1.5 rounded-full mb-8"
+            className="flex flex-wrap justify-center gap-2 mb-8"
           >
-            <span className="w-2 h-2 bg-white rounded-full" />
-            Personalized College Matching
+            {[
+              "Personalized College Matching",
+              "Organize Your Colleges",
+              "AI Finds the Best Colleges for You",
+            ].map((label) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-2 bg-white/15 border border-white/25 text-white text-sm font-medium px-4 py-1.5 rounded-full"
+              >
+                <span className="w-2 h-2 bg-white rounded-full flex-shrink-0" />
+                {label}
+              </span>
+            ))}
           </motion.div>
 
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
