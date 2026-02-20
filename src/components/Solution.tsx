@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 const Solution = () => {
   return (
-    <section className="py-20 md:py-28 bg-gradient-subtle">
+    <section className="py-20 md:py-28 bg-secondary/40 border-b border-border">
       <div className="container px-4">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

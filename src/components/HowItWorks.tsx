@@ -21,7 +21,7 @@ const steps = [
 
 const HowItWorks = () => {
   return (
-    <section className="py-20 md:py-28 bg-card">
+    <section id="how-it-works" className="py-20 md:py-28 bg-secondary/40 border-b border-border">
       <div className="container px-4">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
