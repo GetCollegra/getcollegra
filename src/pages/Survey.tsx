@@ -1,8 +1,22 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const Survey = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleTallyMessage = (e: MessageEvent) => {
+      if (e.data?.event === "Tally.FormSubmitted") {
+        navigate("/quiz-results");
+      }
+    };
+    window.addEventListener("message", handleTallyMessage);
+    return () => window.removeEventListener("message", handleTallyMessage);
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-6">
