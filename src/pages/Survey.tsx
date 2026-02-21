@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -6,12 +6,10 @@ import { Button } from "@/components/ui/button";
 
 const Survey = () => {
   const navigate = useNavigate();
-  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     const handleTallyMessage = (e: MessageEvent) => {
       if (e.data?.event === "Tally.FormSubmitted") {
-        setSubmitted(true);
         navigate("/quiz-results");
       }
     };
@@ -30,18 +28,16 @@ const Survey = () => {
         </Link>
       </div>
       
-      {!submitted && (
-        <div className="w-full h-[calc(100vh-80px)]">
-          <iframe
-            src="https://tally.so/r/7RK08z"
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            title="Collegra Survey"
-            className="w-full h-full"
-          />
-        </div>
-      )}
+      <div className="w-full h-[calc(100vh-80px)]">
+        <iframe
+          src="https://tally.so/r/7RK08z"
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          title="Collegra Survey"
+          className="w-full h-full"
+        />
+      </div>
     </div>
   );
 };
