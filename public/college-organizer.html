@@ -210,6 +210,7 @@
       el("p", null, ["Try sorting colleges into lists. " + (STORAGE_MODE === "session" ? "This demo does not save after you close the tab." : "This demo saves on this device only. It is not a real login.")]),
     ]);
 
+    const resetBtn = el("button", { class: "co-btn co-btn-ghost", onclick: resetDemo }, ["Reset Demo"]);
     const controls = el("div", { class: "co-controls" }, [resetBtn]);
 
     const col = (key, title) => {
