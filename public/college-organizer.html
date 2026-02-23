@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>College Organizer</title>
+<style>body{margin:0;padding:0;}</style>
+</head>
+<body>
+<div id="collegra-organizer"></div>
+<script>
+(function () {
+  const STORAGE_MODE = "session";
+  const STORAGE_KEY = "collegra_organizer_v1";
+  const storage = STORAGE_MODE === "device" ? window.localStorage : window.sessionStorage;
+
+  const SAMPLE_COLLEGES = [
+    { id: "uiuc", name: "University of Illinois Urbana-Champaign", location: "Champaign, IL", size: "Large", strength: "Engineering, Business" },
+    { id: "iu", name: "Indiana University Bloomington", location: "Bloomington, IN", size: "Large", strength: "Business, Arts" },
+    { id: "uwmadison", name: "University of Wisconsin-Madison", location: "Madison, WI", size: "Large", strength: "Research, STEM" },
+    { id: "depaul", name: "DePaul University", location: "Chicago, IL", size: "Medium", strength: "Business, Media" },
+    { id: "loyola", name: "Loyola University Chicago", location: "Chicago, IL", size: "Medium", strength: "Pre-Health, Business" },
+    { id: "miamiOH", name: "Miami University", location: "Oxford, OH", size: "Medium", strength: "Business, Teaching" },
+  ];
+
+  const DEFAULT_STATE = {
+    columns: { considering: ["uiuc", "iu", "uwmadison"], interested: ["depaul", "loyola"], top: ["miamiOH"] },
+    notes: {},
+    tags: {},
+    createdAt: new Date().toISOString(),
+  };
+
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      Object.entries(attrs).forEach(([k, v]) => {
+        if (k === "class") node.className = v;
+        else if (k === "style") node.setAttribute("style", v);
+        else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+        else node.setAttribute(k, v);
+      });
+    }
+    (children || []).forEach((c) => node.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+    return node;
+  }
+
+  function loadState() {
+    try {
+      const raw = storage.getItem(STORAGE_KEY);
+      if (!raw) return structuredClone(DEFAULT_STATE);
+      const parsed = JSON.parse(raw);
+      if (!parsed.columns || !parsed.columns.considering) return structuredClone(DEFAULT_STATE);
+      return parsed;
+    } catch { return structuredClone(DEFAULT_STATE); }
+  }
+
+  function saveState() {
+    try { storage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  }
+
+  function getCollegeById(id) { return SAMPLE_COLLEGES.find((c) => c.id === id); }
+
+  function ensureTagState(id) {
+    if (!state.tags[id]) state.tags[id] = { reach: false, match: true, safety: false };
+  }
+
+  function moveCollege(collegeId, fromCol, toCol) {
+    if (fromCol === toCol) return;
+    state.columns[fromCol] = state.columns[fromCol].filter((id) => id !== collegeId);
+    if (!state.columns[toCol].includes(collegeId)) state.columns[toCol].push(collegeId);
+    saveState(); render();
+  }
+
+  function removeCollege(collegeId, fromCol) {
+    state.columns[fromCol] = state.columns[fromCol].filter((id) => id !== collegeId);
+    saveState(); render();
+  }
+
+  function resetDemo() { state = structuredClone(DEFAULT_STATE); saveState(); render(); }
+
+  function addCollegeById(collegeId, targetCol) {
+    Object.keys(state.columns).forEach((col) => {
+      state.columns[col] = state.columns[col].filter((id) => id !== collegeId);
+    });
+    state.columns[targetCol].push(collegeId);
+    saveState(); render();
+  }
+
+  function createCard(collegeId, currentCol, filterText) {
+    const c = getCollegeById(collegeId);
+    if (!c) return null;
+    const haystack = (c.name + " " + c.location + " " + c.size + " " + c.strength).toLowerCase();
+    if (filterText && !haystack.includes(filterText)) return null;
+    ensureTagState(collegeId);
+    const tag = state.tags[collegeId];
+    const notesValue = state.notes[collegeId] || "";
+
+    const tagBtn = (label, key) =>
+      el("button", { class: "co-tag-btn", "data-active": tag[key] ? "true" : "false", onclick: () => { ensureTagState(collegeId); state.tags[collegeId][key] = !state.tags[collegeId][key]; saveState(); render(); }, title: "Toggle tag" }, [label]);
+
+    const actionBtn = (label, toCol) =>
+      el("button", { class: "co-btn", onclick: () => moveCollege(collegeId, currentCol, toCol) }, [label]);
+
+    const removeBtn = el("button", { class: "co-btn co-btn-ghost", onclick: () => removeCollege(collegeId, currentCol) }, ["Remove"]);
+
+    const notes = el("textarea", { class: "co-notes", placeholder: "Add a quick note (demo preview)...", rows: "2" });
+    notes.value = notesValue;
+    notes.addEventListener("input", () => { state.notes[collegeId] = notes.value; saveState(); });
+
+    const actions = el("div", { class: "co-actions" }, [
+      currentCol !== "considering" ? actionBtn("To Considering", "considering") : null,
+      currentCol !== "interested" ? actionBtn("To Interested", "interested") : null,
+      currentCol !== "top" ? actionBtn("To Top Choices", "top") : null,
+      removeBtn,
+    ].filter(Boolean));
+
+    const tags = el("div", { class: "co-tags" }, [
+      el("span", { class: "co-tags-label" }, ["Tags:"]),
+      tagBtn("Reach", "reach"), tagBtn("Match", "match"), tagBtn("Safety", "safety"),
+    ]);
+
+    return el("div", { class: "co-card", draggable: "true" }, [
+      el("div", { class: "co-card-title" }, [c.name]),
+      el("div", { class: "co-card-meta" }, ["\u{1F4CD} " + c.location + "  \u2022  \u{1F393} " + c.size]),
+      el("div", { class: "co-card-meta" }, ["\u2B50 Strength: " + c.strength]),
+      tags, notes, actions,
+    ]);
+  }
+
+  function allowDrop(colKey, dropZone) {
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("co-drop-active"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("co-drop-active"));
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault(); dropZone.classList.remove("co-drop-active");
+      const payload = e.dataTransfer.getData("text/plain");
+      if (!payload) return;
+      try { const { id, from } = JSON.parse(payload); moveCollege(id, from, colKey); } catch {}
+    });
+  }
+
+  function attachDragHandlers(root) {
+    root.querySelectorAll(".co-column").forEach((col) => {
+      const colKey = col.getAttribute("data-col");
+      const dropZone = col.querySelector(".co-cards");
+      allowDrop(colKey, dropZone);
+    });
+    root.querySelectorAll(".co-card").forEach((card) => {
+      card.addEventListener("dragstart", (e) => {
+        const colEl = card.closest(".co-column");
+        const colKey = colEl.getAttribute("data-col");
+        const title = card.querySelector(".co-card-title")?.textContent || "";
+        const college = SAMPLE_COLLEGES.find((x) => x.name === title);
+        if (!college) return;
+        e.dataTransfer.setData("text/plain", JSON.stringify({ id: college.id, from: colKey }));
+        e.dataTransfer.effectAllowed = "move";
+      });
+    });
+  }
+
+  function render() {
+    const mount = document.getElementById("collegra-organizer");
+    if (!mount) return;
+    mount.innerHTML = "";
+
+    const style = el("style", null, [
+      "#collegra-organizer { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }" +
+      ".co-wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }" +
+      ".co-banner { border-radius: 14px; padding: 12px 14px; background: rgba(0,0,0,0.04); margin-bottom: 12px; }" +
+      ".co-banner h2 { margin: 0 0 4px 0; font-size: 20px; }" +
+      ".co-banner p { margin: 0; opacity: 0.85; line-height: 1.35; }" +
+      ".co-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 12px 0 14px; }" +
+      ".co-search { flex: 1; min-width: 220px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.12); padding: 10px 12px; font-size: 14px; }" +
+      ".co-btn { border-radius: 12px; border: 1px solid rgba(0,0,0,0.12); background: white; padding: 10px 12px; font-size: 14px; cursor: pointer; }" +
+      ".co-btn:hover { background: rgba(0,0,0,0.03); }" +
+      ".co-btn-ghost { background: transparent; }" +
+      ".co-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }" +
+      "@media (max-width: 900px) { .co-grid { grid-template-columns: 1fr; } }" +
+      ".co-column { border-radius: 16px; border: 1px solid rgba(0,0,0,0.12); overflow: hidden; background: rgba(0,0,0,0.02); }" +
+      ".co-col-head { padding: 12px 12px 10px; display: flex; justify-content: space-between; align-items: baseline; background: rgba(0,0,0,0.03); }" +
+      ".co-col-head h3 { margin: 0; font-size: 15px; }" +
+      ".co-count { font-size: 12px; opacity: 0.7; }" +
+      ".co-cards { padding: 12px; min-height: 180px; transition: background 120ms ease; }" +
+      ".co-drop-active { background: rgba(0,0,0,0.06); border-radius: 12px; }" +
+      ".co-card { border-radius: 14px; border: 1px solid rgba(0,0,0,0.12); background: white; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); cursor: grab; }" +
+      ".co-card:active { cursor: grabbing; }" +
+      ".co-card-title { font-weight: 700; margin-bottom: 6px; }" +
+      ".co-card-meta { font-size: 13px; opacity: 0.85; margin-bottom: 6px; line-height: 1.25; }" +
+      ".co-tags { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }" +
+      ".co-tags-label { font-size: 12px; opacity: 0.75; margin-right: 2px; }" +
+      ".co-tag-btn { border-radius: 999px; border: 1px solid rgba(0,0,0,0.12); background: white; padding: 6px 10px; font-size: 12px; cursor: pointer; }" +
+      ".co-tag-btn[data-active='true'] { background: rgba(0,0,0,0.08); }" +
+      ".co-notes { width: 100%; border-radius: 12px; border: 1px solid rgba(0,0,0,0.12); padding: 10px; font-size: 13px; resize: vertical; box-sizing: border-box; }" +
+      ".co-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }" +
+      ".co-footer { margin-top: 14px; border-radius: 14px; border: 1px solid rgba(0,0,0,0.10); padding: 12px; background: rgba(0,0,0,0.02); }" +
+      ".co-footer p { margin: 0; line-height: 1.35; opacity: 0.9; }" +
+      ".co-mini { font-size: 12px; opacity: 0.7; margin-top: 8px; }"
+    ]);
+
+    const wrap = el("div", { class: "co-wrap" });
+    const banner = el("div", { class: "co-banner" }, [
+      el("h2", null, ["Your College Organizer (Preview)"]),
+      el("p", null, ["Try sorting colleges into lists. " + (STORAGE_MODE === "session" ? "This demo does not save after you close the tab." : "This demo saves on this device only. It is not a real login.")]),
+    ]);
+
+    const searchInput = el("input", { class: "co-search", type: "search", placeholder: "Search colleges (name, location, size, strength)...", value: ui.filter || "" });
+    searchInput.addEventListener("input", () => { ui.filter = searchInput.value.toLowerCase().trim(); render(); });
+
+    const resetBtn = el("button", { class: "co-btn co-btn-ghost", onclick: resetDemo }, ["Reset Demo"]);
+
+    const select = el("select", { class: "co-btn", style: "padding: 10px 12px;" });
+    select.appendChild(el("option", { value: "" }, ["Add a college card..."]));
+    SAMPLE_COLLEGES.forEach((c) => select.appendChild(el("option", { value: c.id }, [c.name])));
+    select.addEventListener("change", () => { if (!select.value) return; addCollegeById(select.value, "considering"); select.value = ""; });
+
+    const controls = el("div", { class: "co-controls" }, [searchInput, select, resetBtn]);
+
+    const col = (key, title) => {
+      const cards = (state.columns[key] || []).map((id) => createCard(id, key, ui.filter)).filter(Boolean);
+      const cardsWrap = el("div", { class: "co-cards" }, cards.length ? cards : [
+        el("div", { style: "opacity:0.65; font-size:13px; padding: 6px 2px;" }, ["Drop a college here or add one above."])
+      ]);
+      return el("div", { class: "co-column", "data-col": key }, [
+        el("div", { class: "co-col-head" }, [el("h3", null, [title]), el("div", { class: "co-count" }, [state.columns[key].length + " item(s)"])]),
+        cardsWrap,
+      ]);
+    };
+
+    const grid = el("div", { class: "co-grid" }, [col("considering", "Considering"), col("interested", "Interested"), col("top", "Top Choices")]);
+
+    const footer = el("div", { class: "co-footer" }, [
+      el("p", null, ["Want to save your organizer and come back later? Add a waitlist button below this section: \"Join early access to save progress and get a personalized college list.\""]),
+      el("div", { class: "co-mini" }, ["Tip: For pitch demos, talk through how this becomes a saved dashboard once accounts are added."]),
+    ]);
+
+    wrap.appendChild(style);
+    wrap.appendChild(banner);
+    wrap.appendChild(controls);
+    wrap.appendChild(grid);
+    wrap.appendChild(footer);
+    mount.appendChild(wrap);
+    attachDragHandlers(mount);
+  }
+
+  let ui = { filter: "" };
+  let state = loadState();
+  saveState();
+  render();
+})();
+</script>
+</body>
+</html>
