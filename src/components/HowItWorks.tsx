@@ -3,7 +3,7 @@ import { ClipboardList, Star, GitCompare, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import stepSurvey from "@/assets/step-survey.jpg";
-import stepMatches from "@/assets/step-matches.jpg";
+import stepMatches from "@/assets/step-matches-example.jpg";
 import stepCompare from "@/assets/step-compare.jpg";
 
 const steps = [
@@ -22,7 +22,7 @@ const steps = [
   {
     number: "02",
     icon: Star,
-    title: "Get Your Personalized Matches",
+    title: "Get Your Personalized Matches — Example",
     subtitle: "Results tailored to you.",
     description:
       "Our AI instantly analyzes your responses against hundreds of colleges to surface the ones that fit you best — ranked by match score across academics, culture, and finances.",
