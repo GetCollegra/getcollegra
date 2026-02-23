@@ -210,17 +210,7 @@
       el("p", null, ["Try sorting colleges into lists. " + (STORAGE_MODE === "session" ? "This demo does not save after you close the tab." : "This demo saves on this device only. It is not a real login.")]),
     ]);
 
-    const searchInput = el("input", { class: "co-search", type: "search", placeholder: "Search colleges (name, location, size, strength)...", value: ui.filter || "" });
-    searchInput.addEventListener("input", () => { ui.filter = searchInput.value.toLowerCase().trim(); render(); });
-
-    const resetBtn = el("button", { class: "co-btn co-btn-ghost", onclick: resetDemo }, ["Reset Demo"]);
-
-    const select = el("select", { class: "co-btn", style: "padding: 10px 12px;" });
-    select.appendChild(el("option", { value: "" }, ["Add a college card..."]));
-    SAMPLE_COLLEGES.forEach((c) => select.appendChild(el("option", { value: c.id }, [c.name])));
-    select.addEventListener("change", () => { if (!select.value) return; addCollegeById(select.value, "considering"); select.value = ""; });
-
-    const controls = el("div", { class: "co-controls" }, [searchInput, select, resetBtn]);
+    const controls = el("div", { class: "co-controls" }, [resetBtn]);
 
     const col = (key, title) => {
       const cards = (state.columns[key] || []).map((id) => createCard(id, key, ui.filter)).filter(Boolean);
