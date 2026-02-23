@@ -235,16 +235,10 @@
 
     const grid = el("div", { class: "co-grid" }, [col("considering", "Considering"), col("interested", "Interested"), col("top", "Top Choices")]);
 
-    const footer = el("div", { class: "co-footer" }, [
-      el("p", null, ["Want to save your organizer and come back later? Add a waitlist button below this section: \"Join early access to save progress and get a personalized college list.\""]),
-      el("div", { class: "co-mini" }, ["Tip: For pitch demos, talk through how this becomes a saved dashboard once accounts are added."]),
-    ]);
-
     wrap.appendChild(style);
     wrap.appendChild(banner);
     wrap.appendChild(controls);
     wrap.appendChild(grid);
-    wrap.appendChild(footer);
     mount.appendChild(wrap);
     attachDragHandlers(mount);
   }
