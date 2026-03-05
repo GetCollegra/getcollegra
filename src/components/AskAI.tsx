@@ -19,7 +19,11 @@ const AskAI = () => {
         "https://hlpntgkgjjjcqrwgbvql.supabase.co/functions/v1/claude-qa",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": "sb_publishable_xuggtUHMGTwARtHbCUS2_A_Af9uhZjB",
+            "Authorization": "Bearer sb_publishable_xuggtUHMGTwARtHbCUS2_A_Af9uhZjB",
+          },
           body: JSON.stringify({ question }),
         }
       );
