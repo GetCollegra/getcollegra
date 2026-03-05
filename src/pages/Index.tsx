@@ -6,6 +6,7 @@ import Solution from "@/components/Solution";
 
 import Pricing from "@/components/Pricing";
 import HowItWorks from "@/components/HowItWorks";
+import AskAI from "@/components/AskAI";
 import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
 
@@ -21,6 +22,7 @@ const Index = () => {
         <Solution />
         
         <Pricing />
+        <AskAI />
         <FinalCTA />
       </main>
       <Footer />
