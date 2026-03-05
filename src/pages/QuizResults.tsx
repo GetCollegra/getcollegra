@@ -65,16 +65,30 @@ const QuizResults = () => {
 
   useEffect(() => {
     const fetchRecommendations = async () => {
+      // Collect all URL params - captures both known Tally fields and any extras
+      const allParams: Record<string, string> = {};
+      searchParams.forEach((value, key) => {
+        allParams[key] = value;
+      });
+
       const preferences = {
-        major: searchParams.get("major") || searchParams.get("field") || "Undecided",
-        campusSize: searchParams.get("campus_size") || searchParams.get("size") || "No preference",
-        location: searchParams.get("location") || searchParams.get("setting") || "No preference",
-        budget: searchParams.get("budget") || "No preference",
-        academicInterests: searchParams.get("academic_interests") || searchParams.get("interests") || "General",
-        extracurriculars: searchParams.get("extracurriculars") || searchParams.get("activities") || "Various",
-        region: searchParams.get("region") || searchParams.get("climate") || "No preference",
-        financialAid: searchParams.get("financial_aid") || "Important",
-        additionalNotes: searchParams.get("notes") || "None",
+        // Known Tally form fields (page 1)
+        email: allParams.email || "",
+        cityState: allParams.city_state || allParams.location || "No preference",
+        gpa: allParams.gpa || "",
+        testScore: allParams.test_score || "None",
+        // Fields from pages 2-3 (mapped dynamically from Tally)
+        major: allParams.major || allParams.field || "Undecided",
+        campusSize: allParams.campus_size || allParams.size || "No preference",
+        location: allParams.city_state || allParams.location || allParams.setting || "No preference",
+        budget: allParams.budget || "No preference",
+        academicInterests: allParams.academic_interests || allParams.interests || "General",
+        extracurriculars: allParams.extracurriculars || allParams.activities || "Various",
+        region: allParams.region || allParams.climate || "No preference",
+        financialAid: allParams.financial_aid || "Important",
+        additionalNotes: allParams.notes || "None",
+        // Pass all raw params so the edge function can use any field
+        allResponses: allParams,
       };
 
       try {

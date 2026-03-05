@@ -57,19 +57,34 @@ function buildScorecardQuery(preferences: any): string {
     params.set("latest.student.size__range", "15000..");
   }
 
-  // Location/region preference
+  // Location/region preference - use city/state if provided
+  const cityState = (preferences.cityState || "").toLowerCase();
   const region = (preferences.region || preferences.location || "").toLowerCase();
-  if (region.includes("northeast") || region.includes("new england")) {
+  const regionHint = region || cityState;
+  
+  if (regionHint.includes("northeast") || regionHint.includes("new england") || regionHint.includes("new york") || regionHint.includes("massachusetts") || regionHint.includes("connecticut") || regionHint.includes("pennsylvania")) {
     params.set("school.region_id", "1");
-  } else if (region.includes("southeast") || region.includes("south")) {
+  } else if (regionHint.includes("southeast") || regionHint.includes("south") || regionHint.includes("florida") || regionHint.includes("georgia") || regionHint.includes("virginia") || regionHint.includes("carolina")) {
     params.set("school.region_id", "5");
-  } else if (region.includes("midwest")) {
+  } else if (regionHint.includes("midwest") || regionHint.includes("ohio") || regionHint.includes("illinois") || regionHint.includes("michigan") || regionHint.includes("minnesota")) {
     params.set("school.region_id", "3");
-  } else if (region.includes("west") || region.includes("california")) {
+  } else if (regionHint.includes("west") || regionHint.includes("california") || regionHint.includes("washington") || regionHint.includes("oregon") || regionHint.includes("colorado")) {
     params.set("school.region_id", "8");
-  } else if (region.includes("southwest")) {
+  } else if (regionHint.includes("southwest") || regionHint.includes("texas") || regionHint.includes("arizona") || regionHint.includes("new mexico")) {
     params.set("school.region_id", "6");
   }
+
+  // Use admission rate range based on GPA/test scores to find appropriate schools
+  const gpa = parseFloat(preferences.gpa || "0");
+  if (gpa >= 3.8) {
+    // High GPA - include more selective schools
+    params.set("latest.admissions.admission_rate.overall__range", "0..0.7");
+  } else if (gpa >= 3.3) {
+    params.set("latest.admissions.admission_rate.overall__range", "0.1..0.8");
+  } else if (gpa >= 2.8) {
+    params.set("latest.admissions.admission_rate.overall__range", "0.3..1");
+  }
+  // If no GPA, keep the existing broad range
 
   // Sort by completion rate descending, get top 20 to let AI pick best 5
   params.set("sort", "latest.completion.rate_suppressed.overall:desc");
@@ -184,7 +199,17 @@ Provide exactly 5 colleges sorted by fitScore descending. Include a mix of fitCa
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
+    // Build user prompt from all available Tally answers
+    const allResponses = preferences.allResponses || {};
+    const extraFields = Object.entries(allResponses)
+      .filter(([key]) => !["email"].includes(key)) // exclude email from AI prompt
+      .map(([key, val]) => `- ${key.replace(/_/g, " ")}: ${val}`)
+      .join("\n");
+
     let userPrompt = `Student preferences:
+- Home location (city/state): ${preferences.cityState || "Not specified"}
+- Weighted GPA: ${preferences.gpa || "Not specified"}
+- SAT/ACT Score: ${preferences.testScore || "None"}
 - Intended major/field of interest: ${preferences.major || "Undecided"}
 - Preferred campus size: ${preferences.campusSize || "No preference"}
 - Preferred location/setting: ${preferences.location || "No preference"}
@@ -193,7 +218,10 @@ IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 - Extracurricular interests: ${preferences.extracurriculars || "Various"}
 - Preferred climate/region: ${preferences.region || "No preference"}
 - Importance of financial aid: ${preferences.financialAid || "Important"}
-- Additional notes: ${preferences.additionalNotes || "None"}`;
+- Additional notes: ${preferences.additionalNotes || "None"}
+
+All survey responses:
+${extraFields}`;
 
     if (realCollegeData) {
       userPrompt += `\n\n--- REAL COLLEGE DATA FROM US DEPT OF EDUCATION ---\n${realCollegeData}\n--- END REAL DATA ---\n\nSelect the 5 best-fit colleges from this real data for the student above. Use the exact statistics provided.`;
