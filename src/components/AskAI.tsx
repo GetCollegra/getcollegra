@@ -1,37 +1,32 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const AskAI = () => {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const { toast } = useToast();
 
   const handleAsk = async () => {
     if (!question.trim()) return;
     setLoading(true);
     setAnswer("");
-    setError(false);
 
     try {
-      const res = await fetch(
-        "https://hlpntgkgjjjcqrwgbvql.supabase.co/functions/v1/claude-qa",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhscG50Z2tnampqY3Fyd2didnFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Mjg2ODksImV4cCI6MjA4ODMwNDY4OX0.iJIBQI8e4AbXF5m4cxyAUKF8EAr3jLK8LqVsJTrGLvI",
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhscG50Z2tnampqY3Fyd2didnFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Mjg2ODksImV4cCI6MjA4ODMwNDY4OX0.iJIBQI8e4AbXF5m4cxyAUKF8EAr3jLK8LqVsJTrGLvI",
-          },
-          body: JSON.stringify({ question }),
-        }
-      );
-      if (!res.ok) throw new Error("Request failed");
-      const data = await res.json();
+      const { data, error } = await supabase.functions.invoke("ask-college-ai", {
+        body: { question },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
       setAnswer(data.answer);
-    } catch {
-      setError(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong.";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -60,12 +55,6 @@ const AskAI = () => {
 
           {loading && (
             <p className="text-muted-foreground text-center animate-pulse">Thinking...</p>
-          )}
-
-          {error && (
-            <p className="text-destructive text-center">
-              Something went wrong. Please try again.
-            </p>
           )}
 
           {answer && !loading && (
