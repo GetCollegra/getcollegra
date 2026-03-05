@@ -184,7 +184,17 @@ Provide exactly 5 colleges sorted by fitScore descending. Include a mix of fitCa
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
+    // Build user prompt from all available Tally answers
+    const allResponses = preferences.allResponses || {};
+    const extraFields = Object.entries(allResponses)
+      .filter(([key]) => !["email"].includes(key)) // exclude email from AI prompt
+      .map(([key, val]) => `- ${key.replace(/_/g, " ")}: ${val}`)
+      .join("\n");
+
     let userPrompt = `Student preferences:
+- Home location (city/state): ${preferences.cityState || "Not specified"}
+- Weighted GPA: ${preferences.gpa || "Not specified"}
+- SAT/ACT Score: ${preferences.testScore || "None"}
 - Intended major/field of interest: ${preferences.major || "Undecided"}
 - Preferred campus size: ${preferences.campusSize || "No preference"}
 - Preferred location/setting: ${preferences.location || "No preference"}
@@ -193,7 +203,10 @@ IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 - Extracurricular interests: ${preferences.extracurriculars || "Various"}
 - Preferred climate/region: ${preferences.region || "No preference"}
 - Importance of financial aid: ${preferences.financialAid || "Important"}
-- Additional notes: ${preferences.additionalNotes || "None"}`;
+- Additional notes: ${preferences.additionalNotes || "None"}
+
+All survey responses:
+${extraFields}`;
 
     if (realCollegeData) {
       userPrompt += `\n\n--- REAL COLLEGE DATA FROM US DEPT OF EDUCATION ---\n${realCollegeData}\n--- END REAL DATA ---\n\nSelect the 5 best-fit colleges from this real data for the student above. Use the exact statistics provided.`;
