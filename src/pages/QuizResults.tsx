@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import AskAI from "@/components/AskAI";
+
 import { trackClick } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -483,7 +483,6 @@ const QuizResults = () => {
         )}
       </main>
 
-      <AskAI />
       <Footer />
     </div>
   );
