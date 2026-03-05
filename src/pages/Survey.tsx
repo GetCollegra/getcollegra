@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import AskAI from "@/components/AskAI";
 
 const Survey = () => {
   return (
@@ -24,6 +25,8 @@ const Survey = () => {
           className="w-full h-full"
         />
       </div>
+
+      <AskAI />
     </div>
   );
 };
