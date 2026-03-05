@@ -181,14 +181,30 @@ serve(async (req) => {
 
 Your job is to select the 5 best-fit colleges for this student from the real data provided, and personalize the recommendations.
 
+CRITICAL INSTRUCTIONS — You MUST factor in EVERY student preference below when ranking and selecting colleges:
+
+1. **GPA & Test Scores**: Use these to determine fitCategory (Reach/Match/Safety). Compare against each school's admission rate.
+2. **Campus Size**: Only recommend schools matching their size preference (Small <5K, Medium 5-15K, Large 15-30K, Very Large 30K+).
+3. **Campus Vibe**: Match the student's desired vibe (tight knit, spirited, academic, balanced, diverse) to known campus cultures.
+4. **Location Type**: Respect their Urban/Suburban/Rural preference — use school locale data.
+5. **Maximum Cost Per Year**: Do NOT recommend schools whose net price exceeds their stated budget unless clearly justified as a Reach.
+6. **Acceptance Rate Comfort**: Align recommendations with their selectivity comfort level but include at least one stretch.
+7. **Financial Aid Importance**: If "Essential" or "Very important", prioritize schools with high Pell grant rates and low net prices.
+8. **Campus Life Interests**: Match their extracurricular priorities (athletics, Greek life, research, study abroad, etc.) to known school strengths.
+9. **Academic Importance**: If "Top priority", weight graduation rate and academic reputation heavily.
+10. **Distance From Home**: Use their city/state and distance preference to filter geographically appropriate schools.
+11. **Area of Study**: Prioritize schools with strong programs in their chosen field. Use the program percentage data to identify strengths.
+
+In the "whyFit" and "prosForStudent" fields, explicitly reference the student's specific answers (e.g., "You wanted a spirited campus vibe — this school has a Division I athletics program and strong school spirit").
+
 IMPORTANT: Use the EXACT data values provided (tuition, acceptance rate, graduation rate, etc.) — do NOT make up or modify any statistics. You may add context like campus vibe, notable features, and fit reasoning based on your knowledge.
 
 Return a JSON object with this exact structure:
 {
   "studentProfile": {
-    "summary": "2-3 sentence personalized overview of this student's priorities",
+    "summary": "2-3 sentence personalized overview referencing their specific survey answers",
     "topPriorities": ["Priority 1", "Priority 2", "Priority 3"],
-    "idealSchoolType": "Brief description of ideal school archetype"
+    "idealSchoolType": "Brief description of ideal school archetype based on ALL their answers"
   },
   "colleges": [
     {
@@ -209,14 +225,14 @@ Return a JSON object with this exact structure:
       "avgStartingSalary": "$XX,XXX",
       "fitScore": 95,
       "fitCategory": "Safety/Match/Reach",
-      "whyFit": "2-3 sentences specific to this student",
-      "prosForStudent": ["Pro 1 specific to student", "Pro 2", "Pro 3"],
-      "consForStudent": ["Con 1 specific to student", "Con 2"],
+      "whyFit": "2-3 sentences referencing specific student answers",
+      "prosForStudent": ["Pro referencing specific student preference", "Pro 2", "Pro 3"],
+      "consForStudent": ["Con referencing specific student preference", "Con 2"],
       "campusVibe": "Brief 1 sentence campus culture description",
-      "notableFeature": "One unique thing about this school"
+      "notableFeature": "One unique thing about this school relevant to this student"
     }
   ],
-  "comparisonInsight": "2-3 sentence AI insight comparing the top recommendations"
+  "comparisonInsight": "2-3 sentence AI insight comparing recommendations and referencing the student's key preferences"
 }
 
 Provide exactly 5 colleges sorted by fitScore descending. Include a mix of fitCategories (at least one Safety, one Reach). Use the real data values from the Scorecard data — do NOT fabricate statistics.
