@@ -57,19 +57,34 @@ function buildScorecardQuery(preferences: any): string {
     params.set("latest.student.size__range", "15000..");
   }
 
-  // Location/region preference
+  // Location/region preference - use city/state if provided
+  const cityState = (preferences.cityState || "").toLowerCase();
   const region = (preferences.region || preferences.location || "").toLowerCase();
-  if (region.includes("northeast") || region.includes("new england")) {
+  const regionHint = region || cityState;
+  
+  if (regionHint.includes("northeast") || regionHint.includes("new england") || regionHint.includes("new york") || regionHint.includes("massachusetts") || regionHint.includes("connecticut") || regionHint.includes("pennsylvania")) {
     params.set("school.region_id", "1");
-  } else if (region.includes("southeast") || region.includes("south")) {
+  } else if (regionHint.includes("southeast") || regionHint.includes("south") || regionHint.includes("florida") || regionHint.includes("georgia") || regionHint.includes("virginia") || regionHint.includes("carolina")) {
     params.set("school.region_id", "5");
-  } else if (region.includes("midwest")) {
+  } else if (regionHint.includes("midwest") || regionHint.includes("ohio") || regionHint.includes("illinois") || regionHint.includes("michigan") || regionHint.includes("minnesota")) {
     params.set("school.region_id", "3");
-  } else if (region.includes("west") || region.includes("california")) {
+  } else if (regionHint.includes("west") || regionHint.includes("california") || regionHint.includes("washington") || regionHint.includes("oregon") || regionHint.includes("colorado")) {
     params.set("school.region_id", "8");
-  } else if (region.includes("southwest")) {
+  } else if (regionHint.includes("southwest") || regionHint.includes("texas") || regionHint.includes("arizona") || regionHint.includes("new mexico")) {
     params.set("school.region_id", "6");
   }
+
+  // Use admission rate range based on GPA/test scores to find appropriate schools
+  const gpa = parseFloat(preferences.gpa || "0");
+  if (gpa >= 3.8) {
+    // High GPA - include more selective schools
+    params.set("latest.admissions.admission_rate.overall__range", "0..0.7");
+  } else if (gpa >= 3.3) {
+    params.set("latest.admissions.admission_rate.overall__range", "0.1..0.8");
+  } else if (gpa >= 2.8) {
+    params.set("latest.admissions.admission_rate.overall__range", "0.3..1");
+  }
+  // If no GPA, keep the existing broad range
 
   // Sort by completion rate descending, get top 20 to let AI pick best 5
   params.set("sort", "latest.completion.rate_suppressed.overall:desc");
