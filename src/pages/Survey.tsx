@@ -16,8 +16,19 @@ const Survey = () => {
             const fields = parsed.payload?.fields || [];
             const params = new URLSearchParams();
 
-            // Map Tally field labels to our URL params
+            // Map Tally field labels (lowercased) to URL param keys
             const fieldMap: Record<string, string> = {
+              // Page 1 - known questions
+              "what's your email address?": "email",
+              "what's your city and state?": "city_state",
+              "what's your weighted gpa?": "gpa",
+              "what's your sat or act score? (none if unknown)": "test_score",
+              // Shortened label variants Tally might send
+              "email address": "email",
+              "city and state": "city_state",
+              "weighted gpa": "gpa",
+              "sat or act score": "test_score",
+              // Legacy/generic mappings for pages 2-3
               "major": "major",
               "intended major": "major",
               "field of study": "major",
@@ -41,15 +52,18 @@ const Survey = () => {
 
             for (const field of fields) {
               const label = (field.label || "").toLowerCase().trim();
+              // Remove trailing question mark and extra whitespace for matching
+              const normalizedLabel = label.replace(/\?$/, "").trim();
               const value = field.value || (Array.isArray(field.options) ? field.options.map((o: any) => o.text).join(", ") : "");
               
               if (value) {
-                const paramKey = fieldMap[label];
+                // Try exact match first, then normalized (without ?)
+                const paramKey = fieldMap[label] || fieldMap[normalizedLabel];
                 if (paramKey) {
                   params.set(paramKey, String(value));
                 } else {
                   // Use a sanitized version of the label as fallback
-                  const key = label.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+                  const key = normalizedLabel.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
                   if (key) params.set(key, String(value));
                 }
               }
