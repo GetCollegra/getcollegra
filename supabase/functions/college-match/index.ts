@@ -47,48 +47,72 @@ function buildScorecardQuery(preferences: any): string {
   params.set("school.degrees_awarded.predominant", "3"); // Bachelor's
   params.set("latest.admissions.admission_rate.overall__range", "0..1");
 
-  // Campus size preference
+  // Q5: Campus size preference
   const size = (preferences.campusSize || "").toLowerCase();
   if (size.includes("small")) {
     params.set("latest.student.size__range", "..5000");
   } else if (size.includes("medium")) {
     params.set("latest.student.size__range", "5000..15000");
-  } else if (size.includes("large")) {
-    params.set("latest.student.size__range", "15000..");
+  } else if (size.includes("large") && !size.includes("very")) {
+    params.set("latest.student.size__range", "15000..30000");
+  } else if (size.includes("very large") || size.includes("30,000")) {
+    params.set("latest.student.size__range", "30000..");
   }
 
-  // Location/region preference - use city/state if provided
+  // Q7: Location type (Urban/Suburban/Rural) → school.locale
+  const locationType = (preferences.locationType || "").toLowerCase();
+  if (locationType.includes("urban")) {
+    params.set("school.locale__range", "11..13"); // City
+  } else if (locationType.includes("suburban")) {
+    params.set("school.locale__range", "21..23"); // Suburb
+  } else if (locationType.includes("rural")) {
+    params.set("school.locale__range", "41..43"); // Rural
+  }
+
+  // Q8: Max cost per year → filter by net price
+  const maxCost = (preferences.maxCost || "").toLowerCase();
+  if (maxCost.includes("under $10,000") || maxCost.includes("under 10")) {
+    params.set("latest.cost.avg_net_price.overall__range", "..10000");
+  } else if (maxCost.includes("10,000") && maxCost.includes("20,000")) {
+    params.set("latest.cost.avg_net_price.overall__range", "..20000");
+  } else if (maxCost.includes("20,000") && maxCost.includes("30,000")) {
+    params.set("latest.cost.avg_net_price.overall__range", "..30000");
+  } else if (maxCost.includes("30,000") && maxCost.includes("45,000")) {
+    params.set("latest.cost.avg_net_price.overall__range", "..45000");
+  }
+  // $45,000+ = no filter
+
+  // Q9: Acceptance rate preference
+  const acceptPref = (preferences.acceptanceRatePref || "").toLowerCase();
+  if (acceptPref.includes("very selective") || acceptPref.includes("under 10")) {
+    params.set("latest.admissions.admission_rate.overall__range", "0..0.10");
+  } else if (acceptPref.includes("highly selective") || acceptPref.includes("10")) {
+    params.set("latest.admissions.admission_rate.overall__range", "0..0.25");
+  } else if (acceptPref.includes("selective") && !acceptPref.includes("highly") && !acceptPref.includes("less") && !acceptPref.includes("moderately")) {
+    params.set("latest.admissions.admission_rate.overall__range", "0..0.50");
+  } else if (acceptPref.includes("moderately")) {
+    params.set("latest.admissions.admission_rate.overall__range", "0.25..0.75");
+  } else if (acceptPref.includes("less selective")) {
+    params.set("latest.admissions.admission_rate.overall__range", "0.50..1");
+  }
+
+  // Region from city/state
   const cityState = (preferences.cityState || "").toLowerCase();
-  const region = (preferences.region || preferences.location || "").toLowerCase();
-  const regionHint = region || cityState;
-  
-  if (regionHint.includes("northeast") || regionHint.includes("new england") || regionHint.includes("new york") || regionHint.includes("massachusetts") || regionHint.includes("connecticut") || regionHint.includes("pennsylvania")) {
+  if (cityState.includes("new york") || cityState.includes("massachusetts") || cityState.includes("connecticut") || cityState.includes("pennsylvania") || cityState.includes("new jersey")) {
     params.set("school.region_id", "1");
-  } else if (regionHint.includes("southeast") || regionHint.includes("south") || regionHint.includes("florida") || regionHint.includes("georgia") || regionHint.includes("virginia") || regionHint.includes("carolina")) {
+  } else if (cityState.includes("florida") || cityState.includes("georgia") || cityState.includes("virginia") || cityState.includes("carolina")) {
     params.set("school.region_id", "5");
-  } else if (regionHint.includes("midwest") || regionHint.includes("ohio") || regionHint.includes("illinois") || regionHint.includes("michigan") || regionHint.includes("minnesota")) {
+  } else if (cityState.includes("ohio") || cityState.includes("illinois") || cityState.includes("michigan") || cityState.includes("minnesota")) {
     params.set("school.region_id", "3");
-  } else if (regionHint.includes("west") || regionHint.includes("california") || regionHint.includes("washington") || regionHint.includes("oregon") || regionHint.includes("colorado")) {
+  } else if (cityState.includes("california") || cityState.includes("washington") || cityState.includes("oregon") || cityState.includes("colorado")) {
     params.set("school.region_id", "8");
-  } else if (regionHint.includes("southwest") || regionHint.includes("texas") || regionHint.includes("arizona") || regionHint.includes("new mexico")) {
+  } else if (cityState.includes("texas") || cityState.includes("arizona") || cityState.includes("new mexico")) {
     params.set("school.region_id", "6");
   }
 
-  // Use admission rate range based on GPA/test scores to find appropriate schools
-  const gpa = parseFloat(preferences.gpa || "0");
-  if (gpa >= 3.8) {
-    // High GPA - include more selective schools
-    params.set("latest.admissions.admission_rate.overall__range", "0..0.7");
-  } else if (gpa >= 3.3) {
-    params.set("latest.admissions.admission_rate.overall__range", "0.1..0.8");
-  } else if (gpa >= 2.8) {
-    params.set("latest.admissions.admission_rate.overall__range", "0.3..1");
-  }
-  // If no GPA, keep the existing broad range
-
-  // Sort by completion rate descending, get top 20 to let AI pick best 5
+  // Sort by completion rate descending, get top 30 to let AI pick best 5
   params.set("sort", "latest.completion.rate_suppressed.overall:desc");
-  params.set("per_page", "20");
+  params.set("per_page", "30");
 
   return params.toString();
 }
@@ -210,15 +234,16 @@ IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 - Home location (city/state): ${preferences.cityState || "Not specified"}
 - Weighted GPA: ${preferences.gpa || "Not specified"}
 - SAT/ACT Score: ${preferences.testScore || "None"}
-- Intended major/field of interest: ${preferences.major || "Undecided"}
 - Preferred campus size: ${preferences.campusSize || "No preference"}
-- Preferred location/setting: ${preferences.location || "No preference"}
-- Budget considerations: ${preferences.budget || "No preference"}
-- Academic interests: ${preferences.academicInterests || "General"}
-- Extracurricular interests: ${preferences.extracurriculars || "Various"}
-- Preferred climate/region: ${preferences.region || "No preference"}
-- Importance of financial aid: ${preferences.financialAid || "Important"}
-- Additional notes: ${preferences.additionalNotes || "None"}
+- Campus vibe: ${preferences.campusVibe || "No preference"}
+- Location type: ${preferences.locationType || "No preference"}
+- Maximum cost per year: ${preferences.maxCost || "No preference"}
+- Acceptance rate comfort: ${preferences.acceptanceRatePref || "No preference"}
+- Financial aid importance: ${preferences.financialAid || "Important"}
+- Campus life interests: ${preferences.campusLife || "No preference"}
+- Academic importance: ${preferences.academicImportance || "No preference"}
+- Distance from home: ${preferences.distanceFromHome || "No preference"}
+- Area of study: ${preferences.areaOfStudy || "Undecided"}
 
 All survey responses:
 ${extraFields}`;

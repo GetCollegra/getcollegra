@@ -18,36 +18,57 @@ const Survey = () => {
 
             // Map Tally field labels (lowercased) to URL param keys
             const fieldMap: Record<string, string> = {
-              // Page 1 - known questions
+              // Q1-Q4: Basic info
               "what's your email address?": "email",
               "what's your city and state?": "city_state",
               "what's your weighted gpa?": "gpa",
               "what's your sat or act score? (none if unknown)": "test_score",
-              // Shortened label variants Tally might send
+              // Q5: Campus size
+              "what campus size are you interested in?": "campus_size",
+              "what campus size are you interested in": "campus_size",
+              "campus size": "campus_size",
+              // Q6: Campus vibe
+              "what kind of campus vibe are you looking for?": "campus_vibe",
+              "what kind of campus vibe are you looking for": "campus_vibe",
+              "campus vibe": "campus_vibe",
+              // Q7: Location type
+              "what type of location do you want your college to be in?": "location_type",
+              "what type of location do you want your college to be in": "location_type",
+              "location type": "location_type",
+              // Q8: Max cost
+              "what is the maximum amount you're willing to pay per year for college?": "max_cost",
+              "what is the maximum amount you're willing to pay per year for college": "max_cost",
+              "maximum amount": "max_cost",
+              // Q9: Acceptance rate
+              "what acceptance rate are you comfortable applying to?": "acceptance_rate_pref",
+              "what acceptance rate are you comfortable applying to": "acceptance_rate_pref",
+              "acceptance rate": "acceptance_rate_pref",
+              // Q10: Financial aid importance
+              "how important is financial aid and scholarships in your decision?": "financial_aid",
+              "how important is financial aid and scholarships in your decision": "financial_aid",
+              "financial aid": "financial_aid",
+              // Q11: Campus life
+              "outside of academics, which parts of campus life matter to you?": "campus_life",
+              "outside of academics, which parts of campus life matter to you": "campus_life",
+              "campus life": "campus_life",
+              // Q12: Academic importance
+              "how important are academics in your college decision?": "academic_importance",
+              "how important are academics in your college decision": "academic_importance",
+              "academic importance": "academic_importance",
+              // Q13: Distance from home
+              "how far are you willing to go from home (driving distance)?": "distance_from_home",
+              "how far are you willing to go from home (driving distance)": "distance_from_home",
+              "how far are you willing to go from home": "distance_from_home",
+              "distance from home": "distance_from_home",
+              // Q14: Area of study
+              "what general area of study are you most interested in?": "area_of_study",
+              "what general area of study are you most interested in": "area_of_study",
+              "area of study": "area_of_study",
+              // Shortened variants
               "email address": "email",
               "city and state": "city_state",
               "weighted gpa": "gpa",
               "sat or act score": "test_score",
-              // Legacy/generic mappings for pages 2-3
-              "major": "major",
-              "intended major": "major",
-              "field of study": "major",
-              "campus size": "campus_size",
-              "school size": "campus_size",
-              "location": "location",
-              "preferred location": "location",
-              "setting": "location",
-              "budget": "budget",
-              "academic interests": "academic_interests",
-              "interests": "academic_interests",
-              "extracurriculars": "extracurriculars",
-              "activities": "extracurriculars",
-              "region": "region",
-              "climate": "region",
-              "preferred region": "region",
-              "financial aid": "financial_aid",
-              "notes": "notes",
-              "additional notes": "notes",
             };
 
             for (const field of fields) {

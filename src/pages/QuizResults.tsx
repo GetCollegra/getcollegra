@@ -72,22 +72,32 @@ const QuizResults = () => {
       });
 
       const preferences = {
-        // Known Tally form fields (page 1)
+        // Q1-Q4: Basic info
         email: allParams.email || "",
-        cityState: allParams.city_state || allParams.location || "No preference",
+        cityState: allParams.city_state || "No preference",
         gpa: allParams.gpa || "",
         testScore: allParams.test_score || "None",
-        // Fields from pages 2-3 (mapped dynamically from Tally)
-        major: allParams.major || allParams.field || "Undecided",
-        campusSize: allParams.campus_size || allParams.size || "No preference",
-        location: allParams.city_state || allParams.location || allParams.setting || "No preference",
-        budget: allParams.budget || "No preference",
-        academicInterests: allParams.academic_interests || allParams.interests || "General",
-        extracurriculars: allParams.extracurriculars || allParams.activities || "Various",
-        region: allParams.region || allParams.climate || "No preference",
+        // Q5: Campus size
+        campusSize: allParams.campus_size || "No preference",
+        // Q6: Campus vibe
+        campusVibe: allParams.campus_vibe || "No preference",
+        // Q7: Location type
+        locationType: allParams.location_type || "No preference",
+        // Q8: Max cost per year
+        maxCost: allParams.max_cost || "No preference",
+        // Q9: Acceptance rate preference
+        acceptanceRatePref: allParams.acceptance_rate_pref || "No preference",
+        // Q10: Financial aid importance
         financialAid: allParams.financial_aid || "Important",
-        additionalNotes: allParams.notes || "None",
-        // Pass all raw params so the edge function can use any field
+        // Q11: Campus life interests
+        campusLife: allParams.campus_life || "No preference",
+        // Q12: Academic importance
+        academicImportance: allParams.academic_importance || "No preference",
+        // Q13: Distance from home
+        distanceFromHome: allParams.distance_from_home || "No preference",
+        // Q14: Area of study
+        areaOfStudy: allParams.area_of_study || "Undecided",
+        // All raw params
         allResponses: allParams,
       };
 
