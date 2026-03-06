@@ -298,8 +298,10 @@ const QuizResults = () => {
 
   useEffect(() => {
     const fetchRecommendations = async () => {
+      const ignoredParamKeys = new Set(["__lovable_token", "submission_id"]);
       const allParams: Record<string, string> = {};
       searchParams.forEach((value, key) => {
+        if (ignoredParamKeys.has(key) || key.startsWith("__")) return;
         allParams[key] = value;
       });
 

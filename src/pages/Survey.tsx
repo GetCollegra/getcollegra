@@ -145,6 +145,7 @@ const Survey = () => {
           }
         }
 
+        params.set("submission_id", Date.now().toString());
         console.log("Navigating with params:", params.toString());
         navigate(`/quiz-results?${params.toString()}`, { replace: true });
       } catch {
