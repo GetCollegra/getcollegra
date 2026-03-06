@@ -369,10 +369,10 @@ const QuizResults = () => {
                           </div>
 
                           {/* Premium Paywall - View Full Breakdown */}
-                          <div className="relative border-t border-border">
+                          <div className="relative border-t border-border overflow-hidden">
                             {/* Blurred preview content */}
                             <div className="p-6 md:p-8 select-none pointer-events-none" aria-hidden="true">
-                              <div className="blur-sm opacity-50">
+                              <div className="blur-[6px] opacity-40">
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                                   {[
                                     { label: "Tuition (In-State)", value: college.tuitionInState },
@@ -396,37 +396,40 @@ const QuizResults = () => {
                             </div>
 
                             {/* Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/95 to-card/60 flex items-center justify-center">
-                              <div className="text-center px-6 max-w-md">
-                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
-                                  <span className="text-2xl">🔒</span>
+                            <div className="absolute inset-0 bg-gradient-to-t from-card from-40% via-card/90 to-transparent flex items-center justify-center p-6">
+                              <div className="text-center max-w-sm">
+                                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/15 to-accent/15 border border-primary/20 mb-5 shadow-soft">
+                                  <Lock className="w-6 h-6 text-primary" />
                                 </div>
-                                <h4 className="font-display text-lg md:text-xl font-bold text-foreground mb-4">
+                                <h4 className="font-display text-xl md:text-2xl font-bold text-foreground mb-3">
                                   Unlock your full college plan
                                 </h4>
-                                <p className="text-muted-foreground text-sm mb-5 leading-relaxed">
+                                <p className="text-muted-foreground text-sm mb-6">
                                   With Collegra Premium you get:
                                 </p>
-                                <ul className="text-sm text-foreground space-y-2 text-left mx-auto max-w-xs mb-6">
-                                  <li className="flex items-center gap-2">🎓 <span>15+ personalized college matches</span></li>
-                                  <li className="flex items-center gap-2">📊 <span>Acceptance chance estimates</span></li>
-                                  <li className="flex items-center gap-2">💰 <span>Estimated tuition & financial aid</span></li>
-                                  <li className="flex items-center gap-2">📝 <span>College organizer dashboard</span></li>
-                                  <li className="flex items-center gap-2">⭐ <span>Save schools and add notes</span></li>
-                                  <li className="flex items-center gap-2">📍 <span>Compare colleges side-by-side</span></li>
-                                  <li className="flex items-center gap-2">🔍 <span>Smarter recommendations</span></li>
-                                </ul>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm text-foreground mx-auto max-w-xs mb-7">
+                                  <div className="flex items-center gap-2 text-left">🎓 <span>15+ matches</span></div>
+                                  <div className="flex items-center gap-2 text-left">📊 <span>Acceptance odds</span></div>
+                                  <div className="flex items-center gap-2 text-left">💰 <span>Tuition & aid</span></div>
+                                  <div className="flex items-center gap-2 text-left">📝 <span>Organizer</span></div>
+                                  <div className="flex items-center gap-2 text-left">⭐ <span>Save & notes</span></div>
+                                  <div className="flex items-center gap-2 text-left">📍 <span>Side-by-side</span></div>
+                                  <div className="flex items-center gap-2 text-left col-span-2 justify-center">🔍 <span>Smarter recommendations</span></div>
+                                </div>
                                 <Link
                                   to="/coming-soon"
                                   onClick={() => trackClick("Unlock Premium Breakdown", "QuizResults")}
+                                  className="block"
                                 >
                                   <Button
                                     size="lg"
-                                    className="rounded-full px-8 gap-2 bg-gradient-to-r from-primary to-accent text-white font-bold shadow-elevated hover:scale-105 transition-transform duration-200 w-full"
+                                    className="rounded-full px-8 gap-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-bold shadow-elevated hover:shadow-card hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 w-full text-base"
                                   >
-                                    👉 Unlock Full Results – $9.99/month
+                                    Unlock Full Results – $9.99/mo
+                                    <ArrowRight className="w-4.5 h-4.5" />
                                   </Button>
                                 </Link>
+                                <p className="text-muted-foreground text-xs mt-3">Cancel anytime • 14-day free trial</p>
                               </div>
                             </div>
                           </div>
@@ -537,7 +540,8 @@ const QuizResults = () => {
             {/* CTA Section */}
             <section className="relative py-20 md:py-28 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-hero" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(210_90%_60%/0.2),transparent_70%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(210_90%_70%/0.25),transparent_50%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,hsl(210_80%_30%/0.3),transparent_50%)]" />
               <div className="container px-4 relative z-10">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -545,17 +549,32 @@ const QuizResults = () => {
                   viewport={{ once: true }}
                   className="text-center max-w-2xl mx-auto"
                 >
-                  <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-5">
-                    Ready to go deeper?
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm mb-6">
+                    <Lock className="w-7 h-7 text-white" />
+                  </div>
+                  <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
+                    Unlock your full college plan
                   </h2>
-                  <p className="text-white/75 text-lg mb-10 leading-relaxed">
-                    Get ongoing personalized guidance, updated match lists, and decision-making tools to make your final choice with confidence.
+                  <p className="text-white/75 text-lg mb-8 leading-relaxed max-w-lg mx-auto">
+                    Get 15+ matches, acceptance estimates, financial breakdowns, and a personal organizer dashboard.
                   </p>
-                  <Link to="/coming-soon" onClick={() => trackClick("Unlock Full Results", "QuizResults")}>
-                    <Button size="xl" className="rounded-full px-12 gap-2 bg-white text-primary hover:bg-white/90 font-bold text-lg shadow-elevated transition-all hover:scale-105 duration-200">
-                      Unlock Full Results <ArrowRight className="w-5 h-5" />
+
+                  <div className="inline-grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-white/80 text-left mb-10">
+                    <div className="flex items-center gap-2">🎓 <span>15+ matches</span></div>
+                    <div className="flex items-center gap-2">📊 <span>Acceptance odds</span></div>
+                    <div className="flex items-center gap-2">💰 <span>Tuition & aid</span></div>
+                    <div className="flex items-center gap-2">📝 <span>Organizer</span></div>
+                    <div className="flex items-center gap-2">⭐ <span>Save & notes</span></div>
+                    <div className="flex items-center gap-2">📍 <span>Side-by-side</span></div>
+                  </div>
+
+                  <Link to="/coming-soon" onClick={() => trackClick("Unlock Full Results CTA", "QuizResults")} className="block">
+                    <Button size="xl" className="rounded-full px-12 gap-2.5 bg-white text-primary hover:bg-white/95 font-bold text-lg shadow-elevated hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                      Unlock Full Results – $9.99/mo
+                      <ArrowRight className="w-5 h-5" />
                     </Button>
                   </Link>
+                  <p className="text-white/50 text-sm mt-4">Cancel anytime • 14-day free trial</p>
                 </motion.div>
               </div>
             </section>
