@@ -304,7 +304,7 @@ const QuizResults = () => {
                         transition={{ delay: 0.4 + i * 0.12, duration: 0.5 }}
                         className="group"
                       >
-                        <div className={`relative bg-card border rounded-2xl overflow-hidden transition-all duration-300 ${isExpanded ? "shadow-elevated border-primary/30" : "shadow-soft border-border hover:shadow-card hover:border-border/80"}`}>
+                        <div className="relative bg-card border rounded-2xl overflow-hidden transition-all duration-300 shadow-soft border-border hover:shadow-card hover:border-border/80">
                           {/* Rank badge */}
                           <div className={`absolute top-0 left-0 w-12 h-12 bg-gradient-to-br ${catConfig.gradient} flex items-end justify-end rounded-br-2xl`}>
                             <span className="text-white font-bold text-lg mr-2.5 mb-1">{i + 1}</span>
