@@ -429,7 +429,7 @@ const QuizResults = () => {
                                     <ArrowRight className="w-4.5 h-4.5" />
                                   </Button>
                                 </Link>
-                                <p className="text-muted-foreground text-xs mt-3">Cancel anytime • 14-day free trial</p>
+                                
                               </div>
                             </div>
                           </div>
@@ -574,7 +574,7 @@ const QuizResults = () => {
                       <ArrowRight className="w-5 h-5" />
                     </Button>
                   </Link>
-                  <p className="text-white/50 text-sm mt-4">Cancel anytime • 14-day free trial</p>
+                  
                 </motion.div>
               </div>
             </section>
