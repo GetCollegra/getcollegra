@@ -107,11 +107,23 @@ function buildScorecardQuery(preferences: any): string {
   const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
   params.set("api_key", apiKey || "");
 
-  // Fields to retrieve
+  // Fields to retrieve — including SAT/ACT admission scores
   params.set("fields", [
     "id", "school.name", "school.city", "school.state", "school.school_url",
     "school.ownership", "school.locale", "latest.student.size",
     "latest.admissions.admission_rate.overall",
+    "latest.admissions.sat_scores.average.overall",
+    "latest.admissions.sat_scores.midpoint.critical_reading",
+    "latest.admissions.sat_scores.midpoint.math",
+    "latest.admissions.act_scores.midpoint.cumulative",
+    "latest.admissions.act_scores.midpoint.english",
+    "latest.admissions.act_scores.midpoint.math",
+    "latest.admissions.act_scores.25th_percentile.cumulative",
+    "latest.admissions.act_scores.75th_percentile.cumulative",
+    "latest.admissions.sat_scores.25th_percentile.critical_reading",
+    "latest.admissions.sat_scores.75th_percentile.critical_reading",
+    "latest.admissions.sat_scores.25th_percentile.math",
+    "latest.admissions.sat_scores.75th_percentile.math",
     "latest.cost.tuition.in_state", "latest.cost.tuition.out_of_state",
     "latest.cost.avg_net_price.overall",
     "latest.aid.median_debt.completers.overall", "latest.aid.pell_grant_rate",
