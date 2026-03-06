@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import AskAI from "@/components/AskAI";
+
 
 import { trackClick } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
@@ -705,10 +705,6 @@ const QuizResults = () => {
               </div>
             </section>
 
-            <AskAI
-              surveyContext={surveyContext}
-              recommendedCollegeNames={recommendedCollegeNames}
-            />
 
             {/* CTA Section */}
             <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
