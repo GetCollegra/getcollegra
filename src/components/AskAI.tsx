@@ -22,7 +22,10 @@ const AskAI = ({ surveyContext = {}, recommendedCollegeNames = [] }: AskAIProps)
     try {
       const response = await fetch("https://hlpntgkgjjjcqrwgbvql.supabase.co/functions/v1/claude-qa", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhscG50Z2tnampqY3Fyd2didnFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Mjg2ODksImV4cCI6MjA4ODMwNDY4OX0.iJIBQI8e4AbXF5m4cxyAUKF8EAr3jLK8LqVsJTrGLvI",
+        },
         body: JSON.stringify({
           question,
           surveyContext,
