@@ -304,14 +304,30 @@ serve(async (req) => {
   }
 
   try {
-    const { preferences: rawPreferences } = await req.json();
+    const body = await req.json();
+    const rawPreferences = body?.preferences;
+
+    // Input validation
+    if (!rawPreferences || typeof rawPreferences !== "object") {
+      return new Response(JSON.stringify({ error: "Invalid input: preferences object required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Limit total payload size by checking stringified length
+    const rawStr = JSON.stringify(rawPreferences);
+    if (rawStr.length > 10000) {
+      return new Response(JSON.stringify({ error: "Input too large" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     
     // Sanitize preferences: remove Tally placeholder values like {field_id}
     const sanitize = (val: any): string => {
       if (typeof val !== "string") return "";
       const trimmed = val.trim();
       if (/^\{.*\}$/.test(trimmed)) return "";
-      return trimmed;
+      return trimmed.substring(0, 500); // Cap individual field length
     };
     
     const preferences: Record<string, any> = {};
@@ -332,10 +348,20 @@ serve(async (req) => {
     console.log("Received preferences:", JSON.stringify(preferences, null, 2));
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY is not configured");
+      return new Response(JSON.stringify({ error: "Service configuration error" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const SCORECARD_KEY = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
-    if (!SCORECARD_KEY) throw new Error("COLLEGE_SCORECARD_API_KEY is not configured");
+    if (!SCORECARD_KEY) {
+      console.error("COLLEGE_SCORECARD_API_KEY is not configured");
+      return new Response(JSON.stringify({ error: "Service configuration error" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Step 1: Fetch real college data from College Scorecard API
     const query = buildScorecardQuery(preferences);
@@ -542,7 +568,7 @@ ${extraFields}`;
     });
   } catch (e) {
     console.error("college-match error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred. Please try again." }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
