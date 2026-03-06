@@ -20,16 +20,18 @@ const AskAI = ({ surveyContext = {}, recommendedCollegeNames = [] }: AskAIProps)
     setAnswer("");
 
     try {
-      const { data, error } = await supabase.functions.invoke("ask-college-ai", {
-        body: {
+      const response = await fetch("https://hlpntgkgjjjcqrwgbvql.supabase.co/functions/v1/claude-qa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           question,
           surveyContext,
           recommendedCollegeNames,
-        },
+        }),
       });
 
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Request failed");
 
       setAnswer(data.answer);
     } catch (err) {
