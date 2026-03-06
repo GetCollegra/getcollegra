@@ -260,7 +260,31 @@ serve(async (req) => {
   }
 
   try {
-    const { preferences } = await req.json();
+    const { preferences: rawPreferences } = await req.json();
+    
+    // Sanitize preferences: remove Tally placeholder values like {field_id}
+    const sanitize = (val: any): string => {
+      if (typeof val !== "string") return "";
+      const trimmed = val.trim();
+      if (/^\{.*\}$/.test(trimmed)) return "";
+      return trimmed;
+    };
+    
+    const preferences: Record<string, any> = {};
+    for (const [key, val] of Object.entries(rawPreferences || {})) {
+      if (key === "allResponses" && typeof val === "object" && val !== null) {
+        const cleaned: Record<string, string> = {};
+        for (const [k, v] of Object.entries(val as Record<string, any>)) {
+          const s = sanitize(v);
+          if (s) cleaned[k] = s;
+        }
+        preferences[key] = cleaned;
+      } else {
+        const s = sanitize(val);
+        preferences[key] = s || rawPreferences[key];
+      }
+    }
+    
     console.log("Received preferences:", JSON.stringify(preferences, null, 2));
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -416,7 +440,7 @@ ${extraFields}`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
+        temperature: 0.4,
       }),
     });
 
