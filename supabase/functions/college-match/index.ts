@@ -107,11 +107,23 @@ function buildScorecardQuery(preferences: any): string {
   const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
   params.set("api_key", apiKey || "");
 
-  // Fields to retrieve
+  // Fields to retrieve — including SAT/ACT admission scores
   params.set("fields", [
     "id", "school.name", "school.city", "school.state", "school.school_url",
     "school.ownership", "school.locale", "latest.student.size",
     "latest.admissions.admission_rate.overall",
+    "latest.admissions.sat_scores.average.overall",
+    "latest.admissions.sat_scores.midpoint.critical_reading",
+    "latest.admissions.sat_scores.midpoint.math",
+    "latest.admissions.act_scores.midpoint.cumulative",
+    "latest.admissions.act_scores.midpoint.english",
+    "latest.admissions.act_scores.midpoint.math",
+    "latest.admissions.act_scores.25th_percentile.cumulative",
+    "latest.admissions.act_scores.75th_percentile.cumulative",
+    "latest.admissions.sat_scores.25th_percentile.critical_reading",
+    "latest.admissions.sat_scores.75th_percentile.critical_reading",
+    "latest.admissions.sat_scores.25th_percentile.math",
+    "latest.admissions.sat_scores.75th_percentile.math",
     "latest.cost.tuition.in_state", "latest.cost.tuition.out_of_state",
     "latest.cost.avg_net_price.overall",
     "latest.aid.median_debt.completers.overall", "latest.aid.pell_grant_rate",
@@ -223,6 +235,16 @@ function formatCollegeData(results: any[]): string {
     const locale = r["school.locale"];
     const localeDesc = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
 
+    // SAT/ACT scores
+    const satAvg = r["latest.admissions.sat_scores.average.overall"];
+    const satRead25 = r["latest.admissions.sat_scores.25th_percentile.critical_reading"];
+    const satRead75 = r["latest.admissions.sat_scores.75th_percentile.critical_reading"];
+    const satMath25 = r["latest.admissions.sat_scores.25th_percentile.math"];
+    const satMath75 = r["latest.admissions.sat_scores.75th_percentile.math"];
+    const actMid = r["latest.admissions.act_scores.midpoint.cumulative"];
+    const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
+    const act75 = r["latest.admissions.act_scores.75th_percentile.cumulative"];
+
     // Program percentages
     const programs: string[] = [];
     const progFields: Record<string, string> = {
@@ -241,9 +263,31 @@ function formatCollegeData(results: any[]): string {
       if (pct && Number(pct) > 0.05) programs.push(`${name} (${(Number(pct) * 100).toFixed(0)}%)`);
     }
 
+    // Build SAT display
+    let satDisplay = "N/A";
+    if (satAvg) {
+      satDisplay = `Avg: ${satAvg}`;
+      if (satRead25 && satRead75 && satMath25 && satMath75) {
+        const total25 = Number(satRead25) + Number(satMath25);
+        const total75 = Number(satRead75) + Number(satMath75);
+        satDisplay += ` (25th-75th: ${total25}-${total75})`;
+      }
+    }
+
+    // Build ACT display
+    let actDisplay = "N/A";
+    if (actMid) {
+      actDisplay = `Mid: ${actMid}`;
+      if (act25 && act75) {
+        actDisplay += ` (25th-75th: ${act25}-${act75})`;
+      }
+    }
+
     return `${i + 1}. ${name} (${city}, ${state})
    - Type: ${ownership} | Setting: ${localeDesc}
    - Admission Rate: ${admRate !== null ? (admRate * 100).toFixed(1) + "%" : "N/A"}
+   - SAT Scores: ${satDisplay}
+   - ACT Scores: ${actDisplay}
    - Tuition (In-State): ${tuitionIn ? "$" + tuitionIn.toLocaleString() : "N/A"}
    - Tuition (Out-of-State): ${tuitionOut ? "$" + tuitionOut.toLocaleString() : "N/A"}
    - Avg Net Price: ${netPrice ? "$" + netPrice.toLocaleString() : "N/A"}
@@ -336,7 +380,14 @@ Your job is to select the 5 best-fit colleges for this student from the real dat
 
 CRITICAL: Each student is UNIQUE. Their answers MUST directly determine which colleges you pick. Two students with different answers should get COMPLETELY DIFFERENT lists. Here is how to use each preference:
 
-1. **GPA & Test Scores** → Determines fitCategory. Compare against admission rates:
+1. **SAT & ACT Scores** → CRITICAL for fitCategory. Compare the student's scores against each school's 25th-75th percentile ranges:
+   - Student score ABOVE school's 75th percentile → Safety
+   - Student score WITHIN school's 25th-75th range → Match  
+   - Student score BELOW school's 25th percentile → Reach
+   - If student provides SAT (out of 1600) use SAT data. If ACT (out of 36) use ACT data. If both, use both.
+   - A student with SAT 1300 is competitive at schools with avg SAT ~1200-1350, reach for 1400+
+   - A student with ACT 30 is competitive at schools with avg ACT ~27-31, reach for 33+
+2. **GPA** → Secondary fit factor combined with test scores:
    - GPA 3.8+ with high scores → can include <15% acceptance schools as Match
    - GPA 3.0-3.7 → 25-60% acceptance as Match
    - GPA <3.0 → 50%+ acceptance as Match
