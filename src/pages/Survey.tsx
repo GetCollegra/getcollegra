@@ -7,11 +7,26 @@ const Survey = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const submissionEvents = new Set([
+      "tally.formsubmitted",
+      "tally.form-submitted",
+      "formsubmitted",
+      "form-submitted",
+    ]);
+
+    const isTallySubmissionEvent = (value: unknown) => {
+      if (typeof value !== "string") return false;
+      const normalized = value.toLowerCase().trim();
+      return submissionEvents.has(normalized);
+    };
+
     const parseTallyMessage = (rawData: unknown): Record<string, any> | null => {
       if (typeof rawData === "string") {
-        if (!rawData.includes("Tally.FormSubmitted")) return null;
+        if (!rawData.toLowerCase().includes("tally.form")) return null;
         try {
-          return JSON.parse(rawData);
+          const parsed = JSON.parse(rawData);
+          const eventName = parsed?.event || parsed?.eventType || parsed?.type;
+          return isTallySubmissionEvent(eventName) ? parsed : null;
         } catch {
           return null;
         }
@@ -20,12 +35,12 @@ const Survey = () => {
       if (typeof rawData === "object" && rawData !== null) {
         const data = rawData as Record<string, any>;
         const eventName = data.event || data.eventType || data.type;
-        if (eventName === "Tally.FormSubmitted") return data;
+        if (isTallySubmissionEvent(eventName)) return data;
 
         if (typeof data.data === "object" && data.data !== null) {
           const nested = data.data as Record<string, any>;
           const nestedEventName = nested.event || nested.eventType || nested.type;
-          if (nestedEventName === "Tally.FormSubmitted") return nested;
+          if (isTallySubmissionEvent(nestedEventName)) return nested;
         }
       }
 
@@ -131,15 +146,16 @@ const Survey = () => {
         }
 
         console.log("Navigating with params:", params.toString());
-        navigate(`/quiz-results?${params.toString()}`);
+        navigate(`/quiz-results?${params.toString()}`, { replace: true });
       } catch {
         // Not a supported Tally message shape, ignore
       }
     };
 
     const wrappedHandler = (event: MessageEvent) => {
-      // Only accept messages from Tally's domain
-      if (event.origin !== "https://tally.so") return;
+      // Accept Tally message origins, including subdomains used by embedded forms
+      const isTrustedTallyOrigin = /^https:\/\/([a-z0-9-]+\.)?tally\.so$/i.test(event.origin);
+      if (!isTrustedTallyOrigin) return;
       handleMessage(event);
     };
 
