@@ -236,13 +236,9 @@ function buildScorecardQuery(preferences: any): string {
     }
   }
 
-  // Sort by program strength if area of study is specified, otherwise by completion rate
-  const programField = findProgramField(preferences.areaOfStudy || "");
-  if (programField) {
-    params.set("sort", `${programField}:desc`);
-  } else {
-    params.set("sort", "latest.completion.rate_suppressed.overall:desc");
-  }
+  // Always sort by completion rate — program percentage fields are not supported as sort params
+  // The AI will handle program-based ranking using the returned program_percentage data
+  params.set("sort", "latest.completion.rate_suppressed.overall:desc");
 
   params.set("per_page", "30");
   return params.toString();
