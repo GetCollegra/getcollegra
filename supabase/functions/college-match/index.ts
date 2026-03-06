@@ -380,7 +380,14 @@ Your job is to select the 5 best-fit colleges for this student from the real dat
 
 CRITICAL: Each student is UNIQUE. Their answers MUST directly determine which colleges you pick. Two students with different answers should get COMPLETELY DIFFERENT lists. Here is how to use each preference:
 
-1. **GPA & Test Scores** → Determines fitCategory. Compare against admission rates:
+1. **SAT & ACT Scores** → CRITICAL for fitCategory. Compare the student's scores against each school's 25th-75th percentile ranges:
+   - Student score ABOVE school's 75th percentile → Safety
+   - Student score WITHIN school's 25th-75th range → Match  
+   - Student score BELOW school's 25th percentile → Reach
+   - If student provides SAT (out of 1600) use SAT data. If ACT (out of 36) use ACT data. If both, use both.
+   - A student with SAT 1300 is competitive at schools with avg SAT ~1200-1350, reach for 1400+
+   - A student with ACT 30 is competitive at schools with avg ACT ~27-31, reach for 33+
+2. **GPA** → Secondary fit factor combined with test scores:
    - GPA 3.8+ with high scores → can include <15% acceptance schools as Match
    - GPA 3.0-3.7 → 25-60% acceptance as Match
    - GPA <3.0 → 50%+ acceptance as Match
