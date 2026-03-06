@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link, useSearchParams } from "react-router-dom";
@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AskAI from "@/components/AskAI";
 
 import { trackClick } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
@@ -288,6 +289,22 @@ const QuizResults = () => {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const { toast } = useToast();
 
+  const ignoredParamKeys = useMemo(() => new Set(["__lovable_token", "submission_id"]), []);
+
+  const surveyContext = useMemo(() => {
+    const context: Record<string, string> = {};
+    searchParams.forEach((value, key) => {
+      if (ignoredParamKeys.has(key) || key.startsWith("__")) return;
+      if (value.trim()) context[key] = value;
+    });
+    return context;
+  }, [searchParams, ignoredParamKeys]);
+
+  const recommendedCollegeNames = useMemo(
+    () => recommendations?.colleges?.map((college) => college.name) ?? [],
+    [recommendations]
+  );
+
   useEffect(() => {
     if (!loading) return;
     const interval = setInterval(() => {
@@ -298,7 +315,6 @@ const QuizResults = () => {
 
   useEffect(() => {
     const fetchRecommendations = async () => {
-      const ignoredParamKeys = new Set(["__lovable_token", "submission_id"]);
       const allParams: Record<string, string> = {};
       searchParams.forEach((value, key) => {
         if (ignoredParamKeys.has(key) || key.startsWith("__")) return;
@@ -363,7 +379,7 @@ const QuizResults = () => {
     };
 
     fetchRecommendations();
-  }, [searchParams, toast]);
+  }, [searchParams, toast, ignoredParamKeys]);
 
   const fitScoreColor = (score: number) => {
     if (score >= 90) return "text-emerald-500";
@@ -688,6 +704,11 @@ const QuizResults = () => {
                 </motion.div>
               </div>
             </section>
+
+            <AskAI
+              surveyContext={surveyContext}
+              recommendedCollegeNames={recommendedCollegeNames}
+            />
 
             {/* CTA Section */}
             <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
