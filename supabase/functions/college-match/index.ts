@@ -235,6 +235,16 @@ function formatCollegeData(results: any[]): string {
     const locale = r["school.locale"];
     const localeDesc = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
 
+    // SAT/ACT scores
+    const satAvg = r["latest.admissions.sat_scores.average.overall"];
+    const satRead25 = r["latest.admissions.sat_scores.25th_percentile.critical_reading"];
+    const satRead75 = r["latest.admissions.sat_scores.75th_percentile.critical_reading"];
+    const satMath25 = r["latest.admissions.sat_scores.25th_percentile.math"];
+    const satMath75 = r["latest.admissions.sat_scores.75th_percentile.math"];
+    const actMid = r["latest.admissions.act_scores.midpoint.cumulative"];
+    const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
+    const act75 = r["latest.admissions.act_scores.75th_percentile.cumulative"];
+
     // Program percentages
     const programs: string[] = [];
     const progFields: Record<string, string> = {
@@ -253,9 +263,31 @@ function formatCollegeData(results: any[]): string {
       if (pct && Number(pct) > 0.05) programs.push(`${name} (${(Number(pct) * 100).toFixed(0)}%)`);
     }
 
+    // Build SAT display
+    let satDisplay = "N/A";
+    if (satAvg) {
+      satDisplay = `Avg: ${satAvg}`;
+      if (satRead25 && satRead75 && satMath25 && satMath75) {
+        const total25 = Number(satRead25) + Number(satMath25);
+        const total75 = Number(satRead75) + Number(satMath75);
+        satDisplay += ` (25th-75th: ${total25}-${total75})`;
+      }
+    }
+
+    // Build ACT display
+    let actDisplay = "N/A";
+    if (actMid) {
+      actDisplay = `Mid: ${actMid}`;
+      if (act25 && act75) {
+        actDisplay += ` (25th-75th: ${act25}-${act75})`;
+      }
+    }
+
     return `${i + 1}. ${name} (${city}, ${state})
    - Type: ${ownership} | Setting: ${localeDesc}
    - Admission Rate: ${admRate !== null ? (admRate * 100).toFixed(1) + "%" : "N/A"}
+   - SAT Scores: ${satDisplay}
+   - ACT Scores: ${actDisplay}
    - Tuition (In-State): ${tuitionIn ? "$" + tuitionIn.toLocaleString() : "N/A"}
    - Tuition (Out-of-State): ${tuitionOut ? "$" + tuitionOut.toLocaleString() : "N/A"}
    - Avg Net Price: ${netPrice ? "$" + netPrice.toLocaleString() : "N/A"}
