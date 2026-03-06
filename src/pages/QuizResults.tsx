@@ -86,22 +86,37 @@ const QuizResults = () => {
         allParams[key] = value;
       });
 
+      // Filter out Tally placeholder values like {field_id}
+      const clean = (val: string | undefined, fallback: string): string => {
+        if (!val) return fallback;
+        const trimmed = val.trim();
+        if (!trimmed || /^\{.*\}$/.test(trimmed)) return fallback;
+        return trimmed;
+      };
+
+      // Also clean allResponses
+      const cleanedResponses: Record<string, string> = {};
+      for (const [key, val] of Object.entries(allParams)) {
+        const cleaned = clean(val, "");
+        if (cleaned) cleanedResponses[key] = cleaned;
+      }
+
       const preferences = {
         email: allParams.email || "",
-        cityState: allParams.city_state || "No preference",
-        gpa: allParams.gpa || "",
-        testScore: allParams.test_score || "None",
-        campusSize: allParams.campus_size || "No preference",
-        campusVibe: allParams.campus_vibe || "No preference",
-        locationType: allParams.location_type || "No preference",
-        maxCost: allParams.max_cost || "No preference",
-        acceptanceRatePref: allParams.acceptance_rate_pref || "No preference",
-        financialAid: allParams.financial_aid || "Important",
-        campusLife: allParams.campus_life || "No preference",
-        academicImportance: allParams.academic_importance || "No preference",
-        distanceFromHome: allParams.distance_from_home || "No preference",
-        areaOfStudy: allParams.area_of_study || "Undecided",
-        allResponses: allParams,
+        cityState: clean(allParams.city_state, "No preference"),
+        gpa: clean(allParams.gpa, ""),
+        testScore: clean(allParams.test_score, "None"),
+        campusSize: clean(allParams.campus_size, "No preference"),
+        campusVibe: clean(allParams.campus_vibe, "No preference"),
+        locationType: clean(allParams.location_type, "No preference"),
+        maxCost: clean(allParams.max_cost, "No preference"),
+        acceptanceRatePref: clean(allParams.acceptance_rate_pref, "No preference"),
+        financialAid: clean(allParams.financial_aid, "Important"),
+        campusLife: clean(allParams.campus_life, "No preference"),
+        academicImportance: clean(allParams.academic_importance, "No preference"),
+        distanceFromHome: clean(allParams.distance_from_home, "No preference"),
+        areaOfStudy: clean(allParams.area_of_study, "Undecided"),
+        allResponses: cleanedResponses,
       };
 
       try {
