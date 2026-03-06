@@ -1,10 +1,39 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 5; // max requests per IP per minute (stricter — expensive function)
+
+async function checkRateLimit(ip: string, functionName: string): Promise<boolean> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, serviceKey);
+
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+
+  const { count } = await sb
+    .from("rate_limits")
+    .select("*", { count: "exact", head: true })
+    .eq("ip_address", ip)
+    .eq("function_name", functionName)
+    .gte("window_start", windowStart);
+
+  if ((count ?? 0) >= RATE_LIMIT_MAX) return false;
+
+  await sb.from("rate_limits").insert({ ip_address: ip, function_name: functionName });
+
+  if (Math.random() < 0.05) {
+    await sb.rpc("cleanup_rate_limits");
+  }
+
+  return true;
+}
 
 // Map area of study to Scorecard program fields for sorting
 const studyProgramMap: Record<string, string> = {

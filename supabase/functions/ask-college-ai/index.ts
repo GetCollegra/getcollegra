@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,12 +7,53 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 10; // max requests per IP per minute
+
+async function checkRateLimit(ip: string, functionName: string): Promise<boolean> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, serviceKey);
+
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+
+  // Count requests in current window
+  const { count } = await sb
+    .from("rate_limits")
+    .select("*", { count: "exact", head: true })
+    .eq("ip_address", ip)
+    .eq("function_name", functionName)
+    .gte("window_start", windowStart);
+
+  if ((count ?? 0) >= RATE_LIMIT_MAX) return false;
+
+  // Insert new request record
+  await sb.from("rate_limits").insert({ ip_address: ip, function_name: functionName });
+
+  // Opportunistic cleanup
+  if (Math.random() < 0.05) {
+    await sb.rpc("cleanup_rate_limits");
+  }
+
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                     req.headers.get("cf-connecting-ip") || "unknown";
+
+    const allowed = await checkRateLimit(clientIp, "ask-college-ai");
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please wait a moment." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { question } = await req.json();
 
     // Input validation
