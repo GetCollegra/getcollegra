@@ -211,7 +211,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
         {/* Premium Paywall */}
         <div className="relative border-t border-border overflow-hidden">
           <div className="p-5 sm:p-6 md:p-8 select-none pointer-events-none" aria-hidden="true">
-            <div className="blur-[6px] opacity-40">
+            <div className="blur-[3px] opacity-60">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 {[
                   { label: "Tuition (In-State)", value: college.tuitionInState },
@@ -235,7 +235,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
           </div>
 
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-card from-40% via-card/90 to-transparent flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-gradient-to-t from-card from-30% via-card/70 to-card/30 flex items-center justify-center p-4 sm:p-6">
             <div className="text-center max-w-sm">
               <motion.div
                 initial={{ scale: 0, rotate: -10 }}
