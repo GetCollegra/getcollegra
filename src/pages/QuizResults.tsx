@@ -369,75 +369,68 @@ const QuizResults = () => {
                             ))}
                           </div>
 
-                          {/* Expand/Collapse */}
-                          <div className="border-t border-border">
-                            <button
-                              onClick={() => setExpandedCard(isExpanded ? null : i)}
-                              className="w-full flex items-center justify-center gap-2 py-4 text-primary text-sm font-semibold hover:bg-muted/30 transition-colors"
-                            >
-                              {isExpanded ? "Show less" : "View full breakdown"}
-                              <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
-                            </button>
+                          {/* Premium Paywall - View Full Breakdown */}
+                          <div className="relative border-t border-border">
+                            {/* Blurred preview content */}
+                            <div className="p-6 md:p-8 select-none pointer-events-none" aria-hidden="true">
+                              <div className="blur-sm opacity-50">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                                  {[
+                                    { label: "Tuition (In-State)", value: college.tuitionInState },
+                                    { label: "Tuition (Out-of-State)", value: college.tuitionOutOfState },
+                                    { label: "Avg Financial Aid", value: college.avgFinancialAid },
+                                    { label: "Student:Faculty", value: college.studentFacultyRatio },
+                                    { label: "Student Body", value: college.studentBody },
+                                    { label: "Campus Size", value: college.campusSize },
+                                  ].map((item) => (
+                                    <div key={item.label} className="p-4 bg-muted/30 rounded-xl">
+                                      <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
+                                      <p className="font-semibold text-foreground">{item.value}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="grid md:grid-cols-2 gap-6">
+                                  <div className="p-5 bg-muted/20 rounded-xl h-28" />
+                                  <div className="p-5 bg-muted/20 rounded-xl h-28" />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/95 to-card/60 flex items-center justify-center">
+                              <div className="text-center px-6 max-w-md">
+                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                                  <span className="text-2xl">🔒</span>
+                                </div>
+                                <h4 className="font-display text-lg md:text-xl font-bold text-foreground mb-4">
+                                  Unlock your full college plan
+                                </h4>
+                                <p className="text-muted-foreground text-sm mb-5 leading-relaxed">
+                                  With Collegra Premium you get:
+                                </p>
+                                <ul className="text-sm text-foreground space-y-2 text-left mx-auto max-w-xs mb-6">
+                                  <li className="flex items-center gap-2">🎓 <span>15+ personalized college matches</span></li>
+                                  <li className="flex items-center gap-2">📊 <span>Acceptance chance estimates</span></li>
+                                  <li className="flex items-center gap-2">💰 <span>Estimated tuition & financial aid</span></li>
+                                  <li className="flex items-center gap-2">📝 <span>College organizer dashboard</span></li>
+                                  <li className="flex items-center gap-2">⭐ <span>Save schools and add notes</span></li>
+                                  <li className="flex items-center gap-2">📍 <span>Compare colleges side-by-side</span></li>
+                                  <li className="flex items-center gap-2">🔍 <span>Smarter recommendations</span></li>
+                                </ul>
+                                <Link
+                                  to="/coming-soon"
+                                  onClick={() => trackClick("Unlock Premium Breakdown", "QuizResults")}
+                                >
+                                  <Button
+                                    size="lg"
+                                    className="rounded-full px-8 gap-2 bg-gradient-to-r from-primary to-accent text-white font-bold shadow-elevated hover:scale-105 transition-transform duration-200 w-full"
+                                  >
+                                    👉 Unlock Full Results – $9.99/month
+                                  </Button>
+                                </Link>
+                              </div>
+                            </div>
                           </div>
-
-                          <AnimatePresence>
-                            {isExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="overflow-hidden border-t border-border"
-                              >
-                                <div className="p-6 md:p-8 space-y-8">
-                                  {/* Detailed Stats */}
-                                  <div>
-                                    <p className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-                                      <BarChart3 className="w-4 h-4 text-primary" /> Detailed Stats
-                                    </p>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                      {[
-                                        { label: "Tuition (In-State)", value: college.tuitionInState },
-                                        { label: "Tuition (Out-of-State)", value: college.tuitionOutOfState },
-                                        { label: "Avg Financial Aid", value: college.avgFinancialAid },
-                                        { label: "Student:Faculty", value: college.studentFacultyRatio },
-                                        { label: "Student Body", value: college.studentBody },
-                                        { label: "Campus Size", value: college.campusSize },
-                                      ].map((item) => (
-                                        <div key={item.label} className="p-4 bg-muted/30 rounded-xl">
-                                          <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
-                                          <p className="font-semibold text-foreground">{item.value}</p>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  {/* Programs */}
-                                  <div>
-                                    <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                                      <BookOpen className="w-4 h-4 text-primary" /> Top Programs for You
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                      {college.topPrograms.map((prog) => (
-                                        <span key={prog} className="px-4 py-2 rounded-full bg-secondary text-secondary-foreground text-xs font-medium border border-border">
-                                          {prog}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  {/* Pros & Cons */}
-                                  <div className="grid md:grid-cols-2 gap-6">
-                                    <div className="p-5 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/20">
-                                      <p className="flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-4">
-                                        <ThumbsUp className="w-4 h-4" /> Why it works for you
-                                      </p>
-                                      <ul className="space-y-3">
-                                        {college.prosForStudent.map((pro, j) => (
-                                          <li key={j} className="flex items-start gap-2.5 text-sm text-foreground">
-                                            <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                                            {pro}
-                                          </li>
                                         ))}
                                       </ul>
                                     </div>
