@@ -67,6 +67,7 @@ const QuizResults = () => {
   const [searchParams] = useSearchParams();
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const { toast } = useToast();
 
