@@ -9,6 +9,9 @@ const corsHeaders = {
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 10; // max requests per IP per minute
+const MAX_QUESTION_LENGTH = 2000;
+const MAX_CONTEXT_FIELDS = 40;
+const MAX_CONTEXT_VALUE_LENGTH = 300;
 
 async function checkRateLimit(ip: string, functionName: string): Promise<boolean> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -38,14 +41,50 @@ async function checkRateLimit(ip: string, functionName: string): Promise<boolean
   return true;
 }
 
+const sanitizeText = (value: unknown, maxLength: number) => {
+  if (typeof value !== "string") return "";
+  return value.trim().slice(0, maxLength);
+};
+
+const sanitizeSurveyContext = (raw: unknown): Record<string, string> => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+
+  const entries = Object.entries(raw as Record<string, unknown>).slice(0, MAX_CONTEXT_FIELDS);
+  const cleaned: Record<string, string> = {};
+
+  for (const [rawKey, rawValue] of entries) {
+    const key = sanitizeText(rawKey, 100)
+      .toLowerCase()
+      .replace(/[^a-z0-9_\s-]/g, "")
+      .replace(/\s+/g, "_")
+      .replace(/^_+|_+$/g, "");
+
+    const value = sanitizeText(rawValue, MAX_CONTEXT_VALUE_LENGTH);
+    if (!key || !value || key.startsWith("__") || key === "submission_id") continue;
+
+    cleaned[key] = value;
+  }
+
+  return cleaned;
+};
+
+const sanitizeCollegeNames = (raw: unknown): string[] => {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .slice(0, 20)
+    .map((name) => sanitizeText(name, 120))
+    .filter(Boolean);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-                     req.headers.get("cf-connecting-ip") || "unknown";
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") || "unknown";
 
     const allowed = await checkRateLimit(clientIp, "ask-college-ai");
     if (!allowed) {
@@ -54,16 +93,14 @@ serve(async (req) => {
       });
     }
 
-    const { question } = await req.json();
+    const body = await req.json();
+    const question = sanitizeText(body?.question, MAX_QUESTION_LENGTH);
+    const surveyContext = sanitizeSurveyContext(body?.surveyContext);
+    const recommendedCollegeNames = sanitizeCollegeNames(body?.recommendedCollegeNames);
 
     // Input validation
-    if (!question || typeof question !== "string") {
-      return new Response(JSON.stringify({ error: "Invalid input" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (question.trim().length === 0 || question.length > 2000) {
-      return new Response(JSON.stringify({ error: "Question must be 1–2,000 characters" }), {
+    if (!question) {
+      return new Response(JSON.stringify({ error: "Question is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -76,6 +113,20 @@ serve(async (req) => {
       });
     }
 
+    const surveyContextLines = Object.entries(surveyContext)
+      .map(([key, value]) => `- ${key.replace(/_/g, " ")}: ${value}`)
+      .join("\n");
+
+    const recommendedCollegesLine = recommendedCollegeNames.length > 0
+      ? recommendedCollegeNames.join(", ")
+      : "None provided";
+
+    const contextualPrompt = [
+      `Student question:\n${question}`,
+      `Student survey answers from Tally (use these as primary context when relevant):\n${surveyContextLines || "None provided"}`,
+      `Current recommended colleges (if relevant to the question): ${recommendedCollegesLine}`,
+    ].join("\n\n");
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -87,9 +138,10 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a friendly, knowledgeable college admissions advisor. Answer questions about college selection, applications, majors, financial aid, campus life, and the admissions process. Keep answers clear, concise, and actionable. If you're unsure about specific data, say so.",
+            content:
+              "You are Collegra's college advisor. Always personalize your answer using the student's Tally survey answers when relevant. If context is missing, explicitly say what is missing and give the best possible guidance. Be practical, concise, and actionable. Never invent student preferences that were not provided.",
           },
-          { role: "user", content: question },
+          { role: "user", content: contextualPrompt },
         ],
       }),
     });
