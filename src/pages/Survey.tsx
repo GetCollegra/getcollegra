@@ -53,14 +53,29 @@ const Survey = () => {
               // Normalize: remove trailing punctuation
               const normalizedTitle = rawTitle.replace(/[?\s]+$/, "").trim();
               
-              // Extract value: Tally may use value, answer, or options
+              // Extract a plain string from Tally's various value shapes
+              const extractText = (v: any): string => {
+                if (v === undefined || v === null) return "";
+                if (typeof v === "string") return v;
+                if (typeof v === "number" || typeof v === "boolean") return String(v);
+                if (Array.isArray(v)) return v.map(extractText).filter(Boolean).join(", ");
+                if (typeof v === "object") {
+                  // Tally option objects: { text, name, label, value }
+                  return v.text || v.name || v.label || (typeof v.value === "string" ? v.value : "") || JSON.stringify(v);
+                }
+                return String(v);
+              };
+
               let value = "";
+              // Tally fields may have: value (string or object), answer, options
               if (field.value !== undefined && field.value !== null) {
-                value = String(field.value);
-              } else if (field.answer !== undefined && field.answer !== null) {
-                value = String(field.answer);
-              } else if (Array.isArray(field.options)) {
-                value = field.options.map((o: any) => o.text || o.name || o).join(", ");
+                value = extractText(field.value);
+              }
+              if (!value && field.answer !== undefined && field.answer !== null) {
+                value = extractText(field.answer);
+              }
+              if (!value && Array.isArray(field.options)) {
+                value = field.options.map((o: any) => extractText(o)).filter(Boolean).join(", ");
               }
               
               if (value) {
