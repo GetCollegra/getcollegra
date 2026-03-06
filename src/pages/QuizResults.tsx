@@ -294,7 +294,7 @@ const QuizResults = () => {
                   {recommendations.colleges.map((college, i) => {
                     const catConfig = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
                     const CatIcon = catConfig.icon;
-                    const isExpanded = expandedCard === i;
+                    
 
                     return (
                       <motion.div
