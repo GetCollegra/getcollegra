@@ -402,10 +402,21 @@ IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
       .map(([key, val]) => `- ${key.replace(/_/g, " ")}: ${val}`)
       .join("\n");
 
+    // Build test score string from separate SAT/ACT fields or legacy combined field
+    const satScore = preferences.satScore || "";
+    const actScore = preferences.actScore || "";
+    let testScoreDisplay = preferences.testScore || "None";
+    if (satScore || actScore) {
+      const parts = [];
+      if (satScore) parts.push(`SAT: ${satScore}`);
+      if (actScore) parts.push(`ACT: ${actScore}`);
+      testScoreDisplay = parts.join(", ");
+    }
+
     let userPrompt = `Student preferences (USE ALL OF THESE to select and rank colleges):
 - Home location: ${preferences.cityState || "Not specified"}
 - Weighted GPA: ${preferences.gpa || "Not specified"}
-- SAT/ACT Score: ${preferences.testScore || "None"}
+- Test Scores: ${testScoreDisplay}
 - Campus size: ${preferences.campusSize || "No preference"}
 - Campus vibe: ${preferences.campusVibe || "No preference"}
 - Location type: ${preferences.locationType || "No preference"}
