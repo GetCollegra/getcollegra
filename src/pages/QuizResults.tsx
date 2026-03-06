@@ -106,6 +106,8 @@ const QuizResults = () => {
         cityState: clean(allParams.city_state, "No preference"),
         gpa: clean(allParams.gpa, ""),
         testScore: clean(allParams.test_score, "None"),
+        satScore: clean(allParams.sat_score, ""),
+        actScore: clean(allParams.act_score, ""),
         campusSize: clean(allParams.campus_size, "No preference"),
         campusVibe: clean(allParams.campus_vibe, "No preference"),
         locationType: clean(allParams.location_type, "No preference"),
