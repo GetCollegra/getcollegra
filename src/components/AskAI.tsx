@@ -46,9 +46,11 @@ const AskAI = () => {
           <Textarea
             placeholder="Type your question here..."
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={(e) => setQuestion(e.target.value.slice(0, 2000))}
             rows={3}
+            maxLength={2000}
           />
+          <p className="text-xs text-muted-foreground text-right">{question.length}/2000</p>
           <Button onClick={handleAsk} disabled={loading || !question.trim()} className="w-full">
             {loading ? "Thinking..." : "Ask"}
           </Button>
