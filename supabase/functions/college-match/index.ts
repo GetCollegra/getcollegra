@@ -563,6 +563,24 @@ ${extraFields}`;
       throw new Error("Failed to parse college recommendations");
     }
 
+    // Strip premium fields server-side — only include them for authenticated premium users
+    // Since there's no auth/premium system yet, always strip premium fields
+    const premiumFields = [
+      "tuitionInState", "tuitionOutOfState", "avgFinancialAid",
+      "studentFacultyRatio", "studentBody", "campusSize",
+      "avgStartingSalary", "graduationRate"
+    ];
+
+    if (recommendations?.colleges && Array.isArray(recommendations.colleges)) {
+      recommendations.colleges = recommendations.colleges.map((college: any) => {
+        const sanitized = { ...college };
+        for (const field of premiumFields) {
+          sanitized[field] = "Premium";
+        }
+        return sanitized;
+      });
+    }
+
     return new Response(JSON.stringify(recommendations), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
