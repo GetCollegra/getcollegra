@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   CheckCircle2, MapPin, DollarSign, GraduationCap, Users, Loader2,
   Star, ArrowRight, TrendingUp, ThumbsUp, ThumbsDown, Sparkles,
-  BarChart3, Target, Shield, Zap
+  BarChart3, Target, Shield, Zap, ChevronDown, Award, BookOpen, Globe
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -49,11 +49,19 @@ type Recommendations = {
   comparisonInsight: string;
 };
 
-const fitCategoryConfig: Record<string, { color: string; bg: string; icon: typeof Target }> = {
-  Reach: { color: "text-orange-600", bg: "bg-orange-100", icon: TrendingUp },
-  Match: { color: "text-primary", bg: "bg-primary/10", icon: Target },
-  Safety: { color: "text-emerald-600", bg: "bg-emerald-100", icon: Shield },
+const fitCategoryConfig: Record<string, { color: string; bg: string; border: string; icon: typeof Target; gradient: string }> = {
+  Reach: { color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", icon: TrendingUp, gradient: "from-orange-500 to-amber-500" },
+  Match: { color: "text-primary", bg: "bg-primary/5", border: "border-primary/20", icon: Target, gradient: "from-primary to-blue-500" },
+  Safety: { color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", icon: Shield, gradient: "from-emerald-500 to-teal-500" },
 };
+
+const loadingMessages = [
+  "Analyzing your preferences...",
+  "Searching 6,000+ institutions...",
+  "Matching campus vibes...",
+  "Comparing financial fit...",
+  "Ranking your top picks...",
+];
 
 const QuizResults = () => {
   const [searchParams] = useSearchParams();
@@ -61,43 +69,39 @@ const QuizResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setLoadingMsgIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  useEffect(() => {
     const fetchRecommendations = async () => {
-      // Collect all URL params - captures both known Tally fields and any extras
       const allParams: Record<string, string> = {};
       searchParams.forEach((value, key) => {
         allParams[key] = value;
       });
 
       const preferences = {
-        // Q1-Q4: Basic info
         email: allParams.email || "",
         cityState: allParams.city_state || "No preference",
         gpa: allParams.gpa || "",
         testScore: allParams.test_score || "None",
-        // Q5: Campus size
         campusSize: allParams.campus_size || "No preference",
-        // Q6: Campus vibe
         campusVibe: allParams.campus_vibe || "No preference",
-        // Q7: Location type
         locationType: allParams.location_type || "No preference",
-        // Q8: Max cost per year
         maxCost: allParams.max_cost || "No preference",
-        // Q9: Acceptance rate preference
         acceptanceRatePref: allParams.acceptance_rate_pref || "No preference",
-        // Q10: Financial aid importance
         financialAid: allParams.financial_aid || "Important",
-        // Q11: Campus life interests
         campusLife: allParams.campus_life || "No preference",
-        // Q12: Academic importance
         academicImportance: allParams.academic_importance || "No preference",
-        // Q13: Distance from home
         distanceFromHome: allParams.distance_from_home || "No preference",
-        // Q14: Area of study
         areaOfStudy: allParams.area_of_study || "Undecided",
-        // All raw params
         allResponses: allParams,
       };
 
@@ -120,44 +124,81 @@ const QuizResults = () => {
     fetchRecommendations();
   }, [searchParams, toast]);
 
+  const fitScoreColor = (score: number) => {
+    if (score >= 90) return "text-emerald-500";
+    if (score >= 75) return "text-primary";
+    return "text-orange-500";
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-hero pt-28 pb-20 md:pt-36 md:pb-28">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,hsl(210_90%_60%/0.15),transparent_60%)]" />
+      <section className="relative overflow-hidden pt-28 pb-20 md:pt-36 md:pb-28">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-hero" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(210_90%_70%/0.3),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,hsl(210_80%_30%/0.4),transparent_60%)]" />
+        {/* Decorative circles */}
+        <div className="absolute top-10 right-10 w-64 h-64 rounded-full bg-white/5 blur-3xl" />
+        <div className="absolute bottom-0 left-20 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
+
         <div className="container px-4 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
             className="text-center max-w-3xl mx-auto"
           >
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
-              Your Personalized College Matches
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+              className="w-20 h-20 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mx-auto mb-8 rotate-3"
+            >
+              <GraduationCap className="w-10 h-10 text-white" />
+            </motion.div>
+            <h1 className="font-display text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-5 leading-tight">
+              Your College Matches
+              <br />
+              <span className="text-white/70 text-2xl md:text-3xl lg:text-4xl">are ready</span>
             </h1>
-            <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto">
-              Collegra's AI analyzed your preferences and found colleges that actually fit you — not just any list.
+            <p className="text-white/75 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+              We analyzed your unique preferences against real U.S. Department of Education data to find schools that truly fit you.
             </p>
           </motion.div>
         </div>
       </section>
 
       <main className="flex-1">
-        {/* Loading */}
+        {/* Loading State */}
         {loading && (
-          <section className="py-28">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4">
-              <div className="relative">
-                <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                <Sparkles className="w-5 h-5 text-accent absolute -top-1 -right-1 animate-pulse" />
+          <section className="py-32">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-6">
+              {/* Animated loader */}
+              <div className="relative w-24 h-24">
+                <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
+                <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+                <div className="absolute inset-3 rounded-full border-4 border-accent/30 border-b-transparent animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
+                <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary" />
               </div>
-              <p className="text-foreground text-lg font-semibold">Analyzing your preferences...</p>
-              <p className="text-muted-foreground text-sm">Finding your best-fit colleges with real data</p>
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={loadingMsgIndex}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="text-foreground text-lg font-semibold"
+                >
+                  {loadingMessages[loadingMsgIndex]}
+                </motion.p>
+              </AnimatePresence>
+              <div className="flex gap-1.5">
+                {loadingMessages.map((_, i) => (
+                  <div key={i} className={`w-2 h-2 rounded-full transition-colors duration-300 ${i === loadingMsgIndex ? "bg-primary" : "bg-border"}`} />
+                ))}
+              </div>
             </motion.div>
           </section>
         )}
@@ -165,15 +206,21 @@ const QuizResults = () => {
         {/* Error */}
         {error && !loading && (
           <section className="py-28 text-center">
-            <p className="text-destructive mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()} variant="outline">Try Again</Button>
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                <span className="text-destructive text-2xl">!</span>
+              </div>
+              <p className="text-foreground font-semibold text-lg mb-2">Something went wrong</p>
+              <p className="text-muted-foreground mb-6">{error}</p>
+              <Button onClick={() => window.location.reload()} variant="outline" className="rounded-full px-8">Try Again</Button>
+            </div>
           </section>
         )}
 
         {recommendations && !loading && (
           <>
             {/* Student Profile Section */}
-            <section className="py-16 md:py-20 bg-background border-b border-border">
+            <section className="py-16 md:py-24 bg-gradient-subtle">
               <div className="container px-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -182,46 +229,69 @@ const QuizResults = () => {
                   className="max-w-4xl mx-auto"
                 >
                   <div className="text-center mb-10">
-                    <p className="text-primary font-semibold text-sm uppercase tracking-widest mb-3">Your Profile</p>
-                    <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-4">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.3, type: "spring" }}
+                      className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4"
+                    >
+                      <Users className="w-6 h-6 text-primary" />
+                    </motion.div>
+                    <p className="text-primary font-semibold text-sm uppercase tracking-widest mb-2">Your Profile</p>
+                    <h2 className="font-display text-2xl md:text-4xl font-bold text-foreground">
                       What we learned about you
                     </h2>
                   </div>
 
-                  <div className="bg-card border border-border rounded-2xl p-8 shadow-soft mb-8">
-                    <p className="text-foreground text-lg leading-relaxed mb-6">{recommendations.studentProfile.summary}</p>
-                    <div className="flex flex-wrap gap-3 mb-4">
-                      {recommendations.studentProfile.topPriorities.map((p) => (
-                        <span key={p} className="px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                          {p}
-                        </span>
-                      ))}
+                  <div className="relative">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-3xl blur-lg opacity-50" />
+                    <div className="relative bg-card border border-border rounded-2xl p-8 md:p-10 shadow-soft">
+                      <p className="text-foreground text-lg leading-relaxed mb-8">{recommendations.studentProfile.summary}</p>
+                      <div className="flex flex-wrap gap-3 mb-6">
+                        {recommendations.studentProfile.topPriorities.map((p, i) => (
+                          <motion.span
+                            key={p}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.4 + i * 0.1 }}
+                            className="px-5 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/15"
+                          >
+                            {p}
+                          </motion.span>
+                        ))}
+                      </div>
+                      <div className="flex items-start gap-3 px-5 py-4 bg-muted/50 rounded-xl">
+                        <BookOpen className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground text-sm italic leading-relaxed">{recommendations.studentProfile.idealSchoolType}</p>
+                      </div>
                     </div>
-                    <p className="text-muted-foreground text-sm italic">{recommendations.studentProfile.idealSchoolType}</p>
                   </div>
                 </motion.div>
               </div>
             </section>
 
             {/* College Matches Section */}
-            <section className="py-16 md:py-20 bg-muted/30 border-b border-border">
+            <section className="py-16 md:py-24 bg-background">
               <div className="container px-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="text-center mb-14"
+                  className="text-center mb-16"
                 >
-                  <p className="text-primary font-semibold text-sm uppercase tracking-widest mb-3">Your Matches</p>
-                  <h2 className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
-                    Top 5 colleges for you
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
+                    <Award className="w-4 h-4" />
+                    Top 5 Matches
+                  </div>
+                  <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+                    Colleges picked for <span className="text-gradient">you</span>
                   </h2>
                   <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                    Each college is scored based on how well it matches your specific preferences and goals.
+                    Each school is scored based on how well it aligns with your unique goals, budget, and preferences.
                   </p>
                 </motion.div>
 
-                <div className="max-w-5xl mx-auto space-y-8">
+                <div className="max-w-5xl mx-auto space-y-6">
                   {recommendations.colleges.map((college, i) => {
                     const catConfig = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
                     const CatIcon = catConfig.icon;
@@ -230,164 +300,167 @@ const QuizResults = () => {
                     return (
                       <motion.div
                         key={college.name}
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 40 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 + i * 0.1 }}
-                        className="bg-card border border-border rounded-2xl overflow-hidden shadow-soft hover:shadow-card transition-all duration-300"
+                        transition={{ delay: 0.4 + i * 0.12, duration: 0.5 }}
+                        className="group"
                       >
-                        {/* Card Header */}
-                        <div className="p-6 md:p-8">
-                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
-                            <div>
-                              <div className="flex items-center gap-3 mb-2">
-                                <span className="text-2xl font-bold text-primary">#{i + 1}</span>
-                                <h3 className="font-display text-xl md:text-2xl font-bold text-foreground">{college.name}</h3>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-sm">
-                                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {college.location}</span>
-                                <span>•</span>
-                                <span>{college.setting}</span>
-                                <span>•</span>
-                                <span>{college.ranking}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 shrink-0">
-                              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${catConfig.bg} ${catConfig.color}`}>
-                                <CatIcon className="w-3.5 h-3.5" />
-                                {college.fitCategory}
-                              </div>
-                              <div className="flex items-center gap-1.5 bg-primary/10 text-primary font-bold px-4 py-2 rounded-full text-sm">
-                                <Star className="w-4 h-4 fill-primary" />
-                                {college.fitScore}% Fit
-                              </div>
-                            </div>
+                        <div className={`relative bg-card border rounded-2xl overflow-hidden transition-all duration-300 ${isExpanded ? "shadow-elevated border-primary/30" : "shadow-soft border-border hover:shadow-card hover:border-border/80"}`}>
+                          {/* Rank badge */}
+                          <div className={`absolute top-0 left-0 w-12 h-12 bg-gradient-to-br ${catConfig.gradient} flex items-end justify-end rounded-br-2xl`}>
+                            <span className="text-white font-bold text-lg mr-2.5 mb-1">{i + 1}</span>
                           </div>
 
-                          {/* Why Fit */}
-                          <p className="text-foreground leading-relaxed mb-4">{college.whyFit}</p>
-                          <p className="text-muted-foreground text-sm italic mb-4">"{college.campusVibe}"</p>
-
-                          {/* Notable Feature */}
-                          <div className="flex items-start gap-2 px-4 py-3 bg-accent/5 rounded-xl mb-6">
-                            <Zap className="w-4 h-4 text-accent mt-0.5 shrink-0" />
-                            <p className="text-foreground text-sm font-medium">{college.notableFeature}</p>
-                          </div>
-                        </div>
-
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
-                          <div className="bg-card p-4 md:p-5">
-                            <div className="flex items-center gap-1.5 text-muted-foreground text-xs mb-1">
-                              <GraduationCap className="w-3.5 h-3.5" /> Acceptance
-                            </div>
-                            <p className="font-bold text-foreground text-lg">{college.acceptanceRate}</p>
-                          </div>
-                          <div className="bg-card p-4 md:p-5">
-                            <div className="flex items-center gap-1.5 text-muted-foreground text-xs mb-1">
-                              <DollarSign className="w-3.5 h-3.5" /> Net Price
-                            </div>
-                            <p className="font-bold text-foreground text-lg">{college.netPrice}</p>
-                          </div>
-                          <div className="bg-card p-4 md:p-5">
-                            <div className="flex items-center gap-1.5 text-muted-foreground text-xs mb-1">
-                              <BarChart3 className="w-3.5 h-3.5" /> Grad Rate
-                            </div>
-                            <p className="font-bold text-foreground text-lg">{college.graduationRate}</p>
-                          </div>
-                          <div className="bg-card p-4 md:p-5">
-                            <div className="flex items-center gap-1.5 text-muted-foreground text-xs mb-1">
-                              <TrendingUp className="w-3.5 h-3.5" /> Avg Salary
-                            </div>
-                            <p className="font-bold text-foreground text-lg">{college.avgStartingSalary}</p>
-                          </div>
-                        </div>
-
-                        {/* Expand/Collapse Details */}
-                        <div className="p-6 md:p-8">
-                          <button
-                            onClick={() => setExpandedCard(isExpanded ? null : i)}
-                            className="text-primary text-sm font-semibold hover:underline mb-4"
-                          >
-                            {isExpanded ? "Show less ↑" : "Show full breakdown ↓"}
-                          </button>
-
-                          {isExpanded && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              className="space-y-6 mt-4"
-                            >
-                              {/* More Stats */}
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Tuition (In-State)</p>
-                                  <p className="font-semibold text-foreground">{college.tuitionInState}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Tuition (Out-of-State)</p>
-                                  <p className="font-semibold text-foreground">{college.tuitionOutOfState}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Avg Financial Aid</p>
-                                  <p className="font-semibold text-foreground">{college.avgFinancialAid}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Student:Faculty</p>
-                                  <p className="font-semibold text-foreground">{college.studentFacultyRatio}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Student Body</p>
-                                  <p className="font-semibold text-foreground">{college.studentBody}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Campus Size</p>
-                                  <p className="font-semibold text-foreground">{college.campusSize}</p>
-                                </div>
-                              </div>
-
-                              {/* Programs */}
+                          {/* Card Header */}
+                          <div className="p-6 md:p-8 pl-16 md:pl-20">
+                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5">
                               <div>
-                                <p className="text-xs text-muted-foreground mb-2">Top Programs for You</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {college.topPrograms.map((prog) => (
-                                    <span key={prog} className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
-                                      {prog}
-                                    </span>
-                                  ))}
+                                <h3 className="font-display text-xl md:text-2xl font-bold text-foreground mb-2">{college.name}</h3>
+                                <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-sm">
+                                  <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {college.location}</span>
+                                  <span className="w-1 h-1 rounded-full bg-border" />
+                                  <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> {college.setting}</span>
+                                  <span className="w-1 h-1 rounded-full bg-border" />
+                                  <span>{college.ranking}</span>
                                 </div>
                               </div>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <div className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold ${catConfig.bg} ${catConfig.color} ${catConfig.border} border`}>
+                                  <CatIcon className="w-3.5 h-3.5" />
+                                  {college.fitCategory}
+                                </div>
+                                <div className="flex items-center gap-1.5 font-bold px-4 py-2 rounded-full text-sm bg-card border-2 border-border">
+                                  <Star className={`w-4 h-4 fill-current ${fitScoreColor(college.fitScore)}`} />
+                                  <span className={fitScoreColor(college.fitScore)}>{college.fitScore}%</span>
+                                </div>
+                              </div>
+                            </div>
 
-                              {/* Pros & Cons */}
-                              <div className="grid md:grid-cols-2 gap-6">
-                                <div>
-                                  <p className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
-                                    <ThumbsUp className="w-4 h-4 text-emerald-600" /> Why it works for you
-                                  </p>
-                                  <ul className="space-y-2">
-                                    {college.prosForStudent.map((pro, j) => (
-                                      <li key={j} className="flex items-start gap-2 text-sm text-foreground">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                                        {pro}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                                <div>
-                                  <p className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
-                                    <ThumbsDown className="w-4 h-4 text-orange-500" /> Things to consider
-                                  </p>
-                                  <ul className="space-y-2">
-                                    {college.consForStudent.map((con, j) => (
-                                      <li key={j} className="flex items-start gap-2 text-sm text-foreground">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
-                                        {con}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
+                            {/* Why Fit */}
+                            <p className="text-foreground leading-relaxed mb-4">{college.whyFit}</p>
+
+                            {/* Campus vibe + notable feature */}
+                            <div className="flex flex-col sm:flex-row gap-3 mb-5">
+                              <div className="flex items-start gap-2 px-4 py-3 bg-muted/40 rounded-xl flex-1">
+                                <Sparkles className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                                <p className="text-foreground text-sm"><span className="font-semibold">Vibe:</span> {college.campusVibe}</p>
                               </div>
-                            </motion.div>
-                          )}
+                              <div className="flex items-start gap-2 px-4 py-3 bg-primary/5 rounded-xl flex-1">
+                                <Zap className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                                <p className="text-foreground text-sm"><span className="font-semibold">Standout:</span> {college.notableFeature}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 border-t border-border">
+                            {[
+                              { icon: GraduationCap, label: "Acceptance", value: college.acceptanceRate },
+                              { icon: DollarSign, label: "Net Price", value: college.netPrice },
+                              { icon: BarChart3, label: "Grad Rate", value: college.graduationRate },
+                              { icon: TrendingUp, label: "Avg Salary", value: college.avgStartingSalary },
+                            ].map((stat, si) => (
+                              <div key={stat.label} className={`p-4 md:p-5 ${si < 3 ? "border-r border-border" : ""} ${si < 2 ? "border-b md:border-b-0 border-border" : si === 2 ? "border-b md:border-b-0 border-border" : ""}`}>
+                                <div className="flex items-center gap-1.5 text-muted-foreground text-xs mb-1.5">
+                                  <stat.icon className="w-3.5 h-3.5" /> {stat.label}
+                                </div>
+                                <p className="font-bold text-foreground text-lg">{stat.value}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Expand/Collapse */}
+                          <div className="border-t border-border">
+                            <button
+                              onClick={() => setExpandedCard(isExpanded ? null : i)}
+                              className="w-full flex items-center justify-center gap-2 py-4 text-primary text-sm font-semibold hover:bg-muted/30 transition-colors"
+                            >
+                              {isExpanded ? "Show less" : "View full breakdown"}
+                              <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
+                            </button>
+                          </div>
+
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="overflow-hidden border-t border-border"
+                              >
+                                <div className="p-6 md:p-8 space-y-8">
+                                  {/* Detailed Stats */}
+                                  <div>
+                                    <p className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                                      <BarChart3 className="w-4 h-4 text-primary" /> Detailed Stats
+                                    </p>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                      {[
+                                        { label: "Tuition (In-State)", value: college.tuitionInState },
+                                        { label: "Tuition (Out-of-State)", value: college.tuitionOutOfState },
+                                        { label: "Avg Financial Aid", value: college.avgFinancialAid },
+                                        { label: "Student:Faculty", value: college.studentFacultyRatio },
+                                        { label: "Student Body", value: college.studentBody },
+                                        { label: "Campus Size", value: college.campusSize },
+                                      ].map((item) => (
+                                        <div key={item.label} className="p-4 bg-muted/30 rounded-xl">
+                                          <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
+                                          <p className="font-semibold text-foreground">{item.value}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Programs */}
+                                  <div>
+                                    <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                                      <BookOpen className="w-4 h-4 text-primary" /> Top Programs for You
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {college.topPrograms.map((prog) => (
+                                        <span key={prog} className="px-4 py-2 rounded-full bg-secondary text-secondary-foreground text-xs font-medium border border-border">
+                                          {prog}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Pros & Cons */}
+                                  <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="p-5 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/20">
+                                      <p className="flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-4">
+                                        <ThumbsUp className="w-4 h-4" /> Why it works for you
+                                      </p>
+                                      <ul className="space-y-3">
+                                        {college.prosForStudent.map((pro, j) => (
+                                          <li key={j} className="flex items-start gap-2.5 text-sm text-foreground">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                                            {pro}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                    <div className="p-5 bg-orange-50/50 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-900/20">
+                                      <p className="flex items-center gap-2 text-sm font-bold text-orange-700 dark:text-orange-400 mb-4">
+                                        <ThumbsDown className="w-4 h-4" /> Things to consider
+                                      </p>
+                                      <ul className="space-y-3">
+                                        {college.consForStudent.map((con, j) => (
+                                          <li key={j} className="flex items-start gap-2.5 text-sm text-foreground">
+                                            <span className="w-4 h-4 flex items-center justify-center shrink-0 mt-0.5">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                                            </span>
+                                            {con}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </motion.div>
                     );
@@ -397,69 +470,73 @@ const QuizResults = () => {
             </section>
 
             {/* Comparison Table Section */}
-            <section className="py-16 md:py-20 bg-background border-b border-border">
+            <section className="py-16 md:py-24 bg-muted/20">
               <div className="container px-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  className="text-center mb-10"
+                  className="text-center mb-12"
                 >
-                  <p className="text-primary font-semibold text-sm uppercase tracking-widest mb-3">Side-by-Side</p>
-                  <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-4">
-                    Compare your matches at a glance
+                  <p className="text-primary font-semibold text-sm uppercase tracking-widest mb-2">Side-by-Side</p>
+                  <h2 className="font-display text-2xl md:text-4xl font-bold text-foreground mb-3">
+                    Compare at a glance
                   </h2>
+                  <p className="text-muted-foreground">Swipe or scroll to see all schools</p>
                 </motion.div>
 
-                <div className="max-w-6xl mx-auto overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="border-b-2 border-border">
-                        <th className="text-left p-4 text-muted-foreground font-semibold min-w-[140px]">Factor</th>
-                        {recommendations.colleges.map((c) => (
-                          <th key={c.name} className="text-center p-4 text-foreground font-semibold min-w-[160px]">
-                            <div>{c.name}</div>
-                            <div className="flex items-center justify-center gap-1 mt-1 text-primary text-xs font-bold">
-                              <Star className="w-3 h-3 fill-primary" /> {c.fitScore}%
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { label: "Category", key: "fitCategory" },
-                        { label: "Acceptance Rate", key: "acceptanceRate" },
-                        { label: "Net Price", key: "netPrice" },
-                        { label: "Graduation Rate", key: "graduationRate" },
-                        { label: "Avg Starting Salary", key: "avgStartingSalary" },
-                        { label: "Student Body", key: "studentBody" },
-                        { label: "Setting", key: "setting" },
-                        { label: "Student:Faculty", key: "studentFacultyRatio" },
-                      ].map((row, ri) => (
-                        <tr key={row.key} className={ri % 2 === 0 ? "bg-muted/30" : ""}>
-                          <td className="p-4 text-muted-foreground font-medium">{row.label}</td>
+                <div className="max-w-6xl mx-auto">
+                  <div className="overflow-x-auto rounded-2xl border border-border shadow-soft bg-card">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b-2 border-border bg-muted/30">
+                          <th className="text-left p-4 md:p-5 text-muted-foreground font-semibold min-w-[140px] sticky left-0 bg-muted/30 z-10">Factor</th>
                           {recommendations.colleges.map((c) => (
-                            <td key={c.name} className="p-4 text-center text-foreground">
-                              {row.key === "fitCategory" ? (
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${(fitCategoryConfig[c.fitCategory] || fitCategoryConfig.Match).bg} ${(fitCategoryConfig[c.fitCategory] || fitCategoryConfig.Match).color}`}>
-                                  {c[row.key as keyof College] as string}
-                                </span>
-                              ) : (
-                                c[row.key as keyof College] as string
-                              )}
-                            </td>
+                            <th key={c.name} className="text-center p-4 md:p-5 text-foreground font-semibold min-w-[160px]">
+                              <div className="text-sm">{c.name}</div>
+                              <div className="flex items-center justify-center gap-1 mt-1.5">
+                                <Star className={`w-3 h-3 fill-current ${fitScoreColor(c.fitScore)}`} />
+                                <span className={`text-xs font-bold ${fitScoreColor(c.fitScore)}`}>{c.fitScore}%</span>
+                              </div>
+                            </th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {[
+                          { label: "Category", key: "fitCategory" },
+                          { label: "Acceptance Rate", key: "acceptanceRate" },
+                          { label: "Net Price", key: "netPrice" },
+                          { label: "Graduation Rate", key: "graduationRate" },
+                          { label: "Avg Starting Salary", key: "avgStartingSalary" },
+                          { label: "Student Body", key: "studentBody" },
+                          { label: "Setting", key: "setting" },
+                          { label: "Student:Faculty", key: "studentFacultyRatio" },
+                        ].map((row, ri) => (
+                          <tr key={row.key} className={`border-b border-border last:border-b-0 ${ri % 2 === 0 ? "bg-muted/10" : ""}`}>
+                            <td className="p-4 md:p-5 text-muted-foreground font-medium sticky left-0 bg-card z-10">{row.label}</td>
+                            {recommendations.colleges.map((c) => (
+                              <td key={c.name} className="p-4 md:p-5 text-center text-foreground">
+                                {row.key === "fitCategory" ? (
+                                  <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold ${(fitCategoryConfig[c.fitCategory] || fitCategoryConfig.Match).bg} ${(fitCategoryConfig[c.fitCategory] || fitCategoryConfig.Match).color}`}>
+                                    {c[row.key as keyof College] as string}
+                                  </span>
+                                ) : (
+                                  <span className="font-medium">{c[row.key as keyof College] as string}</span>
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* AI Insight Section */}
-            <section className="py-16 md:py-20 bg-muted/30 border-b border-border">
+            <section className="py-16 md:py-24 bg-background">
               <div className="container px-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -467,36 +544,46 @@ const QuizResults = () => {
                   viewport={{ once: true }}
                   className="max-w-3xl mx-auto text-center"
                 >
-                  <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                    <Sparkles className="w-7 h-7 text-primary" />
+                  <div className="relative inline-block mb-8">
+                    <div className="absolute -inset-3 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-xl" />
+                    <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-white" />
+                    </div>
                   </div>
-                  <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-6">
-                    AI Insight
+                  <h2 className="font-display text-2xl md:text-4xl font-bold text-foreground mb-8">
+                    Our Expert Take
                   </h2>
-                  <p className="text-foreground text-lg leading-relaxed bg-card border border-border rounded-2xl p-8 shadow-soft">
-                    {recommendations.comparisonInsight}
-                  </p>
+                  <div className="relative">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-3xl blur-lg" />
+                    <div className="relative bg-card border border-border rounded-2xl p-8 md:p-10 shadow-soft">
+                      <p className="text-foreground text-lg leading-relaxed italic">
+                        "{recommendations.comparisonInsight}"
+                      </p>
+                    </div>
+                  </div>
                 </motion.div>
               </div>
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 md:py-28 bg-gradient-hero text-white">
-              <div className="container px-4">
+            <section className="relative py-20 md:py-28 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-hero" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(210_90%_60%/0.2),transparent_70%)]" />
+              <div className="container px-4 relative z-10">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   className="text-center max-w-2xl mx-auto"
                 >
-                  <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+                  <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-5">
                     Ready to go deeper?
                   </h2>
-                  <p className="text-white/80 text-lg mb-8">
+                  <p className="text-white/75 text-lg mb-10 leading-relaxed">
                     Get ongoing personalized guidance, updated match lists, and decision-making tools to make your final choice with confidence.
                   </p>
                   <Link to="/coming-soon" onClick={() => trackClick("Unlock Full Results", "QuizResults")}>
-                    <Button size="xl" className="rounded-full px-10 gap-2 bg-white text-primary hover:bg-white/90 font-bold text-lg">
+                    <Button size="xl" className="rounded-full px-12 gap-2 bg-white text-primary hover:bg-white/90 font-bold text-lg shadow-elevated transition-all hover:scale-105 duration-200">
                       Unlock Full Results <ArrowRight className="w-5 h-5" />
                     </Button>
                   </Link>
