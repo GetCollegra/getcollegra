@@ -431,29 +431,6 @@ const QuizResults = () => {
                               </div>
                             </div>
                           </div>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                    <div className="p-5 bg-orange-50/50 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-900/20">
-                                      <p className="flex items-center gap-2 text-sm font-bold text-orange-700 dark:text-orange-400 mb-4">
-                                        <ThumbsDown className="w-4 h-4" /> Things to consider
-                                      </p>
-                                      <ul className="space-y-3">
-                                        {college.consForStudent.map((con, j) => (
-                                          <li key={j} className="flex items-start gap-2.5 text-sm text-foreground">
-                                            <span className="w-4 h-4 flex items-center justify-center shrink-0 mt-0.5">
-                                              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-                                            </span>
-                                            {con}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
                         </div>
                       </motion.div>
                     );
