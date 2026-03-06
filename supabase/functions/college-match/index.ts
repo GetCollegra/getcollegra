@@ -6,7 +6,102 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Map user preferences to College Scorecard API parameters
+// Map area of study to Scorecard program fields for sorting
+const studyProgramMap: Record<string, string> = {
+  "computer": "latest.academics.program_percentage.computer",
+  "engineering": "latest.academics.program_percentage.engineering",
+  "business": "latest.academics.program_percentage.business_marketing",
+  "health": "latest.academics.program_percentage.health",
+  "biology": "latest.academics.program_percentage.biological",
+  "social": "latest.academics.program_percentage.social_science",
+  "psychology": "latest.academics.program_percentage.psychology",
+  "education": "latest.academics.program_percentage.education",
+  "art": "latest.academics.program_percentage.visual_performing",
+  "communication": "latest.academics.program_percentage.communication",
+};
+
+function findProgramField(areaOfStudy: string): string | null {
+  const lower = (areaOfStudy || "").toLowerCase();
+  for (const [keyword, field] of Object.entries(studyProgramMap)) {
+    if (lower.includes(keyword)) return field;
+  }
+  return null;
+}
+
+// Map state names/abbreviations to Scorecard state FIPS codes
+const stateFipsMap: Record<string, string> = {
+  "alabama": "1", "alaska": "2", "arizona": "4", "arkansas": "5",
+  "california": "6", "colorado": "8", "connecticut": "9", "delaware": "10",
+  "florida": "12", "georgia": "13", "hawaii": "15", "idaho": "16",
+  "illinois": "17", "indiana": "18", "iowa": "19", "kansas": "20",
+  "kentucky": "21", "louisiana": "22", "maine": "23", "maryland": "24",
+  "massachusetts": "25", "michigan": "26", "minnesota": "27", "mississippi": "28",
+  "missouri": "29", "montana": "30", "nebraska": "31", "nevada": "32",
+  "new hampshire": "33", "new jersey": "34", "new mexico": "35", "new york": "36",
+  "north carolina": "37", "north dakota": "38", "ohio": "39", "oklahoma": "40",
+  "oregon": "41", "pennsylvania": "42", "rhode island": "44", "south carolina": "45",
+  "south dakota": "46", "tennessee": "47", "texas": "48", "utah": "49",
+  "vermont": "50", "virginia": "51", "washington": "53", "west virginia": "54",
+  "wisconsin": "55", "wyoming": "56",
+};
+
+// State abbreviation map
+const stateAbbrMap: Record<string, string> = {
+  "al": "1", "ak": "2", "az": "4", "ar": "5", "ca": "6", "co": "8",
+  "ct": "9", "de": "10", "fl": "12", "ga": "13", "hi": "15", "id": "16",
+  "il": "17", "in": "18", "ia": "19", "ks": "20", "ky": "21", "la": "22",
+  "me": "23", "md": "24", "ma": "25", "mi": "26", "mn": "27", "ms": "28",
+  "mo": "29", "mt": "30", "ne": "31", "nv": "32", "nh": "33", "nj": "34",
+  "nm": "35", "ny": "36", "nc": "37", "nd": "38", "oh": "39", "ok": "40",
+  "or": "41", "pa": "42", "ri": "44", "sc": "45", "sd": "46", "tn": "47",
+  "tx": "48", "ut": "49", "vt": "50", "va": "51", "wa": "53", "wv": "54",
+  "wi": "55", "wy": "56",
+};
+
+function getStateFips(cityState: string): string[] {
+  const lower = cityState.toLowerCase().trim();
+  const fipsList: string[] = [];
+  
+  // Check full state names
+  for (const [name, fips] of Object.entries(stateFipsMap)) {
+    if (lower.includes(name)) fipsList.push(fips);
+  }
+  
+  // Check abbreviations (e.g. "NY", "CA")
+  if (fipsList.length === 0) {
+    const parts = lower.split(/[,\s]+/);
+    for (const part of parts) {
+      const fips = stateAbbrMap[part];
+      if (fips) fipsList.push(fips);
+    }
+  }
+  
+  return fipsList;
+}
+
+// Get nearby states for distance preference
+function getNearbyStates(fips: string, distance: string): string[] {
+  const nearby: Record<string, string[]> = {
+    "36": ["34", "9", "25", "42", "24"], // NY → NJ, CT, MA, PA, MD
+    "6": ["41", "32", "4"], // CA → OR, NV, AZ
+    "48": ["40", "35", "22", "5"], // TX → OK, NM, LA, AR
+    "12": ["13", "45", "1"], // FL → GA, SC, AL
+    "17": ["18", "55", "26", "19", "29"], // IL → IN, WI, MI, IA, MO
+    "42": ["36", "34", "24", "10", "39"], // PA → NY, NJ, MD, DE, OH
+    "13": ["12", "45", "37", "47", "1"], // GA → FL, SC, NC, TN, AL
+    "25": ["9", "44", "33", "50", "36"], // MA → CT, RI, NH, VT, NY
+    "39": ["42", "26", "18", "21", "54"], // OH → PA, MI, IN, KY, WV
+    "51": ["24", "37", "47", "21", "54", "10"], // VA → MD, NC, TN, KY, WV, DC
+  };
+  
+  const distLower = (distance || "").toLowerCase();
+  if (distLower.includes("anywhere") || distLower.includes("no preference")) return [];
+  if (distLower.includes("1 hour") || distLower.includes("under 2")) return [fips];
+  if (distLower.includes("2-4") || distLower.includes("few hours")) return [fips, ...(nearby[fips] || [])];
+  // 4+ hours or "willing to fly" = no geographic filter
+  return [];
+}
+
 function buildScorecardQuery(preferences: any): string {
   const params = new URLSearchParams();
   const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
@@ -14,23 +109,14 @@ function buildScorecardQuery(preferences: any): string {
 
   // Fields to retrieve
   params.set("fields", [
-    "id",
-    "school.name",
-    "school.city",
-    "school.state",
-    "school.school_url",
-    "school.ownership", // 1=public, 2=private nonprofit, 3=private for-profit
-    "school.locale",
-    "latest.student.size",
+    "id", "school.name", "school.city", "school.state", "school.school_url",
+    "school.ownership", "school.locale", "latest.student.size",
     "latest.admissions.admission_rate.overall",
-    "latest.cost.tuition.in_state",
-    "latest.cost.tuition.out_of_state",
+    "latest.cost.tuition.in_state", "latest.cost.tuition.out_of_state",
     "latest.cost.avg_net_price.overall",
-    "latest.aid.median_debt.completers.overall",
-    "latest.aid.pell_grant_rate",
+    "latest.aid.median_debt.completers.overall", "latest.aid.pell_grant_rate",
     "latest.completion.rate_suppressed.overall",
     "latest.earnings.10_yrs_after_entry.median",
-    "latest.student.demographics.race_ethnicity.white",
     "latest.academics.program_percentage.computer",
     "latest.academics.program_percentage.engineering",
     "latest.academics.program_percentage.business_marketing",
@@ -43,77 +129,81 @@ function buildScorecardQuery(preferences: any): string {
     "latest.academics.program_percentage.communication",
   ].join(","));
 
-  // Filter: only degree-granting, primarily bachelor's
-  params.set("school.degrees_awarded.predominant", "3"); // Bachelor's
+  // Only degree-granting, primarily bachelor's
+  params.set("school.degrees_awarded.predominant", "3");
   params.set("latest.admissions.admission_rate.overall__range", "0..1");
 
-  // Q5: Campus size preference
+  // Campus size preference
   const size = (preferences.campusSize || "").toLowerCase();
   if (size.includes("small")) {
     params.set("latest.student.size__range", "..5000");
   } else if (size.includes("medium")) {
     params.set("latest.student.size__range", "5000..15000");
-  } else if (size.includes("large") && !size.includes("very")) {
-    params.set("latest.student.size__range", "15000..30000");
   } else if (size.includes("very large") || size.includes("30,000")) {
     params.set("latest.student.size__range", "30000..");
+  } else if (size.includes("large")) {
+    params.set("latest.student.size__range", "15000..30000");
   }
 
-  // Q7: Location type (Urban/Suburban/Rural) → school.locale
+  // Location type
   const locationType = (preferences.locationType || "").toLowerCase();
-  if (locationType.includes("urban")) {
-    params.set("school.locale__range", "11..13"); // City
+  if (locationType.includes("urban") || locationType.includes("city")) {
+    params.set("school.locale__range", "11..13");
   } else if (locationType.includes("suburban")) {
-    params.set("school.locale__range", "21..23"); // Suburb
-  } else if (locationType.includes("rural")) {
-    params.set("school.locale__range", "41..43"); // Rural
+    params.set("school.locale__range", "21..23");
+  } else if (locationType.includes("rural") || locationType.includes("small town")) {
+    params.set("school.locale__range", "31..43");
   }
 
-  // Q8: Max cost per year → filter by net price
-  const maxCost = (preferences.maxCost || "").toLowerCase();
-  if (maxCost.includes("under $10,000") || maxCost.includes("under 10")) {
+  // Max cost per year
+  const maxCost = (preferences.maxCost || "").toLowerCase().replace(/,/g, "").replace(/\$/g, "");
+  if (maxCost.includes("under 10") || maxCost.includes("less than 10")) {
     params.set("latest.cost.avg_net_price.overall__range", "..10000");
-  } else if (maxCost.includes("10,000") && maxCost.includes("20,000")) {
+  } else if (maxCost.includes("10") && maxCost.includes("20")) {
     params.set("latest.cost.avg_net_price.overall__range", "..20000");
-  } else if (maxCost.includes("20,000") && maxCost.includes("30,000")) {
+  } else if (maxCost.includes("20") && maxCost.includes("30")) {
     params.set("latest.cost.avg_net_price.overall__range", "..30000");
-  } else if (maxCost.includes("30,000") && maxCost.includes("45,000")) {
+  } else if (maxCost.includes("30") && maxCost.includes("45")) {
     params.set("latest.cost.avg_net_price.overall__range", "..45000");
   }
-  // $45,000+ = no filter
 
-  // Q9: Acceptance rate preference
+  // Acceptance rate preference
   const acceptPref = (preferences.acceptanceRatePref || "").toLowerCase();
   if (acceptPref.includes("very selective") || acceptPref.includes("under 10")) {
     params.set("latest.admissions.admission_rate.overall__range", "0..0.10");
-  } else if (acceptPref.includes("highly selective") || acceptPref.includes("10")) {
+  } else if (acceptPref.includes("highly selective") || (acceptPref.includes("10") && acceptPref.includes("25"))) {
     params.set("latest.admissions.admission_rate.overall__range", "0..0.25");
   } else if (acceptPref.includes("selective") && !acceptPref.includes("highly") && !acceptPref.includes("less") && !acceptPref.includes("moderately")) {
     params.set("latest.admissions.admission_rate.overall__range", "0..0.50");
-  } else if (acceptPref.includes("moderately")) {
+  } else if (acceptPref.includes("moderately") || acceptPref.includes("moderate")) {
     params.set("latest.admissions.admission_rate.overall__range", "0.25..0.75");
-  } else if (acceptPref.includes("less selective")) {
+  } else if (acceptPref.includes("less selective") || acceptPref.includes("open")) {
     params.set("latest.admissions.admission_rate.overall__range", "0.50..1");
   }
 
-  // Region from city/state
+  // Geographic filtering based on city/state + distance preference
   const cityState = (preferences.cityState || "").toLowerCase();
-  if (cityState.includes("new york") || cityState.includes("massachusetts") || cityState.includes("connecticut") || cityState.includes("pennsylvania") || cityState.includes("new jersey")) {
-    params.set("school.region_id", "1");
-  } else if (cityState.includes("florida") || cityState.includes("georgia") || cityState.includes("virginia") || cityState.includes("carolina")) {
-    params.set("school.region_id", "5");
-  } else if (cityState.includes("ohio") || cityState.includes("illinois") || cityState.includes("michigan") || cityState.includes("minnesota")) {
-    params.set("school.region_id", "3");
-  } else if (cityState.includes("california") || cityState.includes("washington") || cityState.includes("oregon") || cityState.includes("colorado")) {
-    params.set("school.region_id", "8");
-  } else if (cityState.includes("texas") || cityState.includes("arizona") || cityState.includes("new mexico")) {
-    params.set("school.region_id", "6");
+  const distanceFromHome = preferences.distanceFromHome || "";
+  
+  if (cityState && cityState !== "no preference" && cityState !== "not specified") {
+    const fipsList = getStateFips(cityState);
+    if (fipsList.length > 0) {
+      const statesForDistance = getNearbyStates(fipsList[0], distanceFromHome);
+      if (statesForDistance.length > 0) {
+        params.set("school.state_fips", statesForDistance.join(","));
+      }
+    }
   }
 
-  // Sort by completion rate descending, get top 30 to let AI pick best 5
-  params.set("sort", "latest.completion.rate_suppressed.overall:desc");
-  params.set("per_page", "30");
+  // Sort by program strength if area of study is specified, otherwise by completion rate
+  const programField = findProgramField(preferences.areaOfStudy || "");
+  if (programField) {
+    params.set("sort", `${programField}:desc`);
+  } else {
+    params.set("sort", "latest.completion.rate_suppressed.overall:desc");
+  }
 
+  params.set("per_page", "30");
   return params.toString();
 }
 
@@ -130,16 +220,37 @@ function formatCollegeData(results: any[]): string {
     const earnings = r["latest.earnings.10_yrs_after_entry.median"];
     const size = r["latest.student.size"];
     const ownership = r["school.ownership"] === 1 ? "Public" : r["school.ownership"] === 2 ? "Private Nonprofit" : "Private For-Profit";
+    const locale = r["school.locale"];
+    const localeDesc = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
+
+    // Program percentages
+    const programs: string[] = [];
+    const progFields: Record<string, string> = {
+      "Computer Science": r["latest.academics.program_percentage.computer"],
+      "Engineering": r["latest.academics.program_percentage.engineering"],
+      "Business": r["latest.academics.program_percentage.business_marketing"],
+      "Health": r["latest.academics.program_percentage.health"],
+      "Biology": r["latest.academics.program_percentage.biological"],
+      "Social Science": r["latest.academics.program_percentage.social_science"],
+      "Psychology": r["latest.academics.program_percentage.psychology"],
+      "Education": r["latest.academics.program_percentage.education"],
+      "Arts": r["latest.academics.program_percentage.visual_performing"],
+      "Communications": r["latest.academics.program_percentage.communication"],
+    };
+    for (const [name, pct] of Object.entries(progFields)) {
+      if (pct && Number(pct) > 0.05) programs.push(`${name} (${(Number(pct) * 100).toFixed(0)}%)`);
+    }
 
     return `${i + 1}. ${name} (${city}, ${state})
-   - Type: ${ownership}
+   - Type: ${ownership} | Setting: ${localeDesc}
    - Admission Rate: ${admRate !== null ? (admRate * 100).toFixed(1) + "%" : "N/A"}
    - Tuition (In-State): ${tuitionIn ? "$" + tuitionIn.toLocaleString() : "N/A"}
    - Tuition (Out-of-State): ${tuitionOut ? "$" + tuitionOut.toLocaleString() : "N/A"}
    - Avg Net Price: ${netPrice ? "$" + netPrice.toLocaleString() : "N/A"}
    - Graduation Rate: ${gradRate !== null ? (gradRate * 100).toFixed(1) + "%" : "N/A"}
    - Median Earnings (10yr): ${earnings ? "$" + earnings.toLocaleString() : "N/A"}
-   - Student Body: ${size ? size.toLocaleString() + " students" : "N/A"}`;
+   - Student Body: ${size ? size.toLocaleString() + " students" : "N/A"}
+   - Strong Programs: ${programs.length > 0 ? programs.join(", ") : "General"}`;
   }).join("\n\n");
 }
 
@@ -150,6 +261,7 @@ serve(async (req) => {
 
   try {
     const { preferences } = await req.json();
+    console.log("Received preferences:", JSON.stringify(preferences, null, 2));
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -161,14 +273,16 @@ serve(async (req) => {
     const query = buildScorecardQuery(preferences);
     const scorecardUrl = `https://api.data.gov/ed/collegescorecard/v1/schools?${query}`;
     
-    console.log("Fetching from College Scorecard API...");
+    console.log("Scorecard query params:", query);
     const scorecardResp = await fetch(scorecardUrl);
     
     let realCollegeData = "";
+    let resultCount = 0;
     if (scorecardResp.ok) {
       const scorecardData = await scorecardResp.json();
       const results = scorecardData.results || [];
-      console.log(`Got ${results.length} colleges from Scorecard API`);
+      resultCount = results.length;
+      console.log(`Got ${resultCount} colleges from Scorecard API`);
       if (results.length > 0) {
         realCollegeData = formatCollegeData(results);
       }
@@ -176,48 +290,66 @@ serve(async (req) => {
       console.error("Scorecard API error:", scorecardResp.status, await scorecardResp.text());
     }
 
+    // If too few results, retry without geographic filter
+    if (resultCount < 10 && realCollegeData) {
+      console.log("Few results, trying broader query without state filter...");
+      const broaderQuery = query.replace(/&school\.state_fips=[^&]*/g, "");
+      const broaderResp = await fetch(`https://api.data.gov/ed/collegescorecard/v1/schools?${broaderQuery}`);
+      if (broaderResp.ok) {
+        const broaderData = await broaderResp.json();
+        const broaderResults = broaderData.results || [];
+        if (broaderResults.length > resultCount) {
+          console.log(`Broader query got ${broaderResults.length} results`);
+          realCollegeData = formatCollegeData(broaderResults);
+        }
+      }
+    }
+
     // Step 2: Use AI to personalize and rank with real data
     const systemPrompt = `You are a college admissions expert. You have been given REAL, VERIFIED data from the US Department of Education's College Scorecard database.
 
 Your job is to select the 5 best-fit colleges for this student from the real data provided, and personalize the recommendations.
 
-CRITICAL INSTRUCTIONS — You MUST factor in EVERY student preference below when ranking and selecting colleges:
+CRITICAL: Each student is UNIQUE. Their answers MUST directly determine which colleges you pick. Two students with different answers should get COMPLETELY DIFFERENT lists. Here is how to use each preference:
 
-1. **GPA & Test Scores**: Use these to determine fitCategory (Reach/Match/Safety). Compare against each school's admission rate.
-2. **Campus Size**: Only recommend schools matching their size preference (Small <5K, Medium 5-15K, Large 15-30K, Very Large 30K+).
-3. **Campus Vibe**: Match the student's desired vibe (tight knit, spirited, academic, balanced, diverse) to known campus cultures.
-4. **Location Type**: Respect their Urban/Suburban/Rural preference — use school locale data.
-5. **Maximum Cost Per Year**: Do NOT recommend schools whose net price exceeds their stated budget unless clearly justified as a Reach.
-6. **Acceptance Rate Comfort**: Align recommendations with their selectivity comfort level but include at least one stretch.
-7. **Financial Aid Importance**: If "Essential" or "Very important", prioritize schools with high Pell grant rates and low net prices.
-8. **Campus Life Interests**: Match their extracurricular priorities (athletics, Greek life, research, study abroad, etc.) to known school strengths.
-9. **Academic Importance**: If "Top priority", weight graduation rate and academic reputation heavily.
-10. **Distance From Home**: Use their city/state and distance preference to filter geographically appropriate schools.
-11. **Area of Study**: Prioritize schools with strong programs in their chosen field. Use the program percentage data to identify strengths.
+1. **GPA & Test Scores** → Determines fitCategory. Compare against admission rates:
+   - GPA 3.8+ with high scores → can include <15% acceptance schools as Match
+   - GPA 3.0-3.7 → 25-60% acceptance as Match
+   - GPA <3.0 → 50%+ acceptance as Match
+2. **Campus Size** → HARD FILTER. Only pick schools matching their size.
+3. **Campus Vibe** → Match to known cultures (e.g., "spirited" = strong athletics, "tight knit" = small classes).
+4. **Location Type** → HARD FILTER. Urban/Suburban/Rural must match.
+5. **Max Cost** → HARD FILTER. Net price must not exceed budget unless labeled as Reach.
+6. **Acceptance Rate Comfort** → Drives the Safety/Match/Reach mix.
+7. **Financial Aid** → If "Essential", prioritize high Pell grant rate schools.
+8. **Campus Life** → Tailor picks (e.g., "Greek life" = schools with strong Greek presence).
+9. **Academic Importance** → If "Top priority", favor high graduation rates.
+10. **Distance From Home** → Geographic constraint from their home city/state.
+11. **Area of Study** → CRITICAL. Prioritize schools with strong programs in their field using program percentage data.
 
-In the "whyFit" and "prosForStudent" fields, explicitly reference the student's specific answers (e.g., "You wanted a spirited campus vibe — this school has a Division I athletics program and strong school spirit").
+In "whyFit" and "prosForStudent", EXPLICITLY quote the student's own words (e.g., "You said you want a 'spirited' campus — this school's Division I program delivers that").
 
-IMPORTANT: Use the EXACT data values provided (tuition, acceptance rate, graduation rate, etc.) — do NOT make up or modify any statistics. You may add context like campus vibe, notable features, and fit reasoning based on your knowledge.
+IMPORTANT: Use EXACT data values from the Scorecard data — do NOT fabricate statistics. You may add context about campus culture and fit reasoning.
 
 Return a JSON object with this exact structure:
 {
   "studentProfile": {
-    "summary": "2-3 sentence personalized overview referencing their specific survey answers",
+    "summary": "2-3 sentence overview referencing their specific answers",
     "topPriorities": ["Priority 1", "Priority 2", "Priority 3"],
-    "idealSchoolType": "Brief description of ideal school archetype based on ALL their answers"
+    "idealSchoolType": "Brief description based on ALL their answers"
   },
   "colleges": [
     {
-      "name": "Full College Name (exactly as provided)",
+      "name": "Full College Name (exactly as in data)",
       "location": "City, State",
       "acceptanceRate": "XX%",
-      "ranking": "Ranking or category description",
+      "ranking": "Category description",
       "tuitionInState": "$XX,XXX",
       "tuitionOutOfState": "$XX,XXX",
-      "avgFinancialAid": "Estimated based on net price data",
+      "avgFinancialAid": "Estimated from net price data",
       "netPrice": "$XX,XXX",
       "topPrograms": ["Program 1", "Program 2", "Program 3"],
-      "campusSize": "XX,XXX acres or description",
+      "campusSize": "Description",
       "studentBody": "XX,XXX students",
       "studentFacultyRatio": "XX:1",
       "setting": "Urban/Suburban/Rural",
@@ -226,34 +358,34 @@ Return a JSON object with this exact structure:
       "fitScore": 95,
       "fitCategory": "Safety/Match/Reach",
       "whyFit": "2-3 sentences referencing specific student answers",
-      "prosForStudent": ["Pro referencing specific student preference", "Pro 2", "Pro 3"],
-      "consForStudent": ["Con referencing specific student preference", "Con 2"],
-      "campusVibe": "Brief 1 sentence campus culture description",
-      "notableFeature": "One unique thing about this school relevant to this student"
+      "prosForStudent": ["Pro quoting student preference", "Pro 2", "Pro 3"],
+      "consForStudent": ["Con referencing student preference", "Con 2"],
+      "campusVibe": "1 sentence campus culture",
+      "notableFeature": "One unique relevant thing"
     }
   ],
-  "comparisonInsight": "2-3 sentence AI insight comparing recommendations and referencing the student's key preferences"
+  "comparisonInsight": "2-3 sentences comparing recommendations referencing key preferences"
 }
 
-Provide exactly 5 colleges sorted by fitScore descending. Include a mix of fitCategories (at least one Safety, one Reach). Use the real data values from the Scorecard data — do NOT fabricate statistics.
+Provide exactly 5 colleges sorted by fitScore descending. Include at least one Safety and one Reach. Use real data values only.
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
-    // Build user prompt from all available Tally answers
+    // Build user prompt from all preferences
     const allResponses = preferences.allResponses || {};
     const extraFields = Object.entries(allResponses)
-      .filter(([key]) => !["email"].includes(key)) // exclude email from AI prompt
+      .filter(([key]) => !["email"].includes(key))
       .map(([key, val]) => `- ${key.replace(/_/g, " ")}: ${val}`)
       .join("\n");
 
-    let userPrompt = `Student preferences:
-- Home location (city/state): ${preferences.cityState || "Not specified"}
+    let userPrompt = `Student preferences (USE ALL OF THESE to select and rank colleges):
+- Home location: ${preferences.cityState || "Not specified"}
 - Weighted GPA: ${preferences.gpa || "Not specified"}
 - SAT/ACT Score: ${preferences.testScore || "None"}
-- Preferred campus size: ${preferences.campusSize || "No preference"}
+- Campus size: ${preferences.campusSize || "No preference"}
 - Campus vibe: ${preferences.campusVibe || "No preference"}
 - Location type: ${preferences.locationType || "No preference"}
-- Maximum cost per year: ${preferences.maxCost || "No preference"}
+- Max cost/year: ${preferences.maxCost || "No preference"}
 - Acceptance rate comfort: ${preferences.acceptanceRatePref || "No preference"}
 - Financial aid importance: ${preferences.financialAid || "Important"}
 - Campus life interests: ${preferences.campusLife || "No preference"}
@@ -265,10 +397,12 @@ All survey responses:
 ${extraFields}`;
 
     if (realCollegeData) {
-      userPrompt += `\n\n--- REAL COLLEGE DATA FROM US DEPT OF EDUCATION ---\n${realCollegeData}\n--- END REAL DATA ---\n\nSelect the 5 best-fit colleges from this real data for the student above. Use the exact statistics provided.`;
+      userPrompt += `\n\n--- REAL COLLEGE DATA FROM US DEPT OF EDUCATION ---\n${realCollegeData}\n--- END REAL DATA ---\n\nSelect the 5 best-fit colleges from this real data for this specific student. The selected colleges MUST reflect their unique preferences above.`;
     } else {
-      userPrompt += `\n\nNote: Could not fetch live data. Please recommend 5 colleges using your best knowledge with accurate data.`;
+      userPrompt += `\n\nNote: Could not fetch live data. Recommend 5 colleges using your knowledge, ensuring they match this specific student's preferences.`;
     }
+
+    console.log("Sending to AI with", userPrompt.length, "chars");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -277,11 +411,12 @@ ${extraFields}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        temperature: 0.7,
       }),
     });
 
