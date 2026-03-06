@@ -621,12 +621,18 @@ const QuizResults = () => {
                           { label: "Student Body", key: "studentBody" },
                           { label: "Setting", key: "setting" },
                           { label: "Student:Faculty", key: "studentFacultyRatio" },
-                        ].map((row, ri) => (
+                        ].map((row, ri) => {
+                          const isPremiumRow = ["graduationRate", "avgStartingSalary", "studentBody", "studentFacultyRatio"].includes(row.key);
+                          return (
                           <tr key={row.key} className={`border-b border-border last:border-b-0 ${ri % 2 === 0 ? "bg-muted/10" : ""}`}>
                             <td className="p-3 sm:p-4 md:p-5 text-muted-foreground font-medium sticky left-0 bg-card z-10 text-xs sm:text-sm">{row.label}</td>
                             {recommendations.colleges.map((c) => (
                               <td key={c.name} className="p-3 sm:p-4 md:p-5 text-center text-foreground">
-                                {row.key === "fitCategory" ? (
+                                {isPremiumRow && (c[row.key as keyof College] as string) === "Premium" ? (
+                                  <span className="inline-flex items-center gap-1 text-muted-foreground text-xs">
+                                    <Lock className="w-3 h-3" /> Premium
+                                  </span>
+                                ) : row.key === "fitCategory" ? (
                                   <span className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold ${(fitCategoryConfig[c.fitCategory] || fitCategoryConfig.Match).bg} ${(fitCategoryConfig[c.fitCategory] || fitCategoryConfig.Match).color}`}>
                                     {c[row.key as keyof College] as string}
                                   </span>
@@ -636,7 +642,8 @@ const QuizResults = () => {
                               </td>
                             ))}
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
