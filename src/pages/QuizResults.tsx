@@ -540,7 +540,8 @@ const QuizResults = () => {
             {/* CTA Section */}
             <section className="relative py-20 md:py-28 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-hero" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(210_90%_60%/0.2),transparent_70%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(210_90%_70%/0.25),transparent_50%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,hsl(210_80%_30%/0.3),transparent_50%)]" />
               <div className="container px-4 relative z-10">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -548,17 +549,32 @@ const QuizResults = () => {
                   viewport={{ once: true }}
                   className="text-center max-w-2xl mx-auto"
                 >
-                  <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-5">
-                    Ready to go deeper?
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm mb-6">
+                    <Lock className="w-7 h-7 text-white" />
+                  </div>
+                  <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
+                    Unlock your full college plan
                   </h2>
-                  <p className="text-white/75 text-lg mb-10 leading-relaxed">
-                    Get ongoing personalized guidance, updated match lists, and decision-making tools to make your final choice with confidence.
+                  <p className="text-white/75 text-lg mb-8 leading-relaxed max-w-lg mx-auto">
+                    Get 15+ matches, acceptance estimates, financial breakdowns, and a personal organizer dashboard.
                   </p>
-                  <Link to="/coming-soon" onClick={() => trackClick("Unlock Full Results", "QuizResults")}>
-                    <Button size="xl" className="rounded-full px-12 gap-2 bg-white text-primary hover:bg-white/90 font-bold text-lg shadow-elevated transition-all hover:scale-105 duration-200">
-                      Unlock Full Results <ArrowRight className="w-5 h-5" />
+
+                  <div className="inline-grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-white/80 text-left mb-10">
+                    <div className="flex items-center gap-2">🎓 <span>15+ matches</span></div>
+                    <div className="flex items-center gap-2">📊 <span>Acceptance odds</span></div>
+                    <div className="flex items-center gap-2">💰 <span>Tuition & aid</span></div>
+                    <div className="flex items-center gap-2">📝 <span>Organizer</span></div>
+                    <div className="flex items-center gap-2">⭐ <span>Save & notes</span></div>
+                    <div className="flex items-center gap-2">📍 <span>Side-by-side</span></div>
+                  </div>
+
+                  <Link to="/coming-soon" onClick={() => trackClick("Unlock Full Results CTA", "QuizResults")} className="block">
+                    <Button size="xl" className="rounded-full px-12 gap-2.5 bg-white text-primary hover:bg-white/95 font-bold text-lg shadow-elevated hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                      Unlock Full Results – $9.99/mo
+                      <ArrowRight className="w-5 h-5" />
                     </Button>
                   </Link>
+                  <p className="text-white/50 text-sm mt-4">Cancel anytime • 14-day free trial</p>
                 </motion.div>
               </div>
             </section>
