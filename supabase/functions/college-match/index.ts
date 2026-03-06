@@ -395,10 +395,10 @@ serve(async (req) => {
     }
 
     const SCORECARD_KEY = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
-    console.log("COLLEGE_SCORECARD_API_KEY present:", Boolean(SCORECARD_KEY));
-    if (!SCORECARD_KEY || SCORECARD_KEY.trim() === "" || SCORECARD_KEY === "COLLEGE_SCORECARD_API_KEY") {
-      console.error("COLLEGE_SCORECARD_API_KEY is missing or appears to be a placeholder");
-      return new Response(JSON.stringify({ error: "Service configuration error: college data provider key is invalid." }), {
+    console.log("COLLEGE_SCORECARD_API_KEY present:", Boolean(SCORECARD_KEY), "length:", SCORECARD_KEY?.length, "starts:", SCORECARD_KEY?.substring(0, 4));
+    if (!SCORECARD_KEY || SCORECARD_KEY.trim().length < 10) {
+      console.error("COLLEGE_SCORECARD_API_KEY is missing or too short");
+      return new Response(JSON.stringify({ error: "Service configuration error: college data API key is not set correctly. Please contact support." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
