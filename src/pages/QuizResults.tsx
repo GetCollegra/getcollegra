@@ -289,6 +289,22 @@ const QuizResults = () => {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const { toast } = useToast();
 
+  const ignoredParamKeys = useMemo(() => new Set(["__lovable_token", "submission_id"]), []);
+
+  const surveyContext = useMemo(() => {
+    const context: Record<string, string> = {};
+    searchParams.forEach((value, key) => {
+      if (ignoredParamKeys.has(key) || key.startsWith("__")) return;
+      if (value.trim()) context[key] = value;
+    });
+    return context;
+  }, [searchParams, ignoredParamKeys]);
+
+  const recommendedCollegeNames = useMemo(
+    () => recommendations?.colleges?.map((college) => college.name) ?? [],
+    [recommendations]
+  );
+
   useEffect(() => {
     if (!loading) return;
     const interval = setInterval(() => {
