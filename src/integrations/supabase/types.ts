@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      rate_limits: {
+        Row: {
+          function_name: string
+          id: string
+          ip_address: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          function_name: string
+          id?: string
+          ip_address: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          function_name?: string
+          id?: string
+          ip_address?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       waitlist_emails: {
         Row: {
           created_at: string
@@ -37,7 +61,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_rate_limits: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
