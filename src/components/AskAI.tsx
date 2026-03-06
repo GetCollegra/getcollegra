@@ -4,7 +4,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-const AskAI = () => {
+type AskAIProps = {
+  surveyContext?: Record<string, string>;
+  recommendedCollegeNames?: string[];
+};
+
+const AskAI = ({ surveyContext = {}, recommendedCollegeNames = [] }: AskAIProps) => {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +22,11 @@ const AskAI = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("ask-college-ai", {
-        body: { question },
+        body: {
+          question,
+          surveyContext,
+          recommendedCollegeNames,
+        },
       });
 
       if (error) throw new Error(error.message);
@@ -32,14 +41,19 @@ const AskAI = () => {
     }
   };
 
+  const hasSurveyContext =
+    Object.keys(surveyContext).length > 0 || recommendedCollegeNames.length > 0;
+
   return (
     <section className="py-20 bg-muted/30">
       <div className="container px-4 max-w-2xl mx-auto">
         <h2 className="text-3xl font-bold text-center text-foreground mb-2">
-          Ask AI About College
+          Ask AI About Your Matches
         </h2>
         <p className="text-center text-muted-foreground mb-8">
-          Have a question about the college process? Ask our AI assistant.
+          {hasSurveyContext
+            ? "Ask questions and get answers personalized to your survey responses and current matches."
+            : "Have a question about the college process? Ask our AI assistant."}
         </p>
 
         <div className="space-y-4">
