@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   CheckCircle2, MapPin, DollarSign, GraduationCap, Users, Loader2,
-  Star, ArrowRight, TrendingUp, ThumbsUp, ThumbsDown, Sparkles,
-  BarChart3, Target, Shield, Zap, ChevronDown, Award, BookOpen, Globe
+  Star, ArrowRight, TrendingUp, Sparkles,
+  BarChart3, Target, Shield, Zap, Award, BookOpen, Globe, Lock
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
