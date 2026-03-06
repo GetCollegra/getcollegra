@@ -101,23 +101,31 @@ const QuizResults = () => {
         if (cleaned) cleanedResponses[key] = cleaned;
       }
 
+      const pickParam = (...keys: string[]) => {
+        for (const key of keys) {
+          const value = allParams[key];
+          if (typeof value === "string" && value.trim()) return value;
+        }
+        return "";
+      };
+
       const preferences = {
-        email: allParams.email || "",
-        cityState: clean(allParams.city_state, "No preference"),
-        gpa: clean(allParams.gpa, ""),
-        testScore: clean(allParams.test_score, "None"),
-        satScore: clean(allParams.sat_score, ""),
-        actScore: clean(allParams.act_score, ""),
-        campusSize: clean(allParams.campus_size, "No preference"),
-        campusVibe: clean(allParams.campus_vibe, "No preference"),
-        locationType: clean(allParams.location_type, "No preference"),
-        maxCost: clean(allParams.max_cost, "No preference"),
-        acceptanceRatePref: clean(allParams.acceptance_rate_pref, "No preference"),
-        financialAid: clean(allParams.financial_aid, "Important"),
-        campusLife: clean(allParams.campus_life, "No preference"),
-        academicImportance: clean(allParams.academic_importance, "No preference"),
-        distanceFromHome: clean(allParams.distance_from_home, "No preference"),
-        areaOfStudy: clean(allParams.area_of_study, "Undecided"),
+        email: pickParam("email"),
+        cityState: clean(pickParam("city_state", "cityState"), "No preference"),
+        gpa: clean(pickParam("gpa"), ""),
+        testScore: clean(pickParam("test_score", "testScore"), "None"),
+        satScore: clean(pickParam("sat_score", "satScore"), ""),
+        actScore: clean(pickParam("act_score", "actScore"), ""),
+        campusSize: clean(pickParam("campus_size", "campusSize"), "No preference"),
+        campusVibe: clean(pickParam("campus_vibe", "campusVibe"), "No preference"),
+        locationType: clean(pickParam("location_type", "locationType"), "No preference"),
+        maxCost: clean(pickParam("max_cost", "maxCost"), "No preference"),
+        acceptanceRatePref: clean(pickParam("acceptance_rate_pref", "acceptanceRatePref"), "No preference"),
+        financialAid: clean(pickParam("financial_aid", "financialAid"), "Important"),
+        campusLife: clean(pickParam("campus_life", "campusLife"), "No preference"),
+        academicImportance: clean(pickParam("academic_importance", "academicImportance"), "No preference"),
+        distanceFromHome: clean(pickParam("distance_from_home", "distanceFromHome"), "No preference"),
+        areaOfStudy: clean(pickParam("area_of_study", "areaOfStudy"), "Undecided"),
         allResponses: cleanedResponses,
       };
 
