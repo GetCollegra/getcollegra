@@ -64,8 +64,7 @@ const Survey = () => {
               }
               
               if (value) {
-                // Try exact match on raw title, then normalized
-                const paramKey = fieldMap[rawTitle] || fieldMap[normalizedTitle];
+                const paramKey = findParamKey(rawTitle) || findParamKey(normalizedTitle);
                 if (paramKey) {
                   params.set(paramKey, value);
                 } else {
