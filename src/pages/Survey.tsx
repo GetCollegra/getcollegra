@@ -137,8 +137,14 @@ const Survey = () => {
       }
     };
 
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    const wrappedHandler = (event: MessageEvent) => {
+      // Only accept messages from Tally's domain
+      if (event.origin !== "https://tally.so") return;
+      handleMessage(event);
+    };
+
+    window.addEventListener("message", wrappedHandler);
+    return () => window.removeEventListener("message", wrappedHandler);
   }, [navigate]);
 
   return (
