@@ -705,6 +705,11 @@ const QuizResults = () => {
               </div>
             </section>
 
+            <AskAI
+              surveyContext={surveyContext}
+              recommendedCollegeNames={recommendedCollegeNames}
+            />
+
             {/* CTA Section */}
             <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-hero" />
