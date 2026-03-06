@@ -379,7 +379,7 @@ const QuizResults = () => {
     };
 
     fetchRecommendations();
-  }, [searchParams, toast]);
+  }, [searchParams, toast, ignoredParamKeys]);
 
   const fitScoreColor = (score: number) => {
     if (score >= 90) return "text-emerald-500";
