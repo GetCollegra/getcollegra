@@ -285,9 +285,11 @@ function formatScorecardResults(results: any[]): string {
 }
 
 /**
- * Fetch colleges from Scorecard.  Automatically retries with a broader
- * geographic query when the initial result set is small.
+ * Fetch colleges from Scorecard.  Progressively relaxes filters until we
+ * have at least MIN_RESULTS schools for the AI to pick from.
  */
+const MIN_RESULTS = 15;
+
 async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: string; count: number }> {
   const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
   if (!apiKey || apiKey.trim().length < 10) {
@@ -296,41 +298,76 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
   }
   console.log("COLLEGE_SCORECARD_API_KEY present:", true, "length:", apiKey.length, "starts:", apiKey.substring(0, 4));
 
-  const query = buildScorecardQuery(prefs);
-  const url = `https://api.data.gov/ed/collegescorecard/v1/schools?${query}`;
-  console.log("Scorecard query params:", query);
+  const baseQuery = buildScorecardQuery(prefs);
+  const baseUrl = "https://api.data.gov/ed/collegescorecard/v1/schools";
+  console.log("Scorecard query params:", baseQuery);
 
-  const resp = await fetch(url);
-  let data = "";
-  let count = 0;
-
-  if (resp.ok) {
+  // Helper to run a query and return results
+  const runQuery = async (q: string): Promise<any[]> => {
+    const resp = await fetch(`${baseUrl}?${q}`);
+    if (!resp.ok) {
+      console.error("Scorecard API error:", resp.status, await resp.text());
+      return [];
+    }
     const json = await resp.json();
-    const results = json.results || [];
-    count = results.length;
-    console.log(`Got ${count} colleges from Scorecard API`);
-    if (count > 0) data = formatScorecardResults(results);
-  } else {
-    console.error("Scorecard API error:", resp.status, await resp.text());
-  }
+    return json.results || [];
+  };
 
-  // Broaden if few results (drop state filter)
-  if (count > 0 && count < 10) {
-    console.log("Few results, trying broader query without state filter...");
-    const broaderQuery = query.replace(/&school\.state_fips=[^&]*/g, "");
-    const broaderResp = await fetch(`https://api.data.gov/ed/collegescorecard/v1/schools?${broaderQuery}`);
-    if (broaderResp.ok) {
-      const bJson = await broaderResp.json();
-      const bResults = bJson.results || [];
-      if (bResults.length > count) {
-        console.log(`Broader query got ${bResults.length} results`);
-        data = formatScorecardResults(bResults);
-        count = bResults.length;
-      }
+  // Progressive broadening strategy — each step relaxes one more filter
+  const broadeningSteps: Array<{ label: string; transform: (q: string) => string }> = [
+    {
+      label: "drop state filter",
+      transform: (q) => q.replace(/&school\.state_fips=[^&]*/g, ""),
+    },
+    {
+      label: "drop locale filter",
+      transform: (q) => q.replace(/&school\.locale__range=[^&]*/g, ""),
+    },
+    {
+      label: "drop size filter",
+      transform: (q) => q.replace(/&latest\.student\.size__range=[^&]*/g, ""),
+    },
+    {
+      label: "widen acceptance rate to 0-50%",
+      transform: (q) => q.replace(
+        /latest\.admissions\.admission_rate\.overall__range=[^&]*/g,
+        "latest.admissions.admission_rate.overall__range=0..0.50"
+      ),
+    },
+    {
+      label: "widen acceptance rate to full range",
+      transform: (q) => q.replace(
+        /latest\.admissions\.admission_rate\.overall__range=[^&]*/g,
+        "latest.admissions.admission_rate.overall__range=0..1"
+      ),
+    },
+    {
+      label: "drop cost filter",
+      transform: (q) => q.replace(/&latest\.cost\.avg_net_price\.overall__range=[^&]*/g, ""),
+    },
+  ];
+
+  // Try original query first
+  let results = await runQuery(baseQuery);
+  let currentQuery = baseQuery;
+  console.log(`Initial query got ${results.length} colleges`);
+
+  // Progressively broaden until we have enough
+  for (const step of broadeningSteps) {
+    if (results.length >= MIN_RESULTS) break;
+    const broader = step.transform(currentQuery);
+    if (broader === currentQuery) continue; // filter wasn't present
+    console.log(`Too few results (${results.length}), broadening: ${step.label}`);
+    const broaderResults = await runQuery(broader);
+    if (broaderResults.length > results.length) {
+      results = broaderResults;
+      currentQuery = broader;
+      console.log(`After broadening got ${results.length} results`);
     }
   }
 
-  return { data, count };
+  const data = results.length > 0 ? formatScorecardResults(results) : "";
+  return { data, count: results.length };
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
