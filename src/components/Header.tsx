@@ -24,7 +24,7 @@ const Header = () => {
               <circle cx="50" cy="26" r="4" fill="currentColor"/>
             </svg>
             <span className="text-xl font-bold text-foreground tracking-tight">
-              Collegra
+              Collegra™
             </span>
           </a>
           <nav className="hidden md:flex items-center gap-8">
