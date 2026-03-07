@@ -281,6 +281,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
 };
 
 const QuizResults = () => {
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
   const [loading, setLoading] = useState(true);
@@ -288,16 +289,22 @@ const QuizResults = () => {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const { toast } = useToast();
 
-  const ignoredParamKeys = useMemo(() => new Set(["__lovable_token", "submission_id"]), []);
+  // Read results passed via router state from Survey page
+  const routerState = location.state as { recommendations?: Recommendations; surveyContext?: Record<string, string> } | null;
 
   const surveyContext = useMemo(() => {
+    // Prefer router state survey context
+    if (routerState?.surveyContext && Object.keys(routerState.surveyContext).length > 0) {
+      return routerState.surveyContext;
+    }
+    // Fallback to URL params
     const context: Record<string, string> = {};
     searchParams.forEach((value, key) => {
-      if (ignoredParamKeys.has(key) || key.startsWith("__")) return;
+      if (key === "__lovable_token" || key === "submission_id" || key.startsWith("__")) return;
       if (value.trim()) context[key] = value;
     });
     return context;
-  }, [searchParams, ignoredParamKeys]);
+  }, [routerState, searchParams]);
 
   const recommendedCollegeNames = useMemo(
     () => recommendations?.colleges?.map((college) => college.name) ?? [],
@@ -313,12 +320,27 @@ const QuizResults = () => {
   }, [loading]);
 
   useEffect(() => {
+    // If results were passed via router state, use them directly — no fetch needed
+    if (routerState?.recommendations) {
+      console.log("Using pre-fetched results from router state");
+      setRecommendations(routerState.recommendations);
+      setLoading(false);
+      return;
+    }
+
+    // Fallback: fetch from edge function using URL params (e.g. direct URL access)
     const fetchRecommendations = async () => {
       const allParams: Record<string, string> = {};
       searchParams.forEach((value, key) => {
-        if (ignoredParamKeys.has(key) || key.startsWith("__")) return;
+        if (key === "__lovable_token" || key === "submission_id" || key.startsWith("__")) return;
         allParams[key] = value;
       });
+
+      if (Object.keys(allParams).length === 0) {
+        setError("No survey data found. Please take the quiz first.");
+        setLoading(false);
+        return;
+      }
 
       const clean = (val: string | undefined, fallback: string): string => {
         if (!val) return fallback;
@@ -378,7 +400,7 @@ const QuizResults = () => {
     };
 
     fetchRecommendations();
-  }, [searchParams, toast, ignoredParamKeys]);
+  }, [routerState, searchParams, toast]);
 
   const fitScoreColor = (score: number) => {
     if (score >= 90) return "text-emerald-500";
