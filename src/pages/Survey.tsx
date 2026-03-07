@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ const Survey = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const isProcessingSubmissionRef = useRef(false);
+  const hasNavigatedToResultsRef = useRef(false);
 
   // Cycle loading messages while submitting
   useEffect(() => {
