@@ -10,7 +10,7 @@ const pillars = [
   {
     icon: LayoutDashboard,
     title: "Everything in One Place",
-    desc: "No more bouncing between 6 websites. Compare, organize, and decide — all in Collegra.",
+    desc: "No more bouncing between 6 websites. Compare, organize, and decide — all in Collegra™.",
   },
   {
     icon: Clock3,
@@ -35,7 +35,7 @@ const Solution = () => {
             A simpler, personalized approach.
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Collegra cuts through the noise by matching students to colleges that fit
+            Collegra™ cuts through the noise by matching students to colleges that fit
             what matters most to them.
           </p>
         </motion.div>

@@ -35,7 +35,7 @@ const valuePages = {
   "reduce-stress": {
     icon: Clock,
     title: "College planning, minus the overwhelm",
-    body: "Collegra simplifies the process so you spend less time researching and more time feeling confident.",
+    body: "Collegra™ simplifies the process so you spend less time researching and more time feeling confident.",
     subtext: "Fewer hours. Better decisions.",
     cta: "Get started",
     smallLine: "Free to try",

@@ -250,7 +250,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
                 Unlock your full college plan
               </h4>
               <p className="text-muted-foreground text-xs sm:text-sm mb-4 sm:mb-6">
-                With Collegra Premium you get:
+                With Collegra™ Premium you get:
               </p>
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 gap-y-1.5 sm:gap-y-2.5 text-xs sm:text-sm text-foreground mx-auto max-w-xs mb-5 sm:mb-7">
                 <div className="flex items-center gap-1.5 sm:gap-2 text-left">🎓 <span>15+ matches</span></div>

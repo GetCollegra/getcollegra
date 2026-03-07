@@ -46,13 +46,13 @@ const ExplainerVideo = () => {
           className="text-center mb-14"
         >
           <span className="inline-block text-primary font-semibold text-sm uppercase tracking-widest mb-3">
-            Why Collegra
+            Why Collegra™
           </span>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
             Everything you need to find the right fit
           </h2>
           <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-            Collegra takes the guesswork out of college searching with smart tools designed around you.
+            Collegra™ takes the guesswork out of college searching with smart tools designed around you.
           </p>
         </motion.div>
 

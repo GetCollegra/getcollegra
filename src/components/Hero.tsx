@@ -59,7 +59,7 @@ const Hero = () => {
               transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
               className="text-lg md:text-xl text-white/80 leading-relaxed mb-8 max-w-lg"
             >
-              Collegra gives you personalized college matches based on your goals,
+              Collegra™ gives you personalized college matches based on your goals,
               interests, and preferences — so you can stop guessing and start with clarity.
             </motion.p>
 
