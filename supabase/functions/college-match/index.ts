@@ -1,250 +1,218 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// ─── CORS ────────────────────────────────────────────────────────────────────
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 5; // max requests per IP per minute (stricter — expensive function)
+// ─── Rate Limiting ───────────────────────────────────────────────────────────
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 5;
 
-async function checkRateLimit(ip: string, functionName: string): Promise<boolean> {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const sb = createClient(supabaseUrl, serviceKey);
-
+async function checkRateLimit(ip: string, fn: string): Promise<boolean> {
+  const sb = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
   const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
-
   const { count } = await sb
     .from("rate_limits")
     .select("*", { count: "exact", head: true })
     .eq("ip_address", ip)
-    .eq("function_name", functionName)
+    .eq("function_name", fn)
     .gte("window_start", windowStart);
 
   if ((count ?? 0) >= RATE_LIMIT_MAX) return false;
-
-  await sb.from("rate_limits").insert({ ip_address: ip, function_name: functionName });
-
-  if (Math.random() < 0.05) {
-    await sb.rpc("cleanup_rate_limits");
-  }
-
+  await sb.from("rate_limits").insert({ ip_address: ip, function_name: fn });
+  if (Math.random() < 0.05) await sb.rpc("cleanup_rate_limits");
   return true;
 }
 
-// Map area of study to Scorecard program fields for sorting
+// ─── Reference Data ──────────────────────────────────────────────────────────
+
 const studyProgramMap: Record<string, string> = {
-  "computer": "latest.academics.program_percentage.computer",
-  "engineering": "latest.academics.program_percentage.engineering",
-  "business": "latest.academics.program_percentage.business_marketing",
-  "health": "latest.academics.program_percentage.health",
-  "biology": "latest.academics.program_percentage.biological",
-  "social": "latest.academics.program_percentage.social_science",
-  "psychology": "latest.academics.program_percentage.psychology",
-  "education": "latest.academics.program_percentage.education",
-  "art": "latest.academics.program_percentage.visual_performing",
-  "communication": "latest.academics.program_percentage.communication",
+  computer: "latest.academics.program_percentage.computer",
+  engineering: "latest.academics.program_percentage.engineering",
+  business: "latest.academics.program_percentage.business_marketing",
+  health: "latest.academics.program_percentage.health",
+  biology: "latest.academics.program_percentage.biological",
+  social: "latest.academics.program_percentage.social_science",
+  psychology: "latest.academics.program_percentage.psychology",
+  education: "latest.academics.program_percentage.education",
+  art: "latest.academics.program_percentage.visual_performing",
+  communication: "latest.academics.program_percentage.communication",
 };
 
-function findProgramField(areaOfStudy: string): string | null {
-  const lower = (areaOfStudy || "").toLowerCase();
-  for (const [keyword, field] of Object.entries(studyProgramMap)) {
-    if (lower.includes(keyword)) return field;
-  }
-  return null;
-}
-
-// Map state names/abbreviations to Scorecard state FIPS codes
 const stateFipsMap: Record<string, string> = {
-  "alabama": "1", "alaska": "2", "arizona": "4", "arkansas": "5",
-  "california": "6", "colorado": "8", "connecticut": "9", "delaware": "10",
-  "florida": "12", "georgia": "13", "hawaii": "15", "idaho": "16",
-  "illinois": "17", "indiana": "18", "iowa": "19", "kansas": "20",
-  "kentucky": "21", "louisiana": "22", "maine": "23", "maryland": "24",
-  "massachusetts": "25", "michigan": "26", "minnesota": "27", "mississippi": "28",
-  "missouri": "29", "montana": "30", "nebraska": "31", "nevada": "32",
-  "new hampshire": "33", "new jersey": "34", "new mexico": "35", "new york": "36",
-  "north carolina": "37", "north dakota": "38", "ohio": "39", "oklahoma": "40",
-  "oregon": "41", "pennsylvania": "42", "rhode island": "44", "south carolina": "45",
-  "south dakota": "46", "tennessee": "47", "texas": "48", "utah": "49",
-  "vermont": "50", "virginia": "51", "washington": "53", "west virginia": "54",
-  "wisconsin": "55", "wyoming": "56",
+  alabama:"1",alaska:"2",arizona:"4",arkansas:"5",california:"6",colorado:"8",
+  connecticut:"9",delaware:"10",florida:"12",georgia:"13",hawaii:"15",idaho:"16",
+  illinois:"17",indiana:"18",iowa:"19",kansas:"20",kentucky:"21",louisiana:"22",
+  maine:"23",maryland:"24",massachusetts:"25",michigan:"26",minnesota:"27",
+  mississippi:"28",missouri:"29",montana:"30",nebraska:"31",nevada:"32",
+  "new hampshire":"33","new jersey":"34","new mexico":"35","new york":"36",
+  "north carolina":"37","north dakota":"38",ohio:"39",oklahoma:"40",oregon:"41",
+  pennsylvania:"42","rhode island":"44","south carolina":"45","south dakota":"46",
+  tennessee:"47",texas:"48",utah:"49",vermont:"50",virginia:"51",washington:"53",
+  "west virginia":"54",wisconsin:"55",wyoming:"56",
 };
 
-// State abbreviation map
 const stateAbbrMap: Record<string, string> = {
-  "al": "1", "ak": "2", "az": "4", "ar": "5", "ca": "6", "co": "8",
-  "ct": "9", "de": "10", "fl": "12", "ga": "13", "hi": "15", "id": "16",
-  "il": "17", "in": "18", "ia": "19", "ks": "20", "ky": "21", "la": "22",
-  "me": "23", "md": "24", "ma": "25", "mi": "26", "mn": "27", "ms": "28",
-  "mo": "29", "mt": "30", "ne": "31", "nv": "32", "nh": "33", "nj": "34",
-  "nm": "35", "ny": "36", "nc": "37", "nd": "38", "oh": "39", "ok": "40",
-  "or": "41", "pa": "42", "ri": "44", "sc": "45", "sd": "46", "tn": "47",
-  "tx": "48", "ut": "49", "vt": "50", "va": "51", "wa": "53", "wv": "54",
-  "wi": "55", "wy": "56",
+  al:"1",ak:"2",az:"4",ar:"5",ca:"6",co:"8",ct:"9",de:"10",fl:"12",ga:"13",
+  hi:"15",id:"16",il:"17","in":"18",ia:"19",ks:"20",ky:"21",la:"22",me:"23",
+  md:"24",ma:"25",mi:"26",mn:"27",ms:"28",mo:"29",mt:"30",ne:"31",nv:"32",
+  nh:"33",nj:"34",nm:"35",ny:"36",nc:"37",nd:"38",oh:"39",ok:"40",or:"41",
+  pa:"42",ri:"44",sc:"45",sd:"46",tn:"47",tx:"48",ut:"49",vt:"50",va:"51",
+  wa:"53",wv:"54",wi:"55",wy:"56",
 };
+
+const nearbyStatesMap: Record<string, string[]> = {
+  "36":["34","9","25","42","24"],"6":["41","32","4"],"48":["40","35","22","5"],
+  "12":["13","45","1"],"17":["18","55","26","19","29"],"42":["36","34","24","10","39"],
+  "13":["12","45","37","47","1"],"25":["9","44","33","50","36"],
+  "39":["42","26","18","21","54"],"51":["24","37","47","21","54","10"],
+};
+
+// ─── Geo helpers ─────────────────────────────────────────────────────────────
 
 function getStateFips(cityState: string): string[] {
   const lower = cityState.toLowerCase().trim();
-  const fipsList: string[] = [];
-  
-  // Check full state names
+  const list: string[] = [];
   for (const [name, fips] of Object.entries(stateFipsMap)) {
-    if (lower.includes(name)) fipsList.push(fips);
+    if (lower.includes(name)) list.push(fips);
   }
-  
-  // Check abbreviations (e.g. "NY", "CA")
-  if (fipsList.length === 0) {
-    const parts = lower.split(/[,\s]+/);
-    for (const part of parts) {
+  if (list.length === 0) {
+    for (const part of lower.split(/[,\s]+/)) {
       const fips = stateAbbrMap[part];
-      if (fips) fipsList.push(fips);
+      if (fips) list.push(fips);
     }
   }
-  
-  return fipsList;
+  return list;
 }
 
-// Get nearby states for distance preference
 function getNearbyStates(fips: string, distance: string): string[] {
-  const nearby: Record<string, string[]> = {
-    "36": ["34", "9", "25", "42", "24"], // NY → NJ, CT, MA, PA, MD
-    "6": ["41", "32", "4"], // CA → OR, NV, AZ
-    "48": ["40", "35", "22", "5"], // TX → OK, NM, LA, AR
-    "12": ["13", "45", "1"], // FL → GA, SC, AL
-    "17": ["18", "55", "26", "19", "29"], // IL → IN, WI, MI, IA, MO
-    "42": ["36", "34", "24", "10", "39"], // PA → NY, NJ, MD, DE, OH
-    "13": ["12", "45", "37", "47", "1"], // GA → FL, SC, NC, TN, AL
-    "25": ["9", "44", "33", "50", "36"], // MA → CT, RI, NH, VT, NY
-    "39": ["42", "26", "18", "21", "54"], // OH → PA, MI, IN, KY, WV
-    "51": ["24", "37", "47", "21", "54", "10"], // VA → MD, NC, TN, KY, WV, DC
-  };
-  
-  const distLower = (distance || "").toLowerCase();
-  if (distLower.includes("anywhere") || distLower.includes("no preference")) return [];
-  if (distLower.includes("1 hour") || distLower.includes("under 2")) return [fips];
-  if (distLower.includes("2-4") || distLower.includes("few hours")) return [fips, ...(nearby[fips] || [])];
-  // 4+ hours or "willing to fly" = no geographic filter
+  const d = (distance || "").toLowerCase();
+  if (d.includes("anywhere") || d.includes("no preference")) return [];
+  if (d.includes("1 hour") || d.includes("under 2")) return [fips];
+  if (d.includes("2-4") || d.includes("few hours")) return [fips, ...(nearbyStatesMap[fips] || [])];
   return [];
 }
 
-function buildScorecardQuery(preferences: any): string {
-  const params = new URLSearchParams();
-  const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
-  params.set("api_key", apiKey || "");
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PROVIDER: College Scorecard  (Primary)
+// Docs: https://collegescorecard.ed.gov/data/documentation/
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  // Fields to retrieve — including SAT/ACT admission scores
-  params.set("fields", [
-    "id", "school.name", "school.city", "school.state", "school.school_url",
-    "school.ownership", "school.locale", "latest.student.size",
-    "latest.admissions.admission_rate.overall",
-    "latest.admissions.sat_scores.average.overall",
-    "latest.admissions.sat_scores.midpoint.critical_reading",
-    "latest.admissions.sat_scores.midpoint.math",
-    "latest.admissions.act_scores.midpoint.cumulative",
-    "latest.admissions.act_scores.midpoint.english",
-    "latest.admissions.act_scores.midpoint.math",
-    "latest.admissions.act_scores.25th_percentile.cumulative",
-    "latest.admissions.act_scores.75th_percentile.cumulative",
-    "latest.admissions.sat_scores.25th_percentile.critical_reading",
-    "latest.admissions.sat_scores.75th_percentile.critical_reading",
-    "latest.admissions.sat_scores.25th_percentile.math",
-    "latest.admissions.sat_scores.75th_percentile.math",
-    "latest.cost.tuition.in_state", "latest.cost.tuition.out_of_state",
-    "latest.cost.avg_net_price.overall",
-    "latest.aid.median_debt.completers.overall", "latest.aid.pell_grant_rate",
-    "latest.completion.rate_suppressed.overall",
-    "latest.earnings.10_yrs_after_entry.median",
-    "latest.academics.program_percentage.computer",
-    "latest.academics.program_percentage.engineering",
-    "latest.academics.program_percentage.business_marketing",
-    "latest.academics.program_percentage.health",
-    "latest.academics.program_percentage.biological",
-    "latest.academics.program_percentage.social_science",
-    "latest.academics.program_percentage.psychology",
-    "latest.academics.program_percentage.education",
-    "latest.academics.program_percentage.visual_performing",
-    "latest.academics.program_percentage.communication",
-  ].join(","));
+/**
+ * All Scorecard fields we request.  Grouped logically so it's easy to see
+ * what data the quiz results page depends on.
+ */
+const SCORECARD_FIELDS = [
+  // Identity
+  "id", "school.name", "school.city", "school.state", "school.school_url",
+  "school.ownership", "school.locale",
 
-  // Only degree-granting, primarily bachelor's
-  params.set("school.degrees_awarded.predominant", "3");
-  params.set("latest.admissions.admission_rate.overall__range", "0..1");
+  // Enrollment
+  "latest.student.size",
 
-  // Campus size preference
-  const size = (preferences.campusSize || "").toLowerCase();
-  if (size.includes("small")) {
-    params.set("latest.student.size__range", "..5000");
-  } else if (size.includes("medium")) {
-    params.set("latest.student.size__range", "5000..15000");
-  } else if (size.includes("very large") || size.includes("30,000")) {
-    params.set("latest.student.size__range", "30000..");
-  } else if (size.includes("large")) {
-    params.set("latest.student.size__range", "15000..30000");
-  }
+  // Admissions — overall + SAT/ACT ranges for fit category
+  "latest.admissions.admission_rate.overall",
+  "latest.admissions.sat_scores.average.overall",
+  "latest.admissions.sat_scores.midpoint.critical_reading",
+  "latest.admissions.sat_scores.midpoint.math",
+  "latest.admissions.act_scores.midpoint.cumulative",
+  "latest.admissions.act_scores.midpoint.english",
+  "latest.admissions.act_scores.midpoint.math",
+  "latest.admissions.act_scores.25th_percentile.cumulative",
+  "latest.admissions.act_scores.75th_percentile.cumulative",
+  "latest.admissions.sat_scores.25th_percentile.critical_reading",
+  "latest.admissions.sat_scores.75th_percentile.critical_reading",
+  "latest.admissions.sat_scores.25th_percentile.math",
+  "latest.admissions.sat_scores.75th_percentile.math",
+
+  // Cost
+  "latest.cost.tuition.in_state",
+  "latest.cost.tuition.out_of_state",
+  "latest.cost.avg_net_price.overall",
+
+  // Aid & Outcomes
+  "latest.aid.median_debt.completers.overall",
+  "latest.aid.pell_grant_rate",
+  "latest.completion.rate_suppressed.overall",
+  "latest.earnings.10_yrs_after_entry.median",
+
+  // Programs (% of students in each major family)
+  "latest.academics.program_percentage.computer",
+  "latest.academics.program_percentage.engineering",
+  "latest.academics.program_percentage.business_marketing",
+  "latest.academics.program_percentage.health",
+  "latest.academics.program_percentage.biological",
+  "latest.academics.program_percentage.social_science",
+  "latest.academics.program_percentage.psychology",
+  "latest.academics.program_percentage.education",
+  "latest.academics.program_percentage.visual_performing",
+  "latest.academics.program_percentage.communication",
+];
+
+function buildScorecardQuery(prefs: Record<string, any>): string {
+  const p = new URLSearchParams();
+  p.set("api_key", Deno.env.get("COLLEGE_SCORECARD_API_KEY") || "");
+  p.set("fields", SCORECARD_FIELDS.join(","));
+  p.set("school.degrees_awarded.predominant", "3"); // bachelor's
+  p.set("latest.admissions.admission_rate.overall__range", "0..1");
+
+  // Campus size filter
+  const size = (prefs.campusSize || "").toLowerCase();
+  if (size.includes("small")) p.set("latest.student.size__range", "..5000");
+  else if (size.includes("medium")) p.set("latest.student.size__range", "5000..15000");
+  else if (size.includes("very large") || size.includes("30,000")) p.set("latest.student.size__range", "30000..");
+  else if (size.includes("large")) p.set("latest.student.size__range", "15000..30000");
 
   // Location type
-  const locationType = (preferences.locationType || "").toLowerCase();
-  if (locationType.includes("urban") || locationType.includes("city")) {
-    params.set("school.locale__range", "11..13");
-  } else if (locationType.includes("suburban")) {
-    params.set("school.locale__range", "21..23");
-  } else if (locationType.includes("rural") || locationType.includes("small town")) {
-    params.set("school.locale__range", "31..43");
-  }
+  const loc = (prefs.locationType || "").toLowerCase();
+  if (loc.includes("urban") || loc.includes("city")) p.set("school.locale__range", "11..13");
+  else if (loc.includes("suburban")) p.set("school.locale__range", "21..23");
+  else if (loc.includes("rural") || loc.includes("small town")) p.set("school.locale__range", "31..43");
 
-  // Max cost per year
-  const maxCost = (preferences.maxCost || "").toLowerCase().replace(/,/g, "").replace(/\$/g, "");
-  if (maxCost.includes("under 10") || maxCost.includes("less than 10")) {
-    params.set("latest.cost.avg_net_price.overall__range", "..10000");
-  } else if (maxCost.includes("10") && maxCost.includes("20")) {
-    params.set("latest.cost.avg_net_price.overall__range", "..20000");
-  } else if (maxCost.includes("20") && maxCost.includes("30")) {
-    params.set("latest.cost.avg_net_price.overall__range", "..30000");
-  } else if (maxCost.includes("30") && maxCost.includes("45")) {
-    params.set("latest.cost.avg_net_price.overall__range", "..45000");
-  }
+  // Max cost
+  const cost = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
+  if (cost.includes("under 10") || cost.includes("less than 10")) p.set("latest.cost.avg_net_price.overall__range", "..10000");
+  else if (cost.includes("10") && cost.includes("20")) p.set("latest.cost.avg_net_price.overall__range", "..20000");
+  else if (cost.includes("20") && cost.includes("30")) p.set("latest.cost.avg_net_price.overall__range", "..30000");
+  else if (cost.includes("30") && cost.includes("45")) p.set("latest.cost.avg_net_price.overall__range", "..45000");
 
-  // Acceptance rate preference
-  const acceptPref = (preferences.acceptanceRatePref || "").toLowerCase();
-  if (acceptPref.includes("very selective") || acceptPref.includes("under 10")) {
-    params.set("latest.admissions.admission_rate.overall__range", "0..0.10");
-  } else if (acceptPref.includes("highly selective") || (acceptPref.includes("10") && acceptPref.includes("25"))) {
-    params.set("latest.admissions.admission_rate.overall__range", "0..0.25");
-  } else if (acceptPref.includes("selective") && !acceptPref.includes("highly") && !acceptPref.includes("less") && !acceptPref.includes("moderately")) {
-    params.set("latest.admissions.admission_rate.overall__range", "0..0.50");
-  } else if (acceptPref.includes("moderately") || acceptPref.includes("moderate")) {
-    params.set("latest.admissions.admission_rate.overall__range", "0.25..0.75");
-  } else if (acceptPref.includes("less selective") || acceptPref.includes("open")) {
-    params.set("latest.admissions.admission_rate.overall__range", "0.50..1");
-  }
+  // Acceptance rate
+  const acc = (prefs.acceptanceRatePref || "").toLowerCase();
+  if (acc.includes("very selective") || acc.includes("under 10"))
+    p.set("latest.admissions.admission_rate.overall__range", "0..0.10");
+  else if (acc.includes("highly selective") || (acc.includes("10") && acc.includes("25")))
+    p.set("latest.admissions.admission_rate.overall__range", "0..0.25");
+  else if (acc.includes("selective") && !acc.includes("highly") && !acc.includes("less") && !acc.includes("moderately"))
+    p.set("latest.admissions.admission_rate.overall__range", "0..0.50");
+  else if (acc.includes("moderately") || acc.includes("moderate"))
+    p.set("latest.admissions.admission_rate.overall__range", "0.25..0.75");
+  else if (acc.includes("less selective") || acc.includes("open"))
+    p.set("latest.admissions.admission_rate.overall__range", "0.50..1");
 
-  // Geographic filtering based on city/state + distance preference
-  const cityState = (preferences.cityState || "").toLowerCase();
-  const distanceFromHome = preferences.distanceFromHome || "";
-  
+  // Geographic filter
+  const cityState = (prefs.cityState || "").toLowerCase();
   if (cityState && cityState !== "no preference" && cityState !== "not specified") {
-    const fipsList = getStateFips(cityState);
-    if (fipsList.length > 0) {
-      const statesForDistance = getNearbyStates(fipsList[0], distanceFromHome);
-      if (statesForDistance.length > 0) {
-        params.set("school.state_fips", statesForDistance.join(","));
-      }
+    const fips = getStateFips(cityState);
+    if (fips.length > 0) {
+      const states = getNearbyStates(fips[0], prefs.distanceFromHome || "");
+      if (states.length > 0) p.set("school.state_fips", states.join(","));
     }
   }
 
-  // Always sort by completion rate — program percentage fields are not supported as sort params
-  // The AI will handle program-based ranking using the returned program_percentage data
-  params.set("sort", "latest.completion.rate_suppressed.overall:desc");
-
-  params.set("per_page", "30");
-  return params.toString();
+  p.set("sort", "latest.completion.rate_suppressed.overall:desc");
+  p.set("per_page", "30");
+  return p.toString();
 }
 
-function formatCollegeData(results: any[]): string {
+/** Turn raw Scorecard JSON rows into a human-readable string the AI can parse */
+function formatScorecardResults(results: any[]): string {
   return results.map((r: any, i: number) => {
     const name = r["school.name"] || "Unknown";
     const city = r["school.city"] || "";
@@ -260,53 +228,46 @@ function formatCollegeData(results: any[]): string {
     const locale = r["school.locale"];
     const localeDesc = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
 
-    // SAT/ACT scores
+    // SAT
     const satAvg = r["latest.admissions.sat_scores.average.overall"];
-    const satRead25 = r["latest.admissions.sat_scores.25th_percentile.critical_reading"];
-    const satRead75 = r["latest.admissions.sat_scores.75th_percentile.critical_reading"];
-    const satMath25 = r["latest.admissions.sat_scores.25th_percentile.math"];
-    const satMath75 = r["latest.admissions.sat_scores.75th_percentile.math"];
-    const actMid = r["latest.admissions.act_scores.midpoint.cumulative"];
-    const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
-    const act75 = r["latest.admissions.act_scores.75th_percentile.cumulative"];
-
-    // Program percentages
-    const programs: string[] = [];
-    const progFields: Record<string, string> = {
-      "Computer Science": r["latest.academics.program_percentage.computer"],
-      "Engineering": r["latest.academics.program_percentage.engineering"],
-      "Business": r["latest.academics.program_percentage.business_marketing"],
-      "Health": r["latest.academics.program_percentage.health"],
-      "Biology": r["latest.academics.program_percentage.biological"],
-      "Social Science": r["latest.academics.program_percentage.social_science"],
-      "Psychology": r["latest.academics.program_percentage.psychology"],
-      "Education": r["latest.academics.program_percentage.education"],
-      "Arts": r["latest.academics.program_percentage.visual_performing"],
-      "Communications": r["latest.academics.program_percentage.communication"],
-    };
-    for (const [name, pct] of Object.entries(progFields)) {
-      if (pct && Number(pct) > 0.05) programs.push(`${name} (${(Number(pct) * 100).toFixed(0)}%)`);
-    }
-
-    // Build SAT display
+    const satR25 = r["latest.admissions.sat_scores.25th_percentile.critical_reading"];
+    const satR75 = r["latest.admissions.sat_scores.75th_percentile.critical_reading"];
+    const satM25 = r["latest.admissions.sat_scores.25th_percentile.math"];
+    const satM75 = r["latest.admissions.sat_scores.75th_percentile.math"];
     let satDisplay = "N/A";
     if (satAvg) {
       satDisplay = `Avg: ${satAvg}`;
-      if (satRead25 && satRead75 && satMath25 && satMath75) {
-        const total25 = Number(satRead25) + Number(satMath25);
-        const total75 = Number(satRead75) + Number(satMath75);
-        satDisplay += ` (25th-75th: ${total25}-${total75})`;
+      if (satR25 && satR75 && satM25 && satM75) {
+        satDisplay += ` (25th-75th: ${Number(satR25)+Number(satM25)}-${Number(satR75)+Number(satM75)})`;
       }
     }
 
-    // Build ACT display
+    // ACT
+    const actMid = r["latest.admissions.act_scores.midpoint.cumulative"];
+    const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
+    const act75 = r["latest.admissions.act_scores.75th_percentile.cumulative"];
     let actDisplay = "N/A";
     if (actMid) {
       actDisplay = `Mid: ${actMid}`;
-      if (act25 && act75) {
-        actDisplay += ` (25th-75th: ${act25}-${act75})`;
-      }
+      if (act25 && act75) actDisplay += ` (25th-75th: ${act25}-${act75})`;
     }
+
+    // Programs
+    const progLabels: Record<string, string> = {
+      "Computer Science": r["latest.academics.program_percentage.computer"],
+      Engineering: r["latest.academics.program_percentage.engineering"],
+      Business: r["latest.academics.program_percentage.business_marketing"],
+      Health: r["latest.academics.program_percentage.health"],
+      Biology: r["latest.academics.program_percentage.biological"],
+      "Social Science": r["latest.academics.program_percentage.social_science"],
+      Psychology: r["latest.academics.program_percentage.psychology"],
+      Education: r["latest.academics.program_percentage.education"],
+      Arts: r["latest.academics.program_percentage.visual_performing"],
+      Communications: r["latest.academics.program_percentage.communication"],
+    };
+    const programs = Object.entries(progLabels)
+      .filter(([, pct]) => pct && Number(pct) > 0.05)
+      .map(([label, pct]) => `${label} (${(Number(pct) * 100).toFixed(0)}%)`);
 
     return `${i + 1}. ${name} (${city}, ${state})
    - Type: ${ownership} | Setting: ${localeDesc}
@@ -323,120 +284,75 @@ function formatCollegeData(results: any[]): string {
   }).join("\n\n");
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+/**
+ * Fetch colleges from Scorecard.  Automatically retries with a broader
+ * geographic query when the initial result set is small.
+ */
+async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: string; count: number }> {
+  const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
+  if (!apiKey || apiKey.trim().length < 10) {
+    console.error("COLLEGE_SCORECARD_API_KEY missing or too short");
+    return { data: "", count: 0 };
+  }
+  console.log("COLLEGE_SCORECARD_API_KEY present:", true, "length:", apiKey.length, "starts:", apiKey.substring(0, 4));
+
+  const query = buildScorecardQuery(prefs);
+  const url = `https://api.data.gov/ed/collegescorecard/v1/schools?${query}`;
+  console.log("Scorecard query params:", query);
+
+  const resp = await fetch(url);
+  let data = "";
+  let count = 0;
+
+  if (resp.ok) {
+    const json = await resp.json();
+    const results = json.results || [];
+    count = results.length;
+    console.log(`Got ${count} colleges from Scorecard API`);
+    if (count > 0) data = formatScorecardResults(results);
+  } else {
+    console.error("Scorecard API error:", resp.status, await resp.text());
   }
 
-  try {
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-                     req.headers.get("cf-connecting-ip") || "unknown";
-
-    const allowed = await checkRateLimit(clientIp, "college-match");
-    if (!allowed) {
-      return new Response(JSON.stringify({ error: "Too many requests. Please wait a moment." }), {
-        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const body = await req.json();
-    const rawPreferences = body?.preferences;
-
-    // Input validation
-    if (!rawPreferences || typeof rawPreferences !== "object") {
-      return new Response(JSON.stringify({ error: "Invalid input: preferences object required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Limit total payload size by checking stringified length
-    const rawStr = JSON.stringify(rawPreferences);
-    if (rawStr.length > 10000) {
-      return new Response(JSON.stringify({ error: "Input too large" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    
-    // Sanitize preferences: remove Tally placeholder values like {field_id}
-    const sanitize = (val: any): string => {
-      if (typeof val !== "string") return "";
-      const trimmed = val.trim();
-      if (/^\{.*\}$/.test(trimmed)) return "";
-      return trimmed.substring(0, 500); // Cap individual field length
-    };
-    
-    const preferences: Record<string, any> = {};
-    for (const [key, val] of Object.entries(rawPreferences || {})) {
-      if (key === "allResponses" && typeof val === "object" && val !== null) {
-        const cleaned: Record<string, string> = {};
-        for (const [k, v] of Object.entries(val as Record<string, any>)) {
-          const s = sanitize(v);
-          if (s) cleaned[k] = s;
-        }
-        preferences[key] = cleaned;
-      } else {
-        const s = sanitize(val);
-        preferences[key] = s || rawPreferences[key];
+  // Broaden if few results (drop state filter)
+  if (count > 0 && count < 10) {
+    console.log("Few results, trying broader query without state filter...");
+    const broaderQuery = query.replace(/&school\.state_fips=[^&]*/g, "");
+    const broaderResp = await fetch(`https://api.data.gov/ed/collegescorecard/v1/schools?${broaderQuery}`);
+    if (broaderResp.ok) {
+      const bJson = await broaderResp.json();
+      const bResults = bJson.results || [];
+      if (bResults.length > count) {
+        console.log(`Broader query got ${bResults.length} results`);
+        data = formatScorecardResults(bResults);
+        count = bResults.length;
       }
     }
-    
-    console.log("Received preferences:", JSON.stringify(preferences, null, 2));
+  }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
-      return new Response(JSON.stringify({ error: "Service configuration error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  return { data, count };
+}
 
-    const SCORECARD_KEY = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
-    console.log("COLLEGE_SCORECARD_API_KEY present:", Boolean(SCORECARD_KEY), "length:", SCORECARD_KEY?.length, "starts:", SCORECARD_KEY?.substring(0, 4));
-    if (!SCORECARD_KEY || SCORECARD_KEY.trim().length < 10) {
-      console.error("COLLEGE_SCORECARD_API_KEY is missing or too short");
-      return new Response(JSON.stringify({ error: "Service configuration error: college data API key is not set correctly. Please contact support." }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PROVIDER PLACEHOLDER: Backup Source
+// To add a second data source (IPEDS, Niche API, Peterson's, etc.):
+//
+//   async function fetchFromBackup(prefs): Promise<{ data: string; count: number }> {
+//     // 1. Call the backup API
+//     // 2. Format results into a plain-text block like formatScorecardResults
+//     // 3. Return { data, count }
+//   }
+//
+// Then in the main handler, merge:
+//   if (scorecardResult.count < 5) {
+//     const backup = await fetchFromBackup(prefs);
+//     realCollegeData += "\n\n--- BACKUP SOURCE ---\n" + backup.data;
+//   }
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // Step 1: Fetch real college data from College Scorecard API
-    const query = buildScorecardQuery(preferences);
-    const scorecardUrl = `https://api.data.gov/ed/collegescorecard/v1/schools?${query}`;
-    
-    console.log("Scorecard query params:", query);
-    const scorecardResp = await fetch(scorecardUrl);
-    
-    let realCollegeData = "";
-    let resultCount = 0;
-    if (scorecardResp.ok) {
-      const scorecardData = await scorecardResp.json();
-      const results = scorecardData.results || [];
-      resultCount = results.length;
-      console.log(`Got ${resultCount} colleges from Scorecard API`);
-      if (results.length > 0) {
-        realCollegeData = formatCollegeData(results);
-      }
-    } else {
-      console.error("Scorecard API error:", scorecardResp.status, await scorecardResp.text());
-    }
+// ─── AI Prompt ───────────────────────────────────────────────────────────────
 
-    // If too few results, retry without geographic filter
-    if (resultCount < 10 && realCollegeData) {
-      console.log("Few results, trying broader query without state filter...");
-      const broaderQuery = query.replace(/&school\.state_fips=[^&]*/g, "");
-      const broaderResp = await fetch(`https://api.data.gov/ed/collegescorecard/v1/schools?${broaderQuery}`);
-      if (broaderResp.ok) {
-        const broaderData = await broaderResp.json();
-        const broaderResults = broaderData.results || [];
-        if (broaderResults.length > resultCount) {
-          console.log(`Broader query got ${broaderResults.length} results`);
-          realCollegeData = formatCollegeData(broaderResults);
-        }
-      }
-    }
-
-    // Step 2: Use AI to personalize and rank with real data
-    const systemPrompt = `You are a college admissions expert. You have been given REAL, VERIFIED data from the US Department of Education's College Scorecard database.
+const SYSTEM_PROMPT = `You are a college admissions expert. You have been given REAL, VERIFIED data from the US Department of Education's College Scorecard database.
 
 Your job is to select the 5 best-fit colleges for this student from the real data provided, and personalize the recommendations.
 
@@ -508,86 +424,176 @@ Provide exactly 5 colleges sorted by fitScore descending. Include at least one S
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
-    // Build user prompt from all preferences
-    const allResponses = preferences.allResponses || {};
-    const extraFields = Object.entries(allResponses)
-      .filter(([key]) => !["email"].includes(key))
-      .map(([key, val]) => `- ${key.replace(/_/g, " ")}: ${val}`)
-      .join("\n");
+function buildUserPrompt(prefs: Record<string, any>, collegeData: string): string {
+  const allResponses = prefs.allResponses || {};
+  const extraFields = Object.entries(allResponses)
+    .filter(([key]) => key !== "email")
+    .map(([key, val]) => `- ${key.replace(/_/g, " ")}: ${val}`)
+    .join("\n");
 
-    // Build test score string from separate SAT/ACT fields or legacy combined field
-    const satScore = preferences.satScore || "";
-    const actScore = preferences.actScore || "";
-    let testScoreDisplay = preferences.testScore || "None";
-    if (satScore || actScore) {
-      const parts = [];
-      if (satScore) parts.push(`SAT: ${satScore}`);
-      if (actScore) parts.push(`ACT: ${actScore}`);
-      testScoreDisplay = parts.join(", ");
-    }
+  const sat = prefs.satScore || "";
+  const act = prefs.actScore || "";
+  let testDisplay = prefs.testScore || "None";
+  if (sat || act) {
+    const parts = [];
+    if (sat) parts.push(`SAT: ${sat}`);
+    if (act) parts.push(`ACT: ${act}`);
+    testDisplay = parts.join(", ");
+  }
 
-    let userPrompt = `Student preferences (USE ALL OF THESE to select and rank colleges):
-- Home location: ${preferences.cityState || "Not specified"}
-- Weighted GPA: ${preferences.gpa || "Not specified"}
-- Test Scores: ${testScoreDisplay}
-- Campus size: ${preferences.campusSize || "No preference"}
-- Campus vibe: ${preferences.campusVibe || "No preference"}
-- Location type: ${preferences.locationType || "No preference"}
-- Max cost/year: ${preferences.maxCost || "No preference"}
-- Acceptance rate comfort: ${preferences.acceptanceRatePref || "No preference"}
-- Financial aid importance: ${preferences.financialAid || "Important"}
-- Campus life interests: ${preferences.campusLife || "No preference"}
-- Academic importance: ${preferences.academicImportance || "No preference"}
-- Distance from home: ${preferences.distanceFromHome || "No preference"}
-- Area of study: ${preferences.areaOfStudy || "Undecided"}
+  let prompt = `Student preferences (USE ALL OF THESE to select and rank colleges):
+- Home location: ${prefs.cityState || "Not specified"}
+- Weighted GPA: ${prefs.gpa || "Not specified"}
+- Test Scores: ${testDisplay}
+- Campus size: ${prefs.campusSize || "No preference"}
+- Campus vibe: ${prefs.campusVibe || "No preference"}
+- Location type: ${prefs.locationType || "No preference"}
+- Max cost/year: ${prefs.maxCost || "No preference"}
+- Acceptance rate comfort: ${prefs.acceptanceRatePref || "No preference"}
+- Financial aid importance: ${prefs.financialAid || "Important"}
+- Campus life interests: ${prefs.campusLife || "No preference"}
+- Academic importance: ${prefs.academicImportance || "No preference"}
+- Distance from home: ${prefs.distanceFromHome || "No preference"}
+- Area of study: ${prefs.areaOfStudy || "Undecided"}
 
 All survey responses:
 ${extraFields}`;
 
-    if (realCollegeData) {
-      userPrompt += `\n\n--- REAL COLLEGE DATA FROM US DEPT OF EDUCATION ---\n${realCollegeData}\n--- END REAL DATA ---\n\nSelect the 5 best-fit colleges from this real data for this specific student. The selected colleges MUST reflect their unique preferences above.`;
-    } else {
-      userPrompt += `\n\nNote: Could not fetch live data. Recommend 5 colleges using your knowledge, ensuring they match this specific student's preferences.`;
+  if (collegeData) {
+    prompt += `\n\n--- REAL COLLEGE DATA FROM US DEPT OF EDUCATION ---\n${collegeData}\n--- END REAL DATA ---\n\nSelect the 5 best-fit colleges from this real data for this specific student. The selected colleges MUST reflect their unique preferences above.`;
+  } else {
+    prompt += `\n\nNote: Could not fetch live data. Recommend 5 colleges using your knowledge, ensuring they match this specific student's preferences.`;
+  }
+
+  return prompt;
+}
+
+// ─── Premium field masking ───────────────────────────────────────────────────
+
+const PREMIUM_FIELDS = [
+  "tuitionInState", "tuitionOutOfState", "avgFinancialAid",
+  "studentFacultyRatio", "studentBody", "campusSize",
+  "avgStartingSalary", "graduationRate",
+];
+
+function maskPremiumFields(recommendations: any): any {
+  if (!recommendations?.colleges || !Array.isArray(recommendations.colleges)) return recommendations;
+  recommendations.colleges = recommendations.colleges.map((c: any) => {
+    const masked = { ...c };
+    for (const f of PREMIUM_FIELDS) masked[f] = "Premium";
+    return masked;
+  });
+  return recommendations;
+}
+
+// ─── Main Handler ────────────────────────────────────────────────────────────
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Rate limit
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                     req.headers.get("cf-connecting-ip") || "unknown";
+    if (!(await checkRateLimit(clientIp, "college-match"))) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please wait a moment." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
+    // Parse & validate input
+    const body = await req.json();
+    const raw = body?.preferences;
+    if (!raw || typeof raw !== "object") {
+      return new Response(JSON.stringify({ error: "Invalid input: preferences object required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (JSON.stringify(raw).length > 10_000) {
+      return new Response(JSON.stringify({ error: "Input too large" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Sanitize
+    const sanitize = (v: any): string => {
+      if (typeof v !== "string") return "";
+      const t = v.trim();
+      return /^\{.*\}$/.test(t) ? "" : t.substring(0, 500);
+    };
+
+    const prefs: Record<string, any> = {};
+    for (const [key, val] of Object.entries(raw)) {
+      if (key === "allResponses" && typeof val === "object" && val !== null) {
+        const cleaned: Record<string, string> = {};
+        for (const [k, v] of Object.entries(val as Record<string, any>)) {
+          const s = sanitize(v);
+          if (s) cleaned[k] = s;
+        }
+        prefs[key] = cleaned;
+      } else {
+        const s = sanitize(val);
+        prefs[key] = s || raw[key];
+      }
+    }
+    console.log("Received preferences:", JSON.stringify(prefs, null, 2));
+
+    // Ensure AI key exists
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY is not configured");
+      return new Response(JSON.stringify({ error: "Service configuration error" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Step 1: Fetch college data from primary source ──
+    const scorecard = await fetchFromScorecard(prefs);
+
+    // ── (Future) Step 1b: Fetch from backup if primary returned too few ──
+    // if (scorecard.count < 5) {
+    //   const backup = await fetchFromBackup(prefs);
+    //   scorecard.data += "\n\n--- BACKUP SOURCE ---\n" + backup.data;
+    // }
+
+    // ── Step 2: AI ranking ──
+    const userPrompt = buildUserPrompt(prefs, scorecard.data);
     console.log("Sending to AI with", userPrompt.length, "chars");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
         temperature: 0.4,
       }),
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    if (!aiResp.ok) {
+      if (aiResp.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
+      if (aiResp.status === 402) {
         return new Response(JSON.stringify({ error: "AI usage limit reached. Please try again later." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("AI gateway error:", aiResp.status, await aiResp.text());
       return new Response(JSON.stringify({ error: "Failed to generate recommendations" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const aiData = await aiResp.json();
+    const content = aiData.choices?.[0]?.message?.content;
     if (!content) throw new Error("No content in AI response");
 
     let recommendations;
@@ -599,23 +605,8 @@ ${extraFields}`;
       throw new Error("Failed to parse college recommendations");
     }
 
-    // Strip premium fields server-side — only include them for authenticated premium users
-    // Since there's no auth/premium system yet, always strip premium fields
-    const premiumFields = [
-      "tuitionInState", "tuitionOutOfState", "avgFinancialAid",
-      "studentFacultyRatio", "studentBody", "campusSize",
-      "avgStartingSalary", "graduationRate"
-    ];
-
-    if (recommendations?.colleges && Array.isArray(recommendations.colleges)) {
-      recommendations.colleges = recommendations.colleges.map((college: any) => {
-        const sanitized = { ...college };
-        for (const field of premiumFields) {
-          sanitized[field] = "Premium";
-        }
-        return sanitized;
-      });
-    }
+    // Mask premium fields for free tier
+    recommendations = maskPremiumFields(recommendations);
 
     return new Response(JSON.stringify(recommendations), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
