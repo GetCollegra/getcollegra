@@ -10,6 +10,7 @@ import ValueDetail from "./pages/ValueDetail";
 import ComingSoon from "./pages/ComingSoon";
 import Terms from "./pages/Terms";
 import Disclaimer from "./pages/Disclaimer";
+import Privacy from "./pages/Privacy";
 
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/coming-soon" element={<ComingSoon />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
+          <Route path="/privacy" element={<Privacy />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

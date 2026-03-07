@@ -14,6 +14,9 @@ const Footer = () => {
           <Link to="/disclaimer" className="text-sm text-muted-foreground hover:text-primary transition-colors">
             Disclaimer
           </Link>
+          <Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            Privacy Policy
+          </Link>
         </div>
       </div>
     </footer>
