@@ -38,6 +38,27 @@ export type Database = {
         }
         Relationships: []
       }
+      survey_submissions: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          preferences: Json
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          preferences?: Json
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          preferences?: Json
+        }
+        Relationships: []
+      }
       waitlist_emails: {
         Row: {
           created_at: string
