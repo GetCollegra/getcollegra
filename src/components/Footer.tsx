@@ -7,9 +7,14 @@ const Footer = () => {
         <p className="text-sm text-muted-foreground">
           © 2026 Collegra™. All rights reserved.
         </p>
-        <Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-          Terms &amp; Conditions
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            Terms &amp; Conditions
+          </Link>
+          <Link to="/disclaimer" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            Disclaimer
+          </Link>
+        </div>
       </div>
     </footer>
   );
