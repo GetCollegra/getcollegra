@@ -292,19 +292,57 @@ const QuizResults = () => {
   // Read results passed via router state from Survey page
   const routerState = location.state as { recommendations?: Recommendations; surveyContext?: Record<string, string> } | null;
 
+  const persistedSurveyContext = useMemo(() => {
+    try {
+      const raw = sessionStorage.getItem("latest_survey_preferences");
+      if (!raw) return {} as Record<string, string>;
+
+      const parsed = JSON.parse(raw) as {
+        responses?: Record<string, unknown>;
+        savedAt?: number;
+      };
+
+      if (!parsed?.responses || typeof parsed.responses !== "object") {
+        return {} as Record<string, string>;
+      }
+
+      // Keep only recent submissions to avoid stale fallbacks
+      if (typeof parsed.savedAt === "number" && Date.now() - parsed.savedAt > 1000 * 60 * 30) {
+        return {} as Record<string, string>;
+      }
+
+      const context: Record<string, string> = {};
+      for (const [key, value] of Object.entries(parsed.responses)) {
+        if (typeof value !== "string") continue;
+        const trimmed = value.trim();
+        if (!trimmed || /^\{.*\}$/.test(trimmed)) continue;
+        context[key] = trimmed;
+      }
+
+      return context;
+    } catch {
+      return {} as Record<string, string>;
+    }
+  }, []);
+
   const surveyContext = useMemo(() => {
     // Prefer router state survey context
     if (routerState?.surveyContext && Object.keys(routerState.surveyContext).length > 0) {
       return routerState.surveyContext;
     }
+
     // Fallback to URL params
     const context: Record<string, string> = {};
     searchParams.forEach((value, key) => {
       if (key === "__lovable_token" || key === "submission_id" || key.startsWith("__")) return;
       if (value.trim()) context[key] = value;
     });
-    return context;
-  }, [routerState, searchParams]);
+
+    if (Object.keys(context).length > 0) return context;
+
+    // Last-resort fallback to persisted survey answers in this tab/session
+    return persistedSurveyContext;
+  }, [routerState, searchParams, persistedSurveyContext]);
 
   const recommendedCollegeNames = useMemo(
     () => recommendations?.colleges?.map((college) => college.name) ?? [],
@@ -330,18 +368,6 @@ const QuizResults = () => {
 
     // Fallback: fetch from edge function using URL params (e.g. direct URL access)
     const fetchRecommendations = async () => {
-      const allParams: Record<string, string> = {};
-      searchParams.forEach((value, key) => {
-        if (key === "__lovable_token" || key === "submission_id" || key.startsWith("__")) return;
-        allParams[key] = value;
-      });
-
-      if (Object.keys(allParams).length === 0) {
-        setError("No survey data found. Please take the quiz first.");
-        setLoading(false);
-        return;
-      }
-
       const clean = (val: string | undefined, fallback: string): string => {
         if (!val) return fallback;
         const trimmed = val.trim();
@@ -349,10 +375,28 @@ const QuizResults = () => {
         return trimmed;
       };
 
-      const cleanedResponses: Record<string, string> = {};
+      const urlParams: Record<string, string> = {};
+      searchParams.forEach((value, key) => {
+        if (key === "__lovable_token" || key === "submission_id" || key.startsWith("__")) return;
+        urlParams[key] = value;
+      });
+
+      let allParams: Record<string, string> = { ...urlParams };
+      let cleanedResponses: Record<string, string> = {};
+
       for (const [key, val] of Object.entries(allParams)) {
         const cleaned = clean(val, "");
         if (cleaned) cleanedResponses[key] = cleaned;
+      }
+
+      // If URL params are placeholders/empty, recover from Survey session storage
+      if (Object.keys(cleanedResponses).length === 0 && Object.keys(persistedSurveyContext).length > 0) {
+        allParams = { ...persistedSurveyContext };
+        cleanedResponses = {};
+        for (const [key, val] of Object.entries(allParams)) {
+          const cleaned = clean(val, "");
+          if (cleaned) cleanedResponses[key] = cleaned;
+        }
       }
 
       if (Object.keys(cleanedResponses).length === 0) {
@@ -406,7 +450,7 @@ const QuizResults = () => {
     };
 
     fetchRecommendations();
-  }, [routerState, searchParams, toast]);
+  }, [routerState, searchParams, toast, persistedSurveyContext]);
 
   const fitScoreColor = (score: number) => {
     if (score >= 90) return "text-emerald-500";
