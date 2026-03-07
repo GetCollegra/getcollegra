@@ -48,7 +48,7 @@ const Survey = () => {
       return null;
     };
 
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       const parsed = parseTallyMessage(event.data);
       if (!parsed) return;
 
