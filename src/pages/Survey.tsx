@@ -188,6 +188,18 @@ const Survey = () => {
           }
         }
 
+        // Persist latest parsed answers so QuizResults can recover if a hard redirect drops router state
+        if (Object.keys(preferencesData).length > 0) {
+          try {
+            sessionStorage.setItem(
+              "latest_survey_preferences",
+              JSON.stringify({ responses: preferencesData, savedAt: Date.now() })
+            );
+          } catch (storageErr) {
+            console.warn("Unable to persist survey preferences in sessionStorage", storageErr);
+          }
+        }
+
         // Save to database
         const email = preferencesData.email || null;
         await supabase.from("survey_submissions").insert({
@@ -250,7 +262,8 @@ const Survey = () => {
 
         // Navigate with results in router state — no more re-fetching on the results page
         hasNavigatedToResultsRef.current = true;
-        navigate("/quiz-results", {
+        const submissionId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        navigate(`/quiz-results?submission_id=${encodeURIComponent(submissionId)}`, {
           replace: true,
           state: {
             recommendations: data,
