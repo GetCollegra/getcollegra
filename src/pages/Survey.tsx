@@ -249,6 +249,7 @@ const Survey = () => {
         console.log("Received college-match results, navigating...");
 
         // Navigate with results in router state — no more re-fetching on the results page
+        hasNavigatedToResultsRef.current = true;
         navigate("/quiz-results", {
           replace: true,
           state: {
