@@ -450,7 +450,7 @@ const QuizResults = () => {
     };
 
     fetchRecommendations();
-  }, [routerState, searchParams, toast]);
+  }, [routerState, searchParams, toast, persistedSurveyContext]);
 
   const fitScoreColor = (score: number) => {
     if (score >= 90) return "text-emerald-500";
