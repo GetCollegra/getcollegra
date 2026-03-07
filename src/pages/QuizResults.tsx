@@ -13,41 +13,7 @@ import Footer from "@/components/Footer";
 import { trackClick } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-type College = {
-  name: string;
-  location: string;
-  acceptanceRate: string;
-  ranking: string;
-  tuitionInState: string;
-  tuitionOutOfState: string;
-  avgFinancialAid: string;
-  netPrice: string;
-  topPrograms: string[];
-  campusSize: string;
-  studentBody: string;
-  studentFacultyRatio: string;
-  setting: string;
-  graduationRate: string;
-  avgStartingSalary: string;
-  fitScore: number;
-  fitCategory: string;
-  whyFit: string;
-  prosForStudent: string[];
-  consForStudent: string[];
-  campusVibe: string;
-  notableFeature: string;
-};
-
-type Recommendations = {
-  studentProfile: {
-    summary: string;
-    topPriorities: string[];
-    idealSchoolType: string;
-  };
-  colleges: College[];
-  comparisonInsight: string;
-};
+import type { College, Recommendations } from "@/types/college";
 
 const fitCategoryConfig: Record<string, { color: string; bg: string; border: string; icon: typeof Target; gradient: string }> = {
   Reach: { color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", icon: TrendingUp, gradient: "from-orange-500 to-amber-500" },
