@@ -260,6 +260,10 @@ const Survey = () => {
       } catch (err) {
         console.error("Error processing survey submission:", err);
         setIsSubmitting(false);
+      } finally {
+        if (!hasNavigatedToResultsRef.current) {
+          isProcessingSubmissionRef.current = false;
+        }
       }
     };
 
