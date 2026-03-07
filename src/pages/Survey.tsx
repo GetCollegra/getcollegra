@@ -71,13 +71,38 @@ const Survey = () => {
 
     const handleMessage = async (event: MessageEvent) => {
       const parsed = parseTallyMessage(event.data);
-      if (!parsed) return;
+      if (!parsed || hasNavigatedToResultsRef.current) return;
+
+      const payload = parsed.payload || parsed.data || parsed;
+      const fields = payload?.fields || payload?.formResponse?.fields || payload?.answers || [];
+
+      const hasFieldValues =
+        Array.isArray(fields) &&
+        fields.some((field: any) => {
+          if (!field || typeof field !== "object") return false;
+          return (
+            (field.value !== undefined && field.value !== null && String(field.value).trim() !== "") ||
+            (field.answer !== undefined && field.answer !== null && String(field.answer).trim() !== "") ||
+            (Array.isArray(field.options) && field.options.length > 0) ||
+            (Array.isArray(field.choices) && field.choices.length > 0)
+          );
+        });
+
+      if (!Array.isArray(fields) || fields.length === 0 || !hasFieldValues) {
+        console.warn("Ignoring Tally submission event without answer fields");
+        return;
+      }
+
+      if (isProcessingSubmissionRef.current) {
+        console.warn("Ignoring duplicate Tally submission event while processing");
+        return;
+      }
+
+      isProcessingSubmissionRef.current = true;
 
       try {
         setIsSubmitting(true);
         console.log("Tally payload:", JSON.stringify(parsed, null, 2));
-        const payload = parsed.payload || parsed.data || parsed;
-        const fields = payload?.fields || payload?.formResponse?.fields || payload?.answers || [];
 
         // Keyword-based mapping
         const keywordMap: Array<{ keywords: string[]; paramKey: string }> = [
