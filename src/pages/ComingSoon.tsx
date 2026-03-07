@@ -63,7 +63,7 @@ const ComingSoon = () => {
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-4 leading-relaxed">
-            We're still putting the finishing touches on Collegra. We want to make sure everything is perfect before you dive in.
+            We're still putting the finishing touches on Collegra™. We want to make sure everything is perfect before you dive in.
           </p>
 
           <p className="text-base text-foreground/70 font-medium mb-10">
@@ -81,7 +81,7 @@ const ComingSoon = () => {
               >
                 <CheckCircle className="w-12 h-12 text-primary" />
                 <p className="text-lg font-semibold text-foreground">You're on the list!</p>
-                <p className="text-muted-foreground text-sm">We'll email you the moment Collegra is ready.</p>
+                <p className="text-muted-foreground text-sm">We'll email you the moment Collegra™ is ready.</p>
               </motion.div>
             ) : (
               <motion.form

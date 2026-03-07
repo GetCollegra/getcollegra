@@ -16,7 +16,7 @@ const steps = [
       "Answer a short set of questions about your major interests, preferred campus size, location, budget, and the vibe you're looking for. No right or wrong answers — just you being you.",
     bullets: ["Academic goals & major preferences", "Campus culture & lifestyle", "Location & financial fit"],
     image: stepSurvey,
-    imageAlt: "Student taking the Collegra quiz on a laptop",
+    imageAlt: "Student taking the Collegra™ quiz on a laptop",
     flip: false,
   },
   {
