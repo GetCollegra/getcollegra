@@ -355,6 +355,12 @@ const QuizResults = () => {
         if (cleaned) cleanedResponses[key] = cleaned;
       }
 
+      if (Object.keys(cleanedResponses).length === 0) {
+        setError("No valid survey data found. Please take the quiz again.");
+        setLoading(false);
+        return;
+      }
+
       const pickParam = (...keys: string[]) => {
         for (const key of keys) {
           const value = allParams[key];
