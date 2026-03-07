@@ -1,11 +1,30 @@
-import { useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
+const loadingMessages = [
+  "Analyzing your preferences...",
+  "Searching 6,000+ institutions...",
+  "Matching campus vibes...",
+  "Comparing financial fit...",
+  "Ranking your top picks...",
+];
+
 const Survey = () => {
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+
+  // Cycle loading messages while submitting
+  useEffect(() => {
+    if (!isSubmitting) return;
+    const interval = setInterval(() => {
+      setLoadingMsgIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, [isSubmitting]);
 
   useEffect(() => {
     const submissionEvents = new Set([
@@ -53,12 +72,12 @@ const Survey = () => {
       if (!parsed) return;
 
       try {
+        setIsSubmitting(true);
         console.log("Tally payload:", JSON.stringify(parsed, null, 2));
         const payload = parsed.payload || parsed.data || parsed;
         const fields = payload?.fields || payload?.formResponse?.fields || payload?.answers || [];
-        const params = new URLSearchParams();
 
-        // Keyword-based mapping: if a field title contains these keywords, map to param key
+        // Keyword-based mapping
         const keywordMap: Array<{ keywords: string[]; paramKey: string }> = [
           { keywords: ["email"], paramKey: "email" },
           { keywords: ["city", "state"], paramKey: "city_state" },
@@ -132,19 +151,15 @@ const Survey = () => {
           if (value) {
             const paramKey = findParamKey(rawTitle) || findParamKey(normalizedTitle);
             if (paramKey) {
-              params.set(paramKey, value);
               preferencesData[paramKey] = value;
             } else {
               const key = normalizedTitle.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
               if (key) {
-                params.set(key, value);
                 preferencesData[key] = value;
               }
             }
           }
         }
-
-        params.set("submission_id", Date.now().toString());
 
         // Save to database
         const email = preferencesData.email || null;
@@ -153,15 +168,74 @@ const Survey = () => {
           preferences: preferencesData,
         });
 
-        console.log("Navigating with params:", params.toString());
-        navigate(`/quiz-results?${params.toString()}`, { replace: true });
+        // Build preferences object for the edge function (same format QuizResults used)
+        const clean = (val: string | undefined, fallback: string): string => {
+          if (!val) return fallback;
+          const trimmed = val.trim();
+          if (!trimmed || /^\{.*\}$/.test(trimmed)) return fallback;
+          return trimmed;
+        };
+
+        const pick = (...keys: string[]) => {
+          for (const key of keys) {
+            const value = preferencesData[key];
+            if (typeof value === "string" && value.trim()) return value;
+          }
+          return "";
+        };
+
+        const cleanedResponses: Record<string, string> = {};
+        for (const [key, val] of Object.entries(preferencesData)) {
+          const cleaned = clean(val, "");
+          if (cleaned) cleanedResponses[key] = cleaned;
+        }
+
+        const preferences = {
+          email: pick("email"),
+          cityState: clean(pick("city_state", "cityState"), "No preference"),
+          gpa: clean(pick("gpa"), ""),
+          testScore: clean(pick("test_score", "testScore"), "None"),
+          satScore: clean(pick("sat_score", "satScore"), ""),
+          actScore: clean(pick("act_score", "actScore"), ""),
+          campusSize: clean(pick("campus_size", "campusSize"), "No preference"),
+          campusVibe: clean(pick("campus_vibe", "campusVibe"), "No preference"),
+          locationType: clean(pick("location_type", "locationType"), "No preference"),
+          maxCost: clean(pick("max_cost", "maxCost"), "No preference"),
+          acceptanceRatePref: clean(pick("acceptance_rate_pref", "acceptanceRatePref"), "No preference"),
+          financialAid: clean(pick("financial_aid", "financialAid"), "Important"),
+          campusLife: clean(pick("campus_life", "campusLife"), "No preference"),
+          academicImportance: clean(pick("academic_importance", "academicImportance"), "No preference"),
+          distanceFromHome: clean(pick("distance_from_home", "distanceFromHome"), "No preference"),
+          areaOfStudy: clean(pick("area_of_study", "areaOfStudy"), "Undecided"),
+          allResponses: cleanedResponses,
+        };
+
+        // Call edge function and WAIT for results
+        console.log("Calling college-match with preferences:", JSON.stringify(preferences, null, 2));
+        const { data, error: fnError } = await supabase.functions.invoke("college-match", {
+          body: { preferences },
+        });
+
+        if (fnError) throw new Error(fnError.message);
+        if (data?.error) throw new Error(data.error);
+
+        console.log("Received college-match results, navigating...");
+
+        // Navigate with results in router state — no more re-fetching on the results page
+        navigate("/quiz-results", {
+          replace: true,
+          state: {
+            recommendations: data,
+            surveyContext: preferencesData,
+          },
+        });
       } catch (err) {
         console.error("Error processing survey submission:", err);
+        setIsSubmitting(false);
       }
     };
 
     const wrappedHandler = (event: MessageEvent) => {
-      // Accept Tally message origins, including subdomains used by embedded forms
       const isTrustedTallyOrigin = /^https:\/\/([a-z0-9-]+\.)?tally\.so$/i.test(event.origin);
       if (!isTrustedTallyOrigin) return;
       handleMessage(event);
@@ -173,25 +247,42 @@ const Survey = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container px-4 py-6">
-        <Link to="/">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Button>
-        </Link>
-      </div>
-      
-      <div className="w-full h-[calc(100vh-80px)]">
-        <iframe
-          src="https://tally.so/r/7RK08z"
-          width="100%"
-          height="100%"
-          frameBorder="0"
-          title="Collegra Survey"
-          className="w-full h-full"
-        />
-      </div>
+      {isSubmitting ? (
+        <div className="flex flex-col items-center justify-center min-h-screen gap-6 px-4">
+          <div className="relative w-20 h-20">
+            <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
+            <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+            <Loader2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary animate-pulse" />
+          </div>
+          <p className="text-foreground text-lg font-semibold text-center">
+            {loadingMessages[loadingMsgIndex]}
+          </p>
+          <p className="text-muted-foreground text-sm text-center max-w-md">
+            This usually takes 15–30 seconds. Please don't close this page.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="container px-4 py-6">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                Back to Home
+              </Button>
+            </Link>
+          </div>
+          <div className="w-full h-[calc(100vh-80px)]">
+            <iframe
+              src="https://tally.so/r/7RK08z"
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              title="Collegra Survey"
+              className="w-full h-full"
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };
