@@ -83,14 +83,12 @@ const Survey = () => {
           for (const { keywords, paramKey } of keywordMap) {
             if (keywords.every((kw) => lower.includes(kw))) return paramKey;
           }
-          // Single keyword fallback
           for (const { keywords, paramKey } of keywordMap) {
             if (keywords.some((kw) => lower.includes(kw))) return paramKey;
           }
           return null;
         };
 
-        // Extract a plain string from Tally's various value shapes
         const extractText = (v: any): string => {
           if (v === undefined || v === null) return "";
           if (typeof v === "string") return v;
@@ -104,23 +102,20 @@ const Survey = () => {
                 if (extracted) return extracted;
               }
             }
-
             const values = Object.values(v).map(extractText).filter(Boolean);
             return values.join(", ");
           }
           return String(v);
         };
 
+        const preferencesData: Record<string, string> = {};
+
         for (const field of fields) {
-          // Tally may use title/label/question/name for field names
           const rawTitle = (field.title || field.label || field.question || field.name || "").toLowerCase().trim();
           if (!rawTitle) continue;
-
-          // Normalize: remove trailing punctuation
           const normalizedTitle = rawTitle.replace(/[?\s]+$/, "").trim();
 
           let value = "";
-          // Tally fields may have: value (string/object), answer, options, choices
           if (field.value !== undefined && field.value !== null) {
             value = extractText(field.value);
           }
@@ -138,19 +133,30 @@ const Survey = () => {
             const paramKey = findParamKey(rawTitle) || findParamKey(normalizedTitle);
             if (paramKey) {
               params.set(paramKey, value);
+              preferencesData[paramKey] = value;
             } else {
-              // Fallback: sanitize the title as a key
               const key = normalizedTitle.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-              if (key) params.set(key, value);
+              if (key) {
+                params.set(key, value);
+                preferencesData[key] = value;
+              }
             }
           }
         }
 
         params.set("submission_id", Date.now().toString());
+
+        // Save to database
+        const email = preferencesData.email || null;
+        await supabase.from("survey_submissions").insert({
+          email,
+          preferences: preferencesData,
+        });
+
         console.log("Navigating with params:", params.toString());
         navigate(`/quiz-results?${params.toString()}`, { replace: true });
-      } catch {
-        // Not a supported Tally message shape, ignore
+      } catch (err) {
+        console.error("Error processing survey submission:", err);
       }
     };
 
