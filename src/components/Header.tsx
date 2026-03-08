@@ -35,7 +35,7 @@ const Header = () => {
             </span>
           </a>
           <nav className="hidden md:flex items-center gap-8">
-            <a href="/#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">How It Works</a>
+            <a href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Home</a>
             <a href="/#pricing" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Pricing</a>
             
             {isAdmin && (
