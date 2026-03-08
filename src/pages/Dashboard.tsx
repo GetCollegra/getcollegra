@@ -505,7 +505,7 @@ const Dashboard = () => {
                   <Card className="bg-card border-border hover:shadow-card transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2.5 rounded-xl bg-emerald-500/10"><Wallet className="h-5 w-5 text-emerald-600" /></div>
+                        <div className="p-2.5 rounded-xl bg-accent/10"><Wallet className="h-5 w-5 text-accent" /></div>
                         <h3 className="font-semibold text-foreground">Most Affordable</h3>
                       </div>
                       <p className="text-xl font-bold text-foreground mb-1">{insights.mostAffordable.name}</p>
@@ -517,7 +517,7 @@ const Dashboard = () => {
                     <Card className="bg-card border-border hover:shadow-card transition-shadow">
                       <CardContent className="p-6">
                         <div className="flex items-center gap-3 mb-4">
-                          <div className="p-2.5 rounded-xl bg-emerald-500/10"><Shield className="h-5 w-5 text-emerald-600" /></div>
+                          <div className="p-2.5 rounded-xl bg-accent/10"><Shield className="h-5 w-5 text-accent" /></div>
                           <h3 className="font-semibold text-foreground">Top Safety School</h3>
                         </div>
                         <p className="text-xl font-bold text-foreground mb-1">{insights.safetySchool.name}</p>
