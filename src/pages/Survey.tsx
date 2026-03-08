@@ -14,7 +14,14 @@ const loadingMessages = [
 ];
 
 const Survey = () => {
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/login", { state: { from: "/survey" } });
+    }
+  }, [user, authLoading, navigate]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const isProcessingSubmissionRef = useRef(false);
