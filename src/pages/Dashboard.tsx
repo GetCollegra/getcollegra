@@ -364,6 +364,31 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Add College Bar */}
+          <Card className="bg-card border-border shadow-soft">
+            <CardContent className="p-4">
+              <form
+                onSubmit={(e) => { e.preventDefault(); addCustomCollege(); }}
+                className="flex items-center gap-3"
+              >
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Add a college by name (e.g. Stanford University)..."
+                    value={addCollegeName}
+                    onChange={(e) => setAddCollegeName(e.target.value)}
+                    className="pl-10 bg-muted/30 border-border/50 focus:bg-card"
+                    maxLength={200}
+                  />
+                </div>
+                <Button type="submit" disabled={!addCollegeName.trim() || addingCollege} size="default" className="shrink-0 gap-1.5">
+                  {addingCollege ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Add
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </motion.section>
 
         <Tabs defaultValue="matches" className="space-y-8">
