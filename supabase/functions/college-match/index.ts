@@ -417,14 +417,14 @@ CRITICAL: Each student is UNIQUE. Their answers MUST directly determine which co
 10. **Distance From Home** → Geographic constraint from their home city/state.
 11. **Area of Study** → CRITICAL. Prioritize schools with strong programs in their field using program percentage data.
 
-In "whyFit" and "prosForStudent", EXPLICITLY quote the student's own words (e.g., "You said you want a 'spirited' campus — this school's Division I program delivers that").
+In "whyFit" and "prosForStudent", EXPLICITLY quote the student's own words (e.g., "You said you want a 'spirited' campus — this school's Division I program delivers that"). If the student's first name is provided, address them by name in whyFit, studentProfile summary, and comparisonInsight.
 
 IMPORTANT: Use EXACT data values from the Scorecard data — do NOT fabricate statistics. You may add context about campus culture and fit reasoning.
 
 Return a JSON object with this exact structure:
 {
   "studentProfile": {
-    "summary": "2-3 sentence overview referencing their specific answers",
+    "summary": "2-3 sentence overview referencing their specific answers. Use the student's first name if provided.",
     "topPriorities": ["Priority 1", "Priority 2", "Priority 3"],
     "idealSchoolType": "Brief description based on ALL their answers"
   },
