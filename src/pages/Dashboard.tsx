@@ -473,61 +473,77 @@ const Dashboard = () => {
           {/* 4. Saved Colleges Organizer */}
           <TabsContent value="saved">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <h2 className="text-2xl font-bold text-foreground mb-6">Saved Colleges</h2>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Bookmark className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Saved Colleges</h2>
+                  <p className="text-sm text-muted-foreground">Track your application progress for each school.</p>
+                </div>
+              </div>
               {loadingSaved ? (
                 <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : savedColleges.length === 0 ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="p-10 text-center">
-                    <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No saved colleges</h3>
-                    <p className="text-muted-foreground">Save colleges from the Matches tab to organize them here.</p>
+                <Card className="bg-card border-border border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                      <Bookmark className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No saved colleges yet</h3>
+                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">Save colleges from the Matches tab to organize and track them here.</p>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-border bg-card">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[180px]">School</TableHead>
-                        <TableHead>Match</TableHead>
-                        <TableHead>Tuition</TableHead>
-                        <TableHead>Acceptance</TableHead>
-                        <TableHead>Setting</TableHead>
-                        <TableHead className="min-w-[160px]">Status</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {savedColleges.map(saved => (
-                        <TableRow key={saved.id}>
-                          <TableCell className="font-medium">{saved.college_name}</TableCell>
-                          <TableCell><span className="font-semibold text-primary">{saved.college_data.fitScore}%</span></TableCell>
-                          <TableCell>{saved.college_data.netPrice}</TableCell>
-                          <TableCell>{saved.college_data.acceptanceRate}</TableCell>
-                          <TableCell>{saved.college_data.setting}</TableCell>
-                          <TableCell>
-                            <Select value={saved.status} onValueChange={(val) => updateStatus(saved.id, val)}>
-                              <SelectTrigger className="h-8 text-xs w-[140px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Considering">Considering</SelectItem>
-                                <SelectItem value="Applying">Applying</SelectItem>
-                                <SelectItem value="Applied">Applied</SelectItem>
-                                <SelectItem value="Accepted">Accepted</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" onClick={() => removeCollege(saved.id)}>
-                              <Trash2 className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="space-y-3">
+                  {savedColleges.map(saved => {
+                    const cat = fitCategoryConfig[saved.college_data.fitCategory] || fitCategoryConfig.Match;
+                    const CatIcon = cat.icon;
+                    const statusColors: Record<string, string> = {
+                      Considering: "bg-muted text-muted-foreground",
+                      Applying: "bg-primary/10 text-primary",
+                      Applied: "bg-accent/10 text-accent",
+                      Accepted: "bg-emerald-50 text-emerald-600",
+                    };
+                    return (
+                      <Card key={saved.id} className="bg-card border-border hover:shadow-soft transition-all duration-200">
+                        <CardContent className="p-5">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-foreground truncate">{saved.college_name}</h3>
+                                <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px] shrink-0`}>
+                                  <CatIcon className="h-3 w-3 mr-0.5" />{saved.college_data.fitCategory}
+                                </Badge>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{saved.college_data.location}</span>
+                                <span className="font-semibold text-primary">{saved.college_data.fitScore}% match</span>
+                                <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{saved.college_data.netPrice}</span>
+                                <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{saved.college_data.acceptanceRate}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Select value={saved.status} onValueChange={(val) => updateStatus(saved.id, val)}>
+                                <SelectTrigger className={`h-8 text-xs w-[130px] border-0 font-medium ${statusColors[saved.status] || ""}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Considering">Considering</SelectItem>
+                                  <SelectItem value="Applying">Applying</SelectItem>
+                                  <SelectItem value="Applied">Applied</SelectItem>
+                                  <SelectItem value="Accepted">Accepted</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeCollege(saved.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </motion.div>
