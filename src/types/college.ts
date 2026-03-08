@@ -65,6 +65,8 @@ export type College = {
   whyFit: string;
   prosForStudent: string[];
   consForStudent: string[];
+  challengesForStudent: string[];
+  howToGetIn: string;
   campusVibe: string;
   notableFeature: string;
 };
