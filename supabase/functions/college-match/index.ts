@@ -612,7 +612,7 @@ serve(async (req) => {
     // }
 
     // ── Step 2: AI ranking ──
-    const userPrompt = buildUserPrompt(prefs, scorecard.data);
+    const userPrompt = buildUserPrompt(prefs, scorecard.data, excludeColleges);
     console.log("Sending to AI with", userPrompt.length, "chars");
 
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
