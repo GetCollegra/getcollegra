@@ -417,7 +417,9 @@ CRITICAL: Each student is UNIQUE. Their answers MUST directly determine which co
 10. **Distance From Home** → Geographic constraint from their home city/state.
 11. **Area of Study** → CRITICAL. Prioritize schools with strong programs in their field using program percentage data.
 
-In "whyFit" and "prosForStudent", EXPLICITLY quote the student's own words (e.g., "You said you want a 'spirited' campus — this school's Division I program delivers that"). If the student's first name is provided, address them by name in whyFit, studentProfile summary, and comparisonInsight.
+TONE & PRONOUNS: ALWAYS address the student directly using "you" and "your" — NEVER use "he", "him", "she", "her", "they", "them", or "the student". If the student's first name is provided, combine it with "you/your" (e.g., "Erin, with your GPA and test scores, the best fit for you is..."). This applies to ALL text fields: whyFit, prosForStudent, consForStudent, challengesForStudent, howToGetIn, studentProfile summary, and comparisonInsight.
+
+In "whyFit" and "prosForStudent", EXPLICITLY quote the student's own words (e.g., "You said you want a 'spirited' campus — this school's Division I program delivers that").
 
 IMPORTANT: Use EXACT data values from the Scorecard data — do NOT fabricate statistics. You may add context about campus culture and fit reasoning.
 
