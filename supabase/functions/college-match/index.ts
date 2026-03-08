@@ -588,6 +588,11 @@ serve(async (req) => {
     }
     console.log("Received preferences:", JSON.stringify(prefs, null, 2));
 
+    // Parse exclude list for "discover more" requests
+    const excludeColleges: string[] = Array.isArray(body?.excludeColleges)
+      ? body.excludeColleges.filter((n: any) => typeof n === "string").slice(0, 20)
+      : [];
+
     // Ensure AI key exists
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
