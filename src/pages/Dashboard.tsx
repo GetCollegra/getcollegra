@@ -267,28 +267,39 @@ const Dashboard = () => {
         <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-12">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
+              <p className="text-sm font-medium text-primary mb-1">Dashboard</p>
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Welcome to Collegra Premium, {firstName}
+                Welcome back, {firstName}
               </h1>
               <p className="text-muted-foreground text-lg">
-                This dashboard helps you organize, compare, and plan your college options.
+                Organize, compare, and plan your college journey — all in one place.
               </p>
             </div>
-            <Button variant="ghost" onClick={signOut} className="text-muted-foreground">
+            <Button variant="outline" onClick={signOut} className="text-muted-foreground border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30">
               <LogOut className="mr-2 h-4 w-4" /> Sign Out
             </Button>
           </div>
           {studentProfile && (
-            <Card className="mt-6 bg-card border-border">
+            <Card className="mt-6 bg-card border-border shadow-soft overflow-hidden">
+              <div className="h-1 bg-primary/20 w-full">
+                <div className="h-full bg-primary rounded-r-full" style={{ width: '100%' }} />
+              </div>
               <CardContent className="p-6">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="h-5 w-5 text-primary mt-1 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground mb-1">Your Student Profile</p>
-                    <p className="text-sm text-muted-foreground">{studentProfile.summary}</p>
+                <div className="flex items-start gap-4">
+                  <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-foreground mb-1">Your Student Profile</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{studentProfile.summary}</p>
+                    {studentProfile.idealSchoolType && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        <span className="font-semibold text-foreground">Ideal school type:</span> {studentProfile.idealSchoolType}
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2 mt-3">
                       {studentProfile.topPriorities?.map((p, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">{p}</Badge>
+                        <Badge key={i} variant="secondary" className="text-xs font-medium">{p}</Badge>
                       ))}
                     </div>
                   </div>
@@ -299,12 +310,12 @@ const Dashboard = () => {
         </motion.section>
 
         <Tabs defaultValue="matches" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto gap-1">
-            <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
-            <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>
-            <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="h-4 w-4" /> Compare</TabsTrigger>
-            <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm"><StickyNote className="h-4 w-4" /> Notes</TabsTrigger>
-            <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm"><Sparkles className="h-4 w-4" /> Insights</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
+            <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
+            <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>
+            <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><BarChart3 className="h-4 w-4" /> Compare</TabsTrigger>
+            <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><StickyNote className="h-4 w-4" /> Notes</TabsTrigger>
+            <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Sparkles className="h-4 w-4" /> Insights</TabsTrigger>
           </TabsList>
 
           {/* 2. College Matches */}
