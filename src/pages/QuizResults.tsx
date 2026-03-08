@@ -765,6 +765,54 @@ const QuizResults = () => {
                   {recommendations.colleges.map((college, i) => (
                     <CollegeCard key={college.name} college={college} index={i} />
                   ))}
+
+                  {/* Additional discovered colleges */}
+                  {additionalColleges.length > 0 && (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-center pt-8 sm:pt-12 pb-4"
+                      >
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-xs sm:text-sm font-semibold mb-2">
+                          <Sparkles className="w-4 h-4" />
+                          More Matches
+                        </div>
+                        <h3 className="font-display text-lg sm:text-xl md:text-2xl font-bold text-foreground">
+                          Additional colleges for you
+                        </h3>
+                      </motion.div>
+                      {additionalColleges.map((college, i) => (
+                        <CollegeCard key={college.name} college={college} index={i + recommendations.colleges.length} />
+                      ))}
+                    </>
+                  )}
+
+                  {/* Discover More button */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="text-center pt-6 sm:pt-10"
+                  >
+                    <Button
+                      onClick={discoverMore}
+                      disabled={loadingMore}
+                      size="lg"
+                      variant="outline"
+                      className="rounded-full px-8 sm:px-10 gap-2 border-primary/30 hover:bg-primary/5 hover:border-primary/50 text-primary font-semibold"
+                    >
+                      {loadingMore ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Finding more matches...</>
+                      ) : (
+                        <><Sparkles className="w-4 h-4" /> Discover More Matches</>
+                      )}
+                    </Button>
+                    <p className="text-muted-foreground text-xs sm:text-sm mt-3">
+                      Find 5 more colleges that fit your preferences
+                    </p>
+                  </motion.div>
                 </div>
               </div>
             </section>
