@@ -40,12 +40,15 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   const [colleges, setColleges] = useState<College[]>([]);
+  const [suggestedColleges, setSuggestedColleges] = useState<College[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [studentProfile, setStudentProfile] = useState<{ summary: string; topPriorities: string[]; idealSchoolType: string } | null>(null);
   const [savedColleges, setSavedColleges] = useState<SavedCollege[]>([]);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [firstName, setFirstName] = useState("");
+  const [storedPreferences, setStoredPreferences] = useState<Record<string, any> | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
