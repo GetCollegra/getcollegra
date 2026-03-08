@@ -267,28 +267,39 @@ const Dashboard = () => {
         <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-12">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
+              <p className="text-sm font-medium text-primary mb-1">Dashboard</p>
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Welcome to Collegra Premium, {firstName}
+                Welcome back, {firstName}
               </h1>
               <p className="text-muted-foreground text-lg">
-                This dashboard helps you organize, compare, and plan your college options.
+                Organize, compare, and plan your college journey — all in one place.
               </p>
             </div>
-            <Button variant="ghost" onClick={signOut} className="text-muted-foreground">
+            <Button variant="outline" onClick={signOut} className="text-muted-foreground border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30">
               <LogOut className="mr-2 h-4 w-4" /> Sign Out
             </Button>
           </div>
           {studentProfile && (
-            <Card className="mt-6 bg-card border-border">
+            <Card className="mt-6 bg-card border-border shadow-soft overflow-hidden">
+              <div className="h-1 bg-primary/20 w-full">
+                <div className="h-full bg-primary rounded-r-full" style={{ width: '100%' }} />
+              </div>
               <CardContent className="p-6">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="h-5 w-5 text-primary mt-1 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground mb-1">Your Student Profile</p>
-                    <p className="text-sm text-muted-foreground">{studentProfile.summary}</p>
+                <div className="flex items-start gap-4">
+                  <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-foreground mb-1">Your Student Profile</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{studentProfile.summary}</p>
+                    {studentProfile.idealSchoolType && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        <span className="font-semibold text-foreground">Ideal school type:</span> {studentProfile.idealSchoolType}
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2 mt-3">
                       {studentProfile.topPriorities?.map((p, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">{p}</Badge>
+                        <Badge key={i} variant="secondary" className="text-xs font-medium">{p}</Badge>
                       ))}
                     </div>
                   </div>
@@ -299,18 +310,23 @@ const Dashboard = () => {
         </motion.section>
 
         <Tabs defaultValue="matches" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto gap-1">
-            <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
-            <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>
-            <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="h-4 w-4" /> Compare</TabsTrigger>
-            <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm"><StickyNote className="h-4 w-4" /> Notes</TabsTrigger>
-            <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm"><Sparkles className="h-4 w-4" /> Insights</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
+            <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
+            <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>
+            <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><BarChart3 className="h-4 w-4" /> Compare</TabsTrigger>
+            <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><StickyNote className="h-4 w-4" /> Notes</TabsTrigger>
+            <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Sparkles className="h-4 w-4" /> Insights</TabsTrigger>
           </TabsList>
 
           {/* 2. College Matches */}
           <TabsContent value="matches">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <h2 className="text-2xl font-bold text-foreground mb-6">Your College Matches</h2>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">Your College Matches</h2>
+              </div>
               {loadingMatches ? (
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -457,61 +473,77 @@ const Dashboard = () => {
           {/* 4. Saved Colleges Organizer */}
           <TabsContent value="saved">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <h2 className="text-2xl font-bold text-foreground mb-6">Saved Colleges</h2>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Bookmark className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Saved Colleges</h2>
+                  <p className="text-sm text-muted-foreground">Track your application progress for each school.</p>
+                </div>
+              </div>
               {loadingSaved ? (
                 <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : savedColleges.length === 0 ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="p-10 text-center">
-                    <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No saved colleges</h3>
-                    <p className="text-muted-foreground">Save colleges from the Matches tab to organize them here.</p>
+                <Card className="bg-card border-border border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                      <Bookmark className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No saved colleges yet</h3>
+                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">Save colleges from the Matches tab to organize and track them here.</p>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-border bg-card">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[180px]">School</TableHead>
-                        <TableHead>Match</TableHead>
-                        <TableHead>Tuition</TableHead>
-                        <TableHead>Acceptance</TableHead>
-                        <TableHead>Setting</TableHead>
-                        <TableHead className="min-w-[160px]">Status</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {savedColleges.map(saved => (
-                        <TableRow key={saved.id}>
-                          <TableCell className="font-medium">{saved.college_name}</TableCell>
-                          <TableCell><span className="font-semibold text-primary">{saved.college_data.fitScore}%</span></TableCell>
-                          <TableCell>{saved.college_data.netPrice}</TableCell>
-                          <TableCell>{saved.college_data.acceptanceRate}</TableCell>
-                          <TableCell>{saved.college_data.setting}</TableCell>
-                          <TableCell>
-                            <Select value={saved.status} onValueChange={(val) => updateStatus(saved.id, val)}>
-                              <SelectTrigger className="h-8 text-xs w-[140px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Considering">Considering</SelectItem>
-                                <SelectItem value="Applying">Applying</SelectItem>
-                                <SelectItem value="Applied">Applied</SelectItem>
-                                <SelectItem value="Accepted">Accepted</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" onClick={() => removeCollege(saved.id)}>
-                              <Trash2 className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="space-y-3">
+                  {savedColleges.map(saved => {
+                    const cat = fitCategoryConfig[saved.college_data.fitCategory] || fitCategoryConfig.Match;
+                    const CatIcon = cat.icon;
+                    const statusColors: Record<string, string> = {
+                      Considering: "bg-muted text-muted-foreground",
+                      Applying: "bg-primary/10 text-primary",
+                      Applied: "bg-accent/10 text-accent",
+                      Accepted: "bg-emerald-50 text-emerald-600",
+                    };
+                    return (
+                      <Card key={saved.id} className="bg-card border-border hover:shadow-soft transition-all duration-200">
+                        <CardContent className="p-5">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-foreground truncate">{saved.college_name}</h3>
+                                <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px] shrink-0`}>
+                                  <CatIcon className="h-3 w-3 mr-0.5" />{saved.college_data.fitCategory}
+                                </Badge>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{saved.college_data.location}</span>
+                                <span className="font-semibold text-primary">{saved.college_data.fitScore}% match</span>
+                                <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{saved.college_data.netPrice}</span>
+                                <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{saved.college_data.acceptanceRate}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Select value={saved.status} onValueChange={(val) => updateStatus(saved.id, val)}>
+                                <SelectTrigger className={`h-8 text-xs w-[130px] border-0 font-medium ${statusColors[saved.status] || ""}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Considering">Considering</SelectItem>
+                                  <SelectItem value="Applying">Applying</SelectItem>
+                                  <SelectItem value="Applied">Applied</SelectItem>
+                                  <SelectItem value="Accepted">Accepted</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeCollege(saved.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </motion.div>
@@ -639,39 +671,57 @@ const Dashboard = () => {
           {/* 6. Personal Notes */}
           <TabsContent value="notes">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <h2 className="text-2xl font-bold text-foreground mb-6">Personal Notes</h2>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <StickyNote className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Personal Notes</h2>
+                  <p className="text-sm text-muted-foreground">Jot down your thoughts about each school.</p>
+                </div>
+              </div>
               {savedColleges.length === 0 ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="p-10 text-center">
-                    <StickyNote className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Save colleges to add notes about them.</p>
+                <Card className="bg-card border-border border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                      <StickyNote className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No notes yet</h3>
+                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">Save colleges first, then come back to add your notes here.</p>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {savedColleges.map(saved => (
-                    <Card key={saved.id} className="bg-card border-border">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <GraduationCap className="h-4 w-4 text-primary" />
-                          {saved.college_name}
-                          <Badge variant="secondary" className="text-xs ml-auto">{saved.status}</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Textarea
-                          placeholder="Write your thoughts about this school..."
-                          value={saved.notes}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setSavedColleges(prev => prev.map(s => s.id === saved.id ? { ...s, notes: val } : s));
-                          }}
-                          onBlur={(e) => updateNotes(saved.id, e.target.value)}
-                          className="min-h-[100px] text-sm"
-                        />
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="grid gap-5 md:grid-cols-2">
+                  {savedColleges.map(saved => {
+                    const cat = fitCategoryConfig[saved.college_data.fitCategory] || fitCategoryConfig.Match;
+                    return (
+                      <Card key={saved.id} className="bg-card border-border hover:shadow-soft transition-all">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base flex items-center gap-2.5">
+                              <div className="p-1.5 rounded-lg bg-primary/10">
+                                <GraduationCap className="h-4 w-4 text-primary" />
+                              </div>
+                              <span className="truncate">{saved.college_name}</span>
+                            </CardTitle>
+                            <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px]`}>{saved.status}</Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <Textarea
+                            placeholder="What stands out about this school? What are your concerns?"
+                            value={saved.notes}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSavedColleges(prev => prev.map(s => s.id === saved.id ? { ...s, notes: val } : s));
+                            }}
+                            onBlur={(e) => updateNotes(saved.id, e.target.value)}
+                            className="min-h-[120px] text-sm bg-muted/30 border-border/50 focus:bg-card resize-none"
+                          />
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </motion.div>
@@ -680,50 +730,69 @@ const Dashboard = () => {
           {/* 7. AI Insights */}
           <TabsContent value="insights">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <h2 className="text-2xl font-bold text-foreground mb-6">AI Insights</h2>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">AI Insights</h2>
+                  <p className="text-sm text-muted-foreground">Key takeaways from your college matches.</p>
+                </div>
+              </div>
               {!insights ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="p-10 text-center">
-                    <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Take the quiz to see personalized insights.</p>
+                <Card className="bg-card border-border border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                      <Sparkles className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No insights yet</h3>
+                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">Take the quiz to see personalized AI insights about your matches.</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="grid gap-6 md:grid-cols-3">
-                  <Card className="bg-card border-border hover:shadow-card transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2.5 rounded-xl bg-primary/10"><Trophy className="h-5 w-5 text-primary" /></div>
-                        <h3 className="font-semibold text-foreground">Best Academic Match</h3>
-                      </div>
-                      <p className="text-xl font-bold text-foreground mb-1">{insights.bestMatch.name}</p>
-                      <p className="text-sm text-muted-foreground">{insights.bestMatch.fitScore}% match · {insights.bestMatch.location}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-card border-border hover:shadow-card transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2.5 rounded-xl bg-accent/10"><Wallet className="h-5 w-5 text-accent" /></div>
-                        <h3 className="font-semibold text-foreground">Most Affordable</h3>
-                      </div>
-                      <p className="text-xl font-bold text-foreground mb-1">{insights.mostAffordable.name}</p>
-                      <p className="text-sm text-muted-foreground">{insights.mostAffordable.netPrice} net price</p>
-                    </CardContent>
-                  </Card>
-
-                  {insights.safetySchool && (
-                    <Card className="bg-card border-border hover:shadow-card transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="p-2.5 rounded-xl bg-accent/10"><Shield className="h-5 w-5 text-accent" /></div>
-                          <h3 className="font-semibold text-foreground">Top Safety School</h3>
-                        </div>
-                        <p className="text-xl font-bold text-foreground mb-1">{insights.safetySchool.name}</p>
-                        <p className="text-sm text-muted-foreground">{insights.safetySchool.acceptanceRate} acceptance rate</p>
-                      </CardContent>
-                    </Card>
-                  )}
+                  {[
+                    {
+                      icon: Trophy,
+                      title: "Best Academic Match",
+                      name: insights.bestMatch.name,
+                      detail: `${insights.bestMatch.fitScore}% match · ${insights.bestMatch.location}`,
+                      accent: "primary",
+                    },
+                    {
+                      icon: Wallet,
+                      title: "Most Affordable",
+                      name: insights.mostAffordable.name,
+                      detail: `${insights.mostAffordable.netPrice} net price`,
+                      accent: "accent",
+                    },
+                    ...(insights.safetySchool ? [{
+                      icon: Shield,
+                      title: "Top Safety School",
+                      name: insights.safetySchool.name,
+                      detail: `${insights.safetySchool.acceptanceRate} acceptance rate`,
+                      accent: "accent" as const,
+                    }] : []),
+                  ].map((item, i) => {
+                    const Icon = item.icon;
+                    return (
+                      <motion.div key={item.title} variants={fadeIn} custom={i + 1}>
+                        <Card className="bg-card border-border hover:shadow-card transition-all duration-300 h-full overflow-hidden">
+                          <div className={`h-1 w-full ${item.accent === "primary" ? "bg-primary" : "bg-accent"}`} style={{ opacity: 0.6 }} />
+                          <CardContent className="p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className={`p-2.5 rounded-xl ${item.accent === "primary" ? "bg-primary/10" : "bg-accent/10"}`}>
+                                <Icon className={`h-5 w-5 ${item.accent === "primary" ? "text-primary" : "text-accent"}`} />
+                              </div>
+                              <h3 className="font-semibold text-muted-foreground text-sm">{item.title}</h3>
+                            </div>
+                            <p className="text-xl font-bold text-foreground mb-1">{item.name}</p>
+                            <p className="text-sm text-muted-foreground">{item.detail}</p>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               )}
             </motion.div>
