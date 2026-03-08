@@ -450,6 +450,8 @@ Return a JSON object with this exact structure:
       "whyFit": "2-3 sentences referencing specific student answers",
       "prosForStudent": ["Pro quoting student preference", "Pro 2", "Pro 3"],
       "consForStudent": ["Con referencing student preference", "Con 2"],
+      "challengesForStudent": ["A specific reason this school may NOT be the best fit for them, referencing their answers (e.g. 'You mentioned wanting a small campus, but this school has 30,000+ students')", "Challenge 2"],
+      "howToGetIn": "2-3 actionable sentences on what this student specifically should do to strengthen their application to THIS school. Reference their GPA, test scores, and intended major. Include specific tips like 'Your SAT of X is below their 25th percentile of Y — consider retaking and aiming for Z' or 'Highlight your interest in [their major] in your essay since this school has a strong program.'",
       "campusVibe": "1 sentence campus culture",
       "notableFeature": "One unique relevant thing"
     }

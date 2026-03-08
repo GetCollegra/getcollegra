@@ -41,6 +41,7 @@ const fadeInUp = {
 
 const CollegeCard = ({ college, index }: { college: College; index: number }) => {
   const [expanded, setExpanded] = useState(false);
+  const [challengesExpanded, setChallengesExpanded] = useState(false);
   const catConfig = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
   const CatIcon = catConfig.icon;
 
@@ -118,7 +119,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
 
           {/* Pros - expandable on mobile */}
           {college.prosForStudent.length > 0 && (
-            <div className="mb-2">
+            <div className="mb-3">
               <button
                 onClick={() => setExpanded(!expanded)}
                 className="flex items-center gap-1.5 text-primary text-xs sm:text-sm font-semibold mb-2 hover:underline sm:pointer-events-none sm:cursor-default"
@@ -148,6 +149,56 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
                     </motion.li>
                   ))}
                 </motion.ul>
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Challenges & How to Get In */}
+          {((college.challengesForStudent && college.challengesForStudent.length > 0) || college.howToGetIn) && (
+            <div className="mb-2">
+              <button
+                onClick={() => setChallengesExpanded(!challengesExpanded)}
+                className="flex items-center gap-1.5 text-orange-600 text-xs sm:text-sm font-semibold mb-2 hover:underline"
+              >
+                <Target className="w-3.5 h-3.5" />
+                Challenges & How to Get In
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${challengesExpanded ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {challengesExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    {college.challengesForStudent && college.challengesForStudent.length > 0 && (
+                      <ul className="space-y-1.5 mb-3">
+                        {college.challengesForStudent.map((challenge, ci) => (
+                          <motion.li
+                            key={ci}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: ci * 0.05 }}
+                            className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground"
+                          >
+                            <TrendingUp className="w-3.5 h-3.5 text-orange-500 mt-0.5 shrink-0" />
+                            <span>{challenge}</span>
+                          </motion.li>
+                        ))}
+                      </ul>
+                    )}
+                    {college.howToGetIn && (
+                      <div className="flex items-start gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-accent/5 border border-accent/15 rounded-xl">
+                        <Sparkles className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                        <p className="text-foreground text-xs sm:text-sm leading-relaxed">
+                          <span className="font-semibold">How to get in:</span> {college.howToGetIn}
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
           )}
