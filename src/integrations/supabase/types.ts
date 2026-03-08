@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      college_matches: {
+        Row: {
+          college_data: Json
+          comparison_insight: string | null
+          created_at: string
+          id: string
+          student_profile: Json
+          user_id: string
+        }
+        Insert: {
+          college_data?: Json
+          comparison_insight?: string | null
+          created_at?: string
+          id?: string
+          student_profile?: Json
+          user_id: string
+        }
+        Update: {
+          college_data?: Json
+          comparison_insight?: string | null
+          created_at?: string
+          id?: string
+          student_profile?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           function_name: string
@@ -35,6 +83,36 @@ export type Database = {
           ip_address?: string
           request_count?: number
           window_start?: string
+        }
+        Relationships: []
+      }
+      saved_colleges: {
+        Row: {
+          college_data: Json
+          college_name: string
+          created_at: string
+          id: string
+          notes: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          college_data?: Json
+          college_name: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          college_data?: Json
+          college_name?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
