@@ -380,6 +380,7 @@ const QuizResults = () => {
       };
 
       const preferences = {
+        firstName: pickParam("first_name", "firstName"),
         email: pickParam("email"),
         cityState: clean(pickParam("city_state", "cityState"), "No preference"),
         gpa: clean(pickParam("gpa"), ""),
@@ -452,7 +453,9 @@ const QuizResults = () => {
               <GraduationCap className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
             </motion.div>
             <h1 className="font-display text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-3 sm:mb-5 leading-tight">
-              Your College Matches
+              {surveyContext.first_name || surveyContext.firstName
+                ? `${surveyContext.first_name || surveyContext.firstName}, Your College Matches`
+                : "Your College Matches"}
               <br />
               <motion.span
                 initial={{ opacity: 0 }}
@@ -728,7 +731,9 @@ const QuizResults = () => {
                     </div>
                   </motion.div>
                   <h2 className="font-display text-xl sm:text-2xl md:text-4xl font-bold text-foreground mb-6 sm:mb-8">
-                    Our Expert Take
+                    {surveyContext.first_name || surveyContext.firstName
+                      ? `${surveyContext.first_name || surveyContext.firstName}, Here's Our Expert Take`
+                      : "Our Expert Take"}
                   </h2>
                   <div className="relative">
                     <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-2xl sm:rounded-3xl blur-lg" />
