@@ -40,12 +40,15 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   const [colleges, setColleges] = useState<College[]>([]);
+  const [suggestedColleges, setSuggestedColleges] = useState<College[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [studentProfile, setStudentProfile] = useState<{ summary: string; topPriorities: string[]; idealSchoolType: string } | null>(null);
   const [savedColleges, setSavedColleges] = useState<SavedCollege[]>([]);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [firstName, setFirstName] = useState("");
+  const [storedPreferences, setStoredPreferences] = useState<Record<string, any> | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -85,6 +88,17 @@ const Dashboard = () => {
     };
     load();
   }, [user]);
+
+  // Load stored survey preferences from sessionStorage
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("latest_survey_preferences");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.responses) setStoredPreferences(parsed.responses);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   // Load saved colleges
   useEffect(() => {
@@ -173,6 +187,65 @@ const Dashboard = () => {
     return { bestMatch, mostAffordable, safetySchool: safetySchools[0] };
   }, [colleges]);
 
+  const allKnownCollegeNames = useMemo(() => {
+    const names = colleges.map(c => c.name);
+    const savedNames = savedColleges.map(s => s.college_name);
+    const suggestedNames = suggestedColleges.map(c => c.name);
+    return [...new Set([...names, ...savedNames, ...suggestedNames])];
+  }, [colleges, savedColleges, suggestedColleges]);
+
+  const discoverSuggestions = async () => {
+    if (!storedPreferences || loadingSuggestions) return;
+    setLoadingSuggestions(true);
+    const clean = (val: string | undefined, fallback: string): string => {
+      if (!val) return fallback;
+      const trimmed = val.trim();
+      if (!trimmed || /^\{.*\}$/.test(trimmed)) return fallback;
+      return trimmed;
+    };
+    const pick = (...keys: string[]) => {
+      for (const key of keys) {
+        const v = storedPreferences[key];
+        if (typeof v === "string" && v.trim()) return v;
+      }
+      return "";
+    };
+    const preferences = {
+      firstName: pick("first_name", "firstName"),
+      cityState: clean(pick("city_state", "cityState"), "No preference"),
+      gpa: clean(pick("gpa"), ""),
+      testScore: clean(pick("test_score", "testScore"), "None"),
+      satScore: clean(pick("sat_score", "satScore"), ""),
+      actScore: clean(pick("act_score", "actScore"), ""),
+      campusSize: clean(pick("campus_size", "campusSize"), "No preference"),
+      campusVibe: clean(pick("campus_vibe", "campusVibe"), "No preference"),
+      locationType: clean(pick("location_type", "locationType"), "No preference"),
+      maxCost: clean(pick("max_cost", "maxCost"), "No preference"),
+      acceptanceRatePref: clean(pick("acceptance_rate_pref", "acceptanceRatePref"), "No preference"),
+      financialAid: clean(pick("financial_aid", "financialAid"), "Important"),
+      campusLife: clean(pick("campus_life", "campusLife"), "No preference"),
+      academicImportance: clean(pick("academic_importance", "academicImportance"), "No preference"),
+      distanceFromHome: clean(pick("distance_from_home", "distanceFromHome"), "No preference"),
+      areaOfStudy: clean(pick("area_of_study", "areaOfStudy"), "Undecided"),
+      allResponses: storedPreferences,
+    };
+    try {
+      const { data, error } = await supabase.functions.invoke("college-match", {
+        body: { preferences, excludeColleges: allKnownCollegeNames },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      if (data?.colleges) {
+        setSuggestedColleges(prev => [...prev, ...data.colleges]);
+        toast({ title: "New suggestions found!", description: `${data.colleges.length} new colleges to explore.` });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to get suggestions", variant: "destructive" });
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -252,58 +325,131 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {colleges.map((college, i) => {
-                    const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
-                    const CatIcon = cat.icon;
-                    const isSaved = savedColleges.some(s => s.college_name === college.name);
-                    return (
-                      <motion.div key={college.name} variants={fadeIn} custom={i + 1}>
-                        <Card className="bg-card border-border hover:shadow-card transition-shadow h-full flex flex-col">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between">
-                              <CardTitle className="text-lg leading-tight">{college.name}</CardTitle>
-                              <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0`}>
-                                <CatIcon className="h-3 w-3 mr-1" />{college.fitCategory}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <MapPin className="h-3.5 w-3.5" />{college.location}
-                            </div>
-                          </CardHeader>
-                          <CardContent className="flex-1 flex flex-col gap-4">
-                            <div className="flex items-center gap-2">
-                              <div className="text-3xl font-bold text-primary">{college.fitScore}%</div>
-                              <span className="text-xs text-muted-foreground">match</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div className="flex items-center gap-1.5 text-muted-foreground">
-                                <Target className="h-3.5 w-3.5" />
-                                <span>{college.acceptanceRate}</span>
+                <>
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {colleges.map((college, i) => {
+                      const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
+                      const CatIcon = cat.icon;
+                      const isSaved = savedColleges.some(s => s.college_name === college.name);
+                      return (
+                        <motion.div key={college.name} variants={fadeIn} custom={i + 1}>
+                          <Card className="bg-card border-border hover:shadow-card transition-shadow h-full flex flex-col">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between">
+                                <CardTitle className="text-lg leading-tight">{college.name}</CardTitle>
+                                <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0`}>
+                                  <CatIcon className="h-3 w-3 mr-1" />{college.fitCategory}
+                                </Badge>
                               </div>
-                              <div className="flex items-center gap-1.5 text-muted-foreground">
-                                <DollarSign className="h-3.5 w-3.5" />
-                                <span>{college.netPrice}</span>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <MapPin className="h-3.5 w-3.5" />{college.location}
                               </div>
-                            </div>
-                            <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
-                            <div className="mt-auto pt-3">
-                              <Button
-                                variant={isSaved ? "secondary" : "default"}
-                                size="sm"
-                                className="w-full"
-                                onClick={() => saveCollege(college)}
-                                disabled={isSaved}
-                              >
-                                {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Saved</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+                            </CardHeader>
+                            <CardContent className="flex-1 flex flex-col gap-4">
+                              <div className="flex items-center gap-2">
+                                <div className="text-3xl font-bold text-primary">{college.fitScore}%</div>
+                                <span className="text-xs text-muted-foreground">match</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                  <Target className="h-3.5 w-3.5" />
+                                  <span>{college.acceptanceRate}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                  <DollarSign className="h-3.5 w-3.5" />
+                                  <span>{college.netPrice}</span>
+                                </div>
+                              </div>
+                              <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
+                              <div className="mt-auto pt-3">
+                                <Button
+                                  variant={isSaved ? "secondary" : "default"}
+                                  size="sm"
+                                  className="w-full"
+                                  onClick={() => saveCollege(college)}
+                                  disabled={isSaved}
+                                >
+                                  {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Saved</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Suggested Colleges */}
+                  {suggestedColleges.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2 mt-10 mb-6">
+                        <Sparkles className="h-5 w-5 text-accent" />
+                        <h3 className="text-xl font-bold text-foreground">More Suggestions</h3>
+                      </div>
+                      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {suggestedColleges.map((college, i) => {
+                          const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
+                          const CatIcon = cat.icon;
+                          const isSaved = savedColleges.some(s => s.college_name === college.name);
+                          return (
+                            <motion.div key={college.name} variants={fadeIn} custom={i + 1}>
+                              <Card className="bg-card border-border hover:shadow-card transition-shadow h-full flex flex-col">
+                                <CardHeader className="pb-3">
+                                  <div className="flex items-start justify-between">
+                                    <CardTitle className="text-lg leading-tight">{college.name}</CardTitle>
+                                    <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0`}>
+                                      <CatIcon className="h-3 w-3 mr-1" />{college.fitCategory}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                    <MapPin className="h-3.5 w-3.5" />{college.location}
+                                  </div>
+                                </CardHeader>
+                                <CardContent className="flex-1 flex flex-col gap-4">
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-3xl font-bold text-primary">{college.fitScore}%</div>
+                                    <span className="text-xs text-muted-foreground">match</span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
+                                  <div className="mt-auto pt-3">
+                                    <Button
+                                      variant={isSaved ? "secondary" : "default"}
+                                      size="sm"
+                                      className="w-full"
+                                      onClick={() => saveCollege(college)}
+                                      disabled={isSaved}
+                                    >
+                                      {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Saved</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Discover More Button */}
+                  {storedPreferences && (
+                    <div className="text-center mt-8">
+                      <Button
+                        onClick={discoverSuggestions}
+                        disabled={loadingSuggestions}
+                        variant="outline"
+                        className="rounded-full px-8 gap-2 border-primary/30 hover:bg-primary/5 hover:border-primary/50 text-primary font-semibold"
+                      >
+                        {loadingSuggestions ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" /> Finding suggestions...</>
+                        ) : (
+                          <><Sparkles className="h-4 w-4" /> Discover More Colleges</>
+                        )}
+                      </Button>
+                      <p className="text-muted-foreground text-xs mt-2">Get 5 more AI-suggested colleges based on your quiz</p>
+                    </div>
+                  )}
+                </>
               )}
             </motion.div>
           </TabsContent>

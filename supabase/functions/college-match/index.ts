@@ -471,7 +471,7 @@ Provide exactly 5 colleges sorted by fitScore descending. Include at least one S
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
-function buildUserPrompt(prefs: Record<string, any>, collegeData: string): string {
+function buildUserPrompt(prefs: Record<string, any>, collegeData: string, excludeColleges: string[] = []): string {
   const allResponses = prefs.allResponses || {};
   const extraFields = Object.entries(allResponses)
     .filter(([key]) => key !== "email")
@@ -506,6 +506,10 @@ function buildUserPrompt(prefs: Record<string, any>, collegeData: string): strin
 
 All survey responses:
 ${extraFields}`;
+
+  if (excludeColleges.length > 0) {
+    prompt += `\n\nIMPORTANT: Do NOT include any of these colleges (already shown to the student):\n${excludeColleges.map(n => `- ${n}`).join("\n")}\nPick 5 DIFFERENT colleges instead.`;
+  }
 
   if (collegeData) {
     prompt += `\n\n--- REAL COLLEGE DATA FROM US DEPT OF EDUCATION ---\n${collegeData}\n--- END REAL DATA ---\n\nSelect the 5 best-fit colleges from this real data for this specific student. The selected colleges MUST reflect their unique preferences above.`;
@@ -588,6 +592,11 @@ serve(async (req) => {
     }
     console.log("Received preferences:", JSON.stringify(prefs, null, 2));
 
+    // Parse exclude list for "discover more" requests
+    const excludeColleges: string[] = Array.isArray(body?.excludeColleges)
+      ? body.excludeColleges.filter((n: any) => typeof n === "string").slice(0, 20)
+      : [];
+
     // Ensure AI key exists
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -607,7 +616,7 @@ serve(async (req) => {
     // }
 
     // ── Step 2: AI ranking ──
-    const userPrompt = buildUserPrompt(prefs, scorecard.data);
+    const userPrompt = buildUserPrompt(prefs, scorecard.data, excludeColleges);
     console.log("Sending to AI with", userPrompt.length, "chars");
 
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
