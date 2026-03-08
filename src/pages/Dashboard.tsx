@@ -377,6 +377,77 @@ const Dashboard = () => {
                     );
                   })}
                 </div>
+
+                {/* Suggested Colleges Section */}
+                {suggestedColleges.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-2 mt-10 mb-6">
+                      <Sparkles className="h-5 w-5 text-accent" />
+                      <h3 className="text-xl font-bold text-foreground">More Suggestions</h3>
+                    </div>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {suggestedColleges.map((college, i) => {
+                        const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
+                        const CatIcon = cat.icon;
+                        const isSaved = savedColleges.some(s => s.college_name === college.name);
+                        return (
+                          <motion.div key={college.name} variants={fadeIn} custom={i + 1}>
+                            <Card className="bg-card border-border hover:shadow-card transition-shadow h-full flex flex-col">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-start justify-between">
+                                  <CardTitle className="text-lg leading-tight">{college.name}</CardTitle>
+                                  <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0`}>
+                                    <CatIcon className="h-3 w-3 mr-1" />{college.fitCategory}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <MapPin className="h-3.5 w-3.5" />{college.location}
+                                </div>
+                              </CardHeader>
+                              <CardContent className="flex-1 flex flex-col gap-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-3xl font-bold text-primary">{college.fitScore}%</div>
+                                  <span className="text-xs text-muted-foreground">match</span>
+                                </div>
+                                <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
+                                <div className="mt-auto pt-3">
+                                  <Button
+                                    variant={isSaved ? "secondary" : "default"}
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() => saveCollege(college)}
+                                    disabled={isSaved}
+                                  >
+                                    {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Saved</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {/* Discover More Button */}
+                {colleges.length > 0 && storedPreferences && (
+                  <div className="text-center mt-8">
+                    <Button
+                      onClick={discoverSuggestions}
+                      disabled={loadingSuggestions}
+                      variant="outline"
+                      className="rounded-full px-8 gap-2 border-primary/30 hover:bg-primary/5 hover:border-primary/50 text-primary font-semibold"
+                    >
+                      {loadingSuggestions ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Finding suggestions...</>
+                      ) : (
+                        <><Sparkles className="h-4 w-4" /> Discover More Colleges</>
+                      )}
+                    </Button>
+                    <p className="text-muted-foreground text-xs mt-2">Get 5 more AI-suggested colleges based on your quiz</p>
+                  </div>
+                )}
               )}
             </motion.div>
           </TabsContent>
