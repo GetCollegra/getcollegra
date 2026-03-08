@@ -89,6 +89,17 @@ const Dashboard = () => {
     load();
   }, [user]);
 
+  // Load stored survey preferences from sessionStorage
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("latest_survey_preferences");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.responses) setStoredPreferences(parsed.responses);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   // Load saved colleges
   useEffect(() => {
     if (!user) return;
