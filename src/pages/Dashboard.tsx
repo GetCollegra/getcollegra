@@ -114,9 +114,10 @@ const Dashboard = () => {
       toast({ title: "Already saved", description: `${college.name} is in your list.` });
       return;
     }
+    const insertPayload: Record<string, unknown> = { user_id: user.id, college_name: college.name, college_data: college };
     const { data, error } = await supabase
       .from("saved_colleges")
-      .insert({ user_id: user.id, college_name: college.name, college_data: college as unknown as Record<string, unknown> })
+      .insert(insertPayload as any)
       .select()
       .single();
 
