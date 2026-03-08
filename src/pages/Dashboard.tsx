@@ -65,44 +65,47 @@ const Dashboard = () => {
       return;
     }
     setAddingCollege(true);
-    const emptyCollege: College = {
-      name,
-      location: "—",
-      acceptanceRate: "—",
-      ranking: "—",
-      tuitionInState: "—",
-      tuitionOutOfState: "—",
-      avgFinancialAid: "—",
-      netPrice: "—",
-      topPrograms: [],
-      campusSize: "—",
-      studentBody: "—",
-      studentFacultyRatio: "—",
-      setting: "—",
-      graduationRate: "—",
-      avgStartingSalary: "—",
-      fitScore: 0,
-      fitCategory: "Match",
-      whyFit: "Manually added by you.",
-      prosForStudent: [],
-      consForStudent: [],
-      challengesForStudent: [],
-      howToGetIn: "—",
-      campusVibe: "—",
-      notableFeature: "—",
-    };
-    const insertPayload: Record<string, unknown> = { user_id: user.id, college_name: name, college_data: emptyCollege };
-    const { data, error } = await supabase
-      .from("saved_colleges")
-      .insert(insertPayload as any)
-      .select()
-      .single();
-    if (error) {
-      toast({ title: "Error adding college", description: error.message, variant: "destructive" });
-    } else if (data) {
-      setSavedColleges(prev => [{ ...data, college_data: data.college_data as unknown as College, notes: data.notes || "" }, ...prev]);
-      toast({ title: "College added!", description: `${name} has been added to your saved list.` });
-      setAddCollegeName("");
+    try {
+      // Use AI to populate college data
+      const { data: aiData, error: aiError } = await supabase.functions.invoke("college-lookup", {
+        body: { collegeName: name },
+      });
+      if (aiError) throw new Error(aiError.message);
+      if (aiData?.error) throw new Error(aiData.error);
+
+      const collegeData: College = aiData?.college || {
+        name, location: "—", acceptanceRate: "—", ranking: "—",
+        tuitionInState: "—", tuitionOutOfState: "—", avgFinancialAid: "—",
+        netPrice: "—", topPrograms: [], campusSize: "—", studentBody: "—",
+        studentFacultyRatio: "—", setting: "—", graduationRate: "—",
+        avgStartingSalary: "—", fitScore: 0, fitCategory: "Match" as const,
+        whyFit: "Added by you.", prosForStudent: [], consForStudent: [],
+        challengesForStudent: [], howToGetIn: "—", campusVibe: "—", notableFeature: "—",
+      };
+
+      const insertPayload: Record<string, unknown> = {
+        user_id: user.id,
+        college_name: collegeData.name || name,
+        college_data: collegeData,
+      };
+      const { data, error } = await supabase
+        .from("saved_colleges")
+        .insert(insertPayload as any)
+        .select()
+        .single();
+      if (error) {
+        toast({ title: "Error saving", description: error.message, variant: "destructive" });
+      } else if (data) {
+        setSavedColleges(prev => [{ ...data, college_data: data.college_data as unknown as College, notes: data.notes || "" }, ...prev]);
+        toast({ title: "College added!", description: `${collegeData.name || name} has been added with full details.` });
+        setAddCollegeName("");
+      }
+    } catch (err) {
+      toast({
+        title: "Couldn't look up college",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
     }
     setAddingCollege(false);
   };
