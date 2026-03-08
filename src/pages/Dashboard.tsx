@@ -378,7 +378,7 @@ const Dashboard = () => {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Add a college by name (e.g. Stanford University)..."
+                    placeholder="Add a college — AI will fill in all the details..."
                     value={addCollegeName}
                     onChange={(e) => setAddCollegeName(e.target.value)}
                     className="pl-10 bg-muted/30 border-border/50 focus:bg-card"
