@@ -60,23 +60,23 @@ const Pricing = () => {
             <ul className="space-y-3 mb-8">
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Clear next steps so you always know what to do — less stress, more clarity</span>
+                <span>Full AI college match results</span>
               </li>
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Personalized college list that updates as your GPA, interests, or goals change</span>
+                <span>Personalized college fit scores</span>
               </li>
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Ongoing guidance through deadlines, applications, and decisions</span>
+                <span>Save & organize colleges</span>
               </li>
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>One platform that keeps everything organized throughout the year</span>
+                <span>Compare schools side-by-side</span>
               </li>
               <li className="flex items-center gap-3 text-foreground">
                 <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Cancel anytime</span>
+                <span>Smart insights for better decisions</span>
               </li>
             </ul>
 
