@@ -3,6 +3,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const loadingMessages = [
   "Analyzing your preferences...",
@@ -13,7 +14,14 @@ const loadingMessages = [
 ];
 
 const Survey = () => {
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/login", { state: { from: "/survey" } });
+    }
+  }, [user, authLoading, navigate]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const isProcessingSubmissionRef = useRef(false);
