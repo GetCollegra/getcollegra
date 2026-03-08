@@ -55,7 +55,8 @@ const Header = () => {
             )}
             <a href="/survey" className="text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-accent transition-colors">
               Get Started
-          </a>
+            </a>
+          </div>
         </div>
       </div>
     </header>
