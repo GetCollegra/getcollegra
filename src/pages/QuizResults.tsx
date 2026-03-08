@@ -494,6 +494,69 @@ const QuizResults = () => {
     saveToDb();
   }, [recommendations]);
 
+  const allCollegeNames = useMemo(() => {
+    const names = recommendations?.colleges?.map(c => c.name) ?? [];
+    return [...names, ...additionalColleges.map(c => c.name)];
+  }, [recommendations, additionalColleges]);
+
+  const discoverMore = async () => {
+    if (!recommendations || loadingMore) return;
+    setLoadingMore(true);
+
+    // Rebuild preferences from survey context
+    const pickParam = (...keys: string[]) => {
+      for (const key of keys) {
+        const value = surveyContext[key];
+        if (typeof value === "string" && value.trim()) return value;
+      }
+      return "";
+    };
+    const clean = (val: string | undefined, fallback: string): string => {
+      if (!val) return fallback;
+      const trimmed = val.trim();
+      if (!trimmed || /^\{.*\}$/.test(trimmed)) return fallback;
+      return trimmed;
+    };
+
+    const preferences = {
+      firstName: pickParam("first_name", "firstName"),
+      email: pickParam("email"),
+      cityState: clean(pickParam("city_state", "cityState"), "No preference"),
+      gpa: clean(pickParam("gpa"), ""),
+      testScore: clean(pickParam("test_score", "testScore"), "None"),
+      satScore: clean(pickParam("sat_score", "satScore"), ""),
+      actScore: clean(pickParam("act_score", "actScore"), ""),
+      campusSize: clean(pickParam("campus_size", "campusSize"), "No preference"),
+      campusVibe: clean(pickParam("campus_vibe", "campusVibe"), "No preference"),
+      locationType: clean(pickParam("location_type", "locationType"), "No preference"),
+      maxCost: clean(pickParam("max_cost", "maxCost"), "No preference"),
+      acceptanceRatePref: clean(pickParam("acceptance_rate_pref", "acceptanceRatePref"), "No preference"),
+      financialAid: clean(pickParam("financial_aid", "financialAid"), "Important"),
+      campusLife: clean(pickParam("campus_life", "campusLife"), "No preference"),
+      academicImportance: clean(pickParam("academic_importance", "academicImportance"), "No preference"),
+      distanceFromHome: clean(pickParam("distance_from_home", "distanceFromHome"), "No preference"),
+      areaOfStudy: clean(pickParam("area_of_study", "areaOfStudy"), "Undecided"),
+      allResponses: surveyContext,
+    };
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("college-match", {
+        body: { preferences, excludeColleges: allCollegeNames },
+      });
+      if (fnError) throw new Error(fnError.message);
+      if (data?.error) throw new Error(data.error);
+      if (data?.colleges) {
+        setAdditionalColleges(prev => [...prev, ...data.colleges]);
+        toast({ title: "Found more matches!", description: `${data.colleges.length} additional colleges discovered.` });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load more recommendations";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   const fitScoreColor = (score: number) => {
     if (score >= 90) return "text-emerald-500";
     if (score >= 75) return "text-primary";
