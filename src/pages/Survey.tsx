@@ -106,6 +106,7 @@ const Survey = () => {
 
         // Keyword-based mapping
         const keywordMap: Array<{ keywords: string[]; paramKey: string }> = [
+          { keywords: ["first name", "name"], paramKey: "first_name" },
           { keywords: ["email"], paramKey: "email" },
           { keywords: ["city", "state"], paramKey: "city_state" },
           { keywords: ["gpa"], paramKey: "gpa" },
@@ -230,6 +231,7 @@ const Survey = () => {
         }
 
         const preferences = {
+          firstName: pick("first_name", "firstName"),
           email: pick("email"),
           cityState: clean(pick("city_state", "cityState"), "No preference"),
           gpa: clean(pick("gpa"), ""),

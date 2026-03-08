@@ -417,14 +417,14 @@ CRITICAL: Each student is UNIQUE. Their answers MUST directly determine which co
 10. **Distance From Home** → Geographic constraint from their home city/state.
 11. **Area of Study** → CRITICAL. Prioritize schools with strong programs in their field using program percentage data.
 
-In "whyFit" and "prosForStudent", EXPLICITLY quote the student's own words (e.g., "You said you want a 'spirited' campus — this school's Division I program delivers that").
+In "whyFit" and "prosForStudent", EXPLICITLY quote the student's own words (e.g., "You said you want a 'spirited' campus — this school's Division I program delivers that"). If the student's first name is provided, address them by name in whyFit, studentProfile summary, and comparisonInsight.
 
 IMPORTANT: Use EXACT data values from the Scorecard data — do NOT fabricate statistics. You may add context about campus culture and fit reasoning.
 
 Return a JSON object with this exact structure:
 {
   "studentProfile": {
-    "summary": "2-3 sentence overview referencing their specific answers",
+    "summary": "2-3 sentence overview referencing their specific answers. Use the student's first name if provided.",
     "topPriorities": ["Priority 1", "Priority 2", "Priority 3"],
     "idealSchoolType": "Brief description based on ALL their answers"
   },
@@ -454,7 +454,7 @@ Return a JSON object with this exact structure:
       "notableFeature": "One unique relevant thing"
     }
   ],
-  "comparisonInsight": "2-3 sentences comparing recommendations referencing key preferences"
+  "comparisonInsight": "A detailed 5-8 sentence analysis comparing all 5 recommendations. Address the student BY THEIR FIRST NAME if provided. Explain: (1) Why this specific mix of Safety/Match/Reach schools works for them, (2) How each school addresses their stated priorities differently, (3) What tradeoffs exist between their top picks (e.g. cost vs. prestige, size vs. program strength), (4) Which school might be the best overall fit and why. Reference their specific survey answers throughout."
 }
 
 Provide exactly 5 colleges sorted by fitScore descending. Include at least one Safety and one Reach. Use real data values only.
@@ -479,6 +479,7 @@ function buildUserPrompt(prefs: Record<string, any>, collegeData: string): strin
   }
 
   let prompt = `Student preferences (USE ALL OF THESE to select and rank colleges):
+- Student's first name: ${prefs.firstName || "Not provided"}
 - Home location: ${prefs.cityState || "Not specified"}
 - Weighted GPA: ${prefs.gpa || "Not specified"}
 - Test Scores: ${testDisplay}
