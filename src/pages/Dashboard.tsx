@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +17,7 @@ import Header from "@/components/Header";
 import {
   GraduationCap, Star, BookmarkPlus, Bookmark, BarChart3, StickyNote,
   Sparkles, MapPin, DollarSign, Target, Shield, TrendingUp,
-  LogOut, Trophy, Navigation, Wallet, Loader2, Trash2
+  LogOut, Trophy, Navigation, Wallet, Loader2, Trash2, Plus, Search
 } from "lucide-react";
 import type { College } from "@/types/college";
 
@@ -49,6 +50,62 @@ const Dashboard = () => {
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [storedPreferences, setStoredPreferences] = useState<Record<string, any> | null>(null);
+  const [addCollegeName, setAddCollegeName] = useState("");
+  const [addingCollege, setAddingCollege] = useState(false);
+
+  const addCustomCollege = async () => {
+    const name = addCollegeName.trim();
+    if (!name || !user) return;
+    if (name.length > 200) {
+      toast({ title: "Name too long", description: "Please enter a shorter college name.", variant: "destructive" });
+      return;
+    }
+    if (savedColleges.find(s => s.college_name.toLowerCase() === name.toLowerCase())) {
+      toast({ title: "Already saved", description: `${name} is already in your list.` });
+      return;
+    }
+    setAddingCollege(true);
+    const emptyCollege: College = {
+      name,
+      location: "—",
+      acceptanceRate: "—",
+      ranking: "—",
+      tuitionInState: "—",
+      tuitionOutOfState: "—",
+      avgFinancialAid: "—",
+      netPrice: "—",
+      topPrograms: [],
+      campusSize: "—",
+      studentBody: "—",
+      studentFacultyRatio: "—",
+      setting: "—",
+      graduationRate: "—",
+      avgStartingSalary: "—",
+      fitScore: 0,
+      fitCategory: "Match",
+      whyFit: "Manually added by you.",
+      prosForStudent: [],
+      consForStudent: [],
+      challengesForStudent: [],
+      howToGetIn: "—",
+      campusVibe: "—",
+      notableFeature: "—",
+    };
+    const insertPayload: Record<string, unknown> = { user_id: user.id, college_name: name, college_data: emptyCollege };
+    const { data, error } = await supabase
+      .from("saved_colleges")
+      .insert(insertPayload as any)
+      .select()
+      .single();
+    if (error) {
+      toast({ title: "Error adding college", description: error.message, variant: "destructive" });
+    } else if (data) {
+      setSavedColleges(prev => [{ ...data, college_data: data.college_data as unknown as College, notes: data.notes || "" }, ...prev]);
+      toast({ title: "College added!", description: `${name} has been added to your saved list.` });
+      setAddCollegeName("");
+    }
+    setAddingCollege(false);
+  };
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -307,6 +364,31 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Add College Bar */}
+          <Card className="bg-card border-border shadow-soft">
+            <CardContent className="p-4">
+              <form
+                onSubmit={(e) => { e.preventDefault(); addCustomCollege(); }}
+                className="flex items-center gap-3"
+              >
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Add a college by name (e.g. Stanford University)..."
+                    value={addCollegeName}
+                    onChange={(e) => setAddCollegeName(e.target.value)}
+                    className="pl-10 bg-muted/30 border-border/50 focus:bg-card"
+                    maxLength={200}
+                  />
+                </div>
+                <Button type="submit" disabled={!addCollegeName.trim() || addingCollege} size="default" className="shrink-0 gap-1.5">
+                  {addingCollege ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Add
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </motion.section>
 
         <Tabs defaultValue="matches" className="space-y-8">
