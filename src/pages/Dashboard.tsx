@@ -187,6 +187,65 @@ const Dashboard = () => {
     return { bestMatch, mostAffordable, safetySchool: safetySchools[0] };
   }, [colleges]);
 
+  const allKnownCollegeNames = useMemo(() => {
+    const names = colleges.map(c => c.name);
+    const savedNames = savedColleges.map(s => s.college_name);
+    const suggestedNames = suggestedColleges.map(c => c.name);
+    return [...new Set([...names, ...savedNames, ...suggestedNames])];
+  }, [colleges, savedColleges, suggestedColleges]);
+
+  const discoverSuggestions = async () => {
+    if (!storedPreferences || loadingSuggestions) return;
+    setLoadingSuggestions(true);
+    const clean = (val: string | undefined, fallback: string): string => {
+      if (!val) return fallback;
+      const trimmed = val.trim();
+      if (!trimmed || /^\{.*\}$/.test(trimmed)) return fallback;
+      return trimmed;
+    };
+    const pick = (...keys: string[]) => {
+      for (const key of keys) {
+        const v = storedPreferences[key];
+        if (typeof v === "string" && v.trim()) return v;
+      }
+      return "";
+    };
+    const preferences = {
+      firstName: pick("first_name", "firstName"),
+      cityState: clean(pick("city_state", "cityState"), "No preference"),
+      gpa: clean(pick("gpa"), ""),
+      testScore: clean(pick("test_score", "testScore"), "None"),
+      satScore: clean(pick("sat_score", "satScore"), ""),
+      actScore: clean(pick("act_score", "actScore"), ""),
+      campusSize: clean(pick("campus_size", "campusSize"), "No preference"),
+      campusVibe: clean(pick("campus_vibe", "campusVibe"), "No preference"),
+      locationType: clean(pick("location_type", "locationType"), "No preference"),
+      maxCost: clean(pick("max_cost", "maxCost"), "No preference"),
+      acceptanceRatePref: clean(pick("acceptance_rate_pref", "acceptanceRatePref"), "No preference"),
+      financialAid: clean(pick("financial_aid", "financialAid"), "Important"),
+      campusLife: clean(pick("campus_life", "campusLife"), "No preference"),
+      academicImportance: clean(pick("academic_importance", "academicImportance"), "No preference"),
+      distanceFromHome: clean(pick("distance_from_home", "distanceFromHome"), "No preference"),
+      areaOfStudy: clean(pick("area_of_study", "areaOfStudy"), "Undecided"),
+      allResponses: storedPreferences,
+    };
+    try {
+      const { data, error } = await supabase.functions.invoke("college-match", {
+        body: { preferences, excludeColleges: allKnownCollegeNames },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      if (data?.colleges) {
+        setSuggestedColleges(prev => [...prev, ...data.colleges]);
+        toast({ title: "New suggestions found!", description: `${data.colleges.length} new colleges to explore.` });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to get suggestions", variant: "destructive" });
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
