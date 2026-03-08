@@ -520,11 +520,18 @@ const Dashboard = () => {
           {/* 5. Compare Colleges */}
           <TabsContent value="compare">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <h2 className="text-2xl font-bold text-foreground mb-2">Compare Colleges</h2>
-              <p className="text-muted-foreground mb-6 text-sm">Select up to 4 saved colleges to compare side-by-side.</p>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Compare Colleges</h2>
+                  <p className="text-muted-foreground text-sm">Select up to 4 saved colleges to compare side-by-side.</p>
+                </div>
+              </div>
 
               {savedColleges.length === 0 ? (
-                <Card className="bg-card border-border">
+                <Card className="bg-card border-border mt-6">
                   <CardContent className="p-10 text-center">
                     <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">Save some colleges first to compare them.</p>
@@ -532,51 +539,97 @@ const Dashboard = () => {
                 </Card>
               ) : (
                 <>
-                  <div className="flex flex-wrap gap-3 mb-6">
-                    {savedColleges.map(s => (
-                      <label key={s.id} className={`flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-all ${compareIds.has(s.id) ? "bg-primary/5 border-primary" : "bg-card border-border hover:border-primary/40"}`}>
-                        <Checkbox checked={compareIds.has(s.id)} onCheckedChange={() => toggleCompare(s.id)} />
-                        <span className="text-sm font-medium">{s.college_name}</span>
-                      </label>
-                    ))}
+                  <div className="flex flex-wrap gap-2 mt-6 mb-8">
+                    {savedColleges.map(s => {
+                      const isSelected = compareIds.has(s.id);
+                      const cat = fitCategoryConfig[s.college_data.fitCategory] || fitCategoryConfig.Match;
+                      return (
+                        <label
+                          key={s.id}
+                          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                            isSelected
+                              ? "bg-primary/5 border-primary shadow-soft"
+                              : "bg-card border-border hover:border-primary/30 hover:shadow-soft"
+                          }`}
+                        >
+                          <Checkbox checked={isSelected} onCheckedChange={() => toggleCompare(s.id)} />
+                          <span className="text-sm font-medium text-foreground">{s.college_name}</span>
+                          <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px] px-1.5 py-0`}>
+                            {s.college_data.fitScore}%
+                          </Badge>
+                        </label>
+                      );
+                    })}
                   </div>
 
                   {comparedColleges.length >= 2 && (
-                    <div className="overflow-x-auto rounded-xl border border-border bg-card">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="min-w-[120px]">Attribute</TableHead>
-                            {comparedColleges.map(c => (
-                              <TableHead key={c.id} className="min-w-[160px] font-semibold">{c.college_name}</TableHead>
-                            ))}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {[
-                            { label: "Match Score", key: (c: College) => `${c.fitScore}%` },
-                            { label: "Fit Category", key: (c: College) => c.fitCategory },
-                            { label: "Location", key: (c: College) => c.location },
-                            { label: "Acceptance Rate", key: (c: College) => c.acceptanceRate },
-                            { label: "Net Price", key: (c: College) => c.netPrice },
-                            { label: "Student Body", key: (c: College) => c.studentBody },
-                            { label: "Setting", key: (c: College) => c.setting },
-                            { label: "Top Programs", key: (c: College) => c.topPrograms?.join(", ") || "—" },
-                            { label: "Campus Vibe", key: (c: College) => c.campusVibe },
-                          ].map(row => (
-                            <TableRow key={row.label}>
-                              <TableCell className="font-medium text-muted-foreground">{row.label}</TableCell>
+                    <div className="space-y-0">
+                      {/* College Header Cards */}
+                      <div className={`grid gap-4 mb-6`} style={{ gridTemplateColumns: `repeat(${comparedColleges.length}, minmax(0, 1fr))` }}>
+                        {comparedColleges.map(c => {
+                          const cat = fitCategoryConfig[c.college_data.fitCategory] || fitCategoryConfig.Match;
+                          const CatIcon = cat.icon;
+                          return (
+                            <Card key={c.id} className="bg-card border-border overflow-hidden">
+                              <div className="h-1.5 bg-primary w-full" style={{ opacity: c.college_data.fitScore / 100 }} />
+                              <CardContent className="p-5 text-center">
+                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                                  <GraduationCap className="h-6 w-6 text-primary" />
+                                </div>
+                                <h3 className="font-bold text-foreground text-sm leading-tight mb-1">{c.college_name}</h3>
+                                <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-3">
+                                  <MapPin className="h-3 w-3" />{c.college_data.location}
+                                </div>
+                                <div className="text-2xl font-bold text-primary mb-1">{c.college_data.fitScore}%</div>
+                                <Badge className={`${cat.bg} ${cat.color} border-0 text-xs`}>
+                                  <CatIcon className="h-3 w-3 mr-1" />{c.college_data.fitCategory}
+                                </Badge>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+
+                      {/* Comparison Rows */}
+                      <div className="rounded-xl border border-border overflow-hidden bg-card">
+                        {[
+                          { label: "Acceptance Rate", icon: Target, key: (c: College) => c.acceptanceRate },
+                          { label: "Net Price", icon: DollarSign, key: (c: College) => c.netPrice },
+                          { label: "Student Body", icon: GraduationCap, key: (c: College) => c.studentBody },
+                          { label: "Setting", icon: MapPin, key: (c: College) => c.setting },
+                          { label: "Graduation Rate", icon: Trophy, key: (c: College) => c.graduationRate },
+                          { label: "Avg Starting Salary", icon: Wallet, key: (c: College) => c.avgStartingSalary },
+                          { label: "Top Programs", icon: Star, key: (c: College) => c.topPrograms?.join(", ") || "—" },
+                          { label: "Campus Vibe", icon: Navigation, key: (c: College) => c.campusVibe },
+                        ].map((row, idx) => {
+                          const RowIcon = row.icon;
+                          return (
+                            <div
+                              key={row.label}
+                              className={`grid items-center gap-4 px-5 py-4 ${idx % 2 === 0 ? "bg-card" : "bg-muted/30"} ${idx > 0 ? "border-t border-border/50" : ""}`}
+                              style={{ gridTemplateColumns: `180px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
+                            >
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <RowIcon className="h-4 w-4 shrink-0" />
+                                {row.label}
+                              </div>
                               {comparedColleges.map(c => (
-                                <TableCell key={c.id}>{row.key(c.college_data)}</TableCell>
+                                <div key={c.id} className="text-sm font-medium text-foreground">
+                                  {row.key(c.college_data)}
+                                </div>
                               ))}
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                   {comparedColleges.length < 2 && comparedColleges.length > 0 && (
-                    <p className="text-sm text-muted-foreground">Select at least 2 colleges to compare.</p>
+                    <Card className="bg-card border-border border-dashed">
+                      <CardContent className="p-8 text-center">
+                        <p className="text-sm text-muted-foreground">Select at least <span className="font-semibold text-foreground">2 colleges</span> to see the comparison.</p>
+                      </CardContent>
+                    </Card>
                   )}
                 </>
               )}
