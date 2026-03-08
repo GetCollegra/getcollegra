@@ -507,6 +507,10 @@ function buildUserPrompt(prefs: Record<string, any>, collegeData: string, exclud
 All survey responses:
 ${extraFields}`;
 
+  if (excludeColleges.length > 0) {
+    prompt += `\n\nIMPORTANT: Do NOT include any of these colleges (already shown to the student):\n${excludeColleges.map(n => `- ${n}`).join("\n")}\nPick 5 DIFFERENT colleges instead.`;
+  }
+
   if (collegeData) {
     prompt += `\n\n--- REAL COLLEGE DATA FROM US DEPT OF EDUCATION ---\n${collegeData}\n--- END REAL DATA ---\n\nSelect the 5 best-fit colleges from this real data for this specific student. The selected colleges MUST reflect their unique preferences above.`;
   } else {
