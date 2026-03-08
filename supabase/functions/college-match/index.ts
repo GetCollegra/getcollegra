@@ -471,7 +471,7 @@ Provide exactly 5 colleges sorted by fitScore descending. Include at least one S
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
-function buildUserPrompt(prefs: Record<string, any>, collegeData: string): string {
+function buildUserPrompt(prefs: Record<string, any>, collegeData: string, excludeColleges: string[] = []): string {
   const allResponses = prefs.allResponses || {};
   const extraFields = Object.entries(allResponses)
     .filter(([key]) => key !== "email")
