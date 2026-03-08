@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdmin } from "@/hooks/use-admin";
-import { Shield } from "lucide-react";
+import { Shield, LogIn, LogOut, User } from "lucide-react";
 
 const Header = () => {
   const { user } = useAuth();
