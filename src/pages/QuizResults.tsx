@@ -301,6 +301,8 @@ const QuizResults = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
+  const [additionalColleges, setAdditionalColleges] = useState<College[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
