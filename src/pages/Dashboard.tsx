@@ -687,24 +687,24 @@ const Dashboard = () => {
                                 {/* Pros / Cons / How to Get In */}
                                 <div className="grid md:grid-cols-3 gap-4">
                                   {saved.college_data.prosForStudent?.length > 0 && (
-                                    <div className="bg-emerald-50/50 rounded-lg p-4 border border-emerald-100">
-                                      <p className="text-xs font-semibold text-emerald-700 mb-2">Pros</p>
+                                    <div className="bg-secondary/50 rounded-lg p-4 border border-border/50">
+                                      <p className="text-xs font-semibold text-foreground mb-2">✓ Pros</p>
                                       <ul className="space-y-1">
                                         {saved.college_data.prosForStudent.map((pro, i) => (
                                           <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
-                                            <span className="text-emerald-500 mt-0.5">•</span>{pro}
+                                            <span className="text-primary mt-0.5">•</span>{pro}
                                           </li>
                                         ))}
                                       </ul>
                                     </div>
                                   )}
                                   {saved.college_data.consForStudent?.length > 0 && (
-                                    <div className="bg-orange-50/50 rounded-lg p-4 border border-orange-100">
-                                      <p className="text-xs font-semibold text-orange-700 mb-2">Cons</p>
+                                    <div className="bg-destructive/5 rounded-lg p-4 border border-destructive/10">
+                                      <p className="text-xs font-semibold text-foreground mb-2">✗ Cons</p>
                                       <ul className="space-y-1">
                                         {saved.college_data.consForStudent.map((con, i) => (
                                           <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
-                                            <span className="text-orange-500 mt-0.5">•</span>{con}
+                                            <span className="text-destructive mt-0.5">•</span>{con}
                                           </li>
                                         ))}
                                       </ul>
