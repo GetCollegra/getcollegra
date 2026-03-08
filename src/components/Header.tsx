@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdmin } from "@/hooks/use-admin";
-import { Shield } from "lucide-react";
+import { Shield, LogIn, LogOut, User } from "lucide-react";
 
 const Header = () => {
   const { user } = useAuth();
@@ -43,14 +43,39 @@ const Header = () => {
                 <Shield className="h-4 w-4" /> Dashboard
               </a>
             )}
+
+            {user ? (
+              <>
+                <a href="/dashboard" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <User className="h-4 w-4" /> My Account
+                </a>
+                <button onClick={() => { import("@/integrations/supabase/client").then(m => m.supabase.auth.signOut()); }} className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <LogOut className="h-4 w-4" /> Sign Out
+                </button>
+              </>
+            ) : (
+              <a href="/login" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                <LogIn className="h-4 w-4" /> Sign In
+              </a>
+            )}
+
             <a href="/survey" className="text-sm font-semibold bg-primary text-primary-foreground px-5 py-2 rounded-full hover:bg-accent transition-colors shadow-soft">
               Get Started →
             </a>
           </nav>
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-3">
             {isAdmin && (
               <a href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
                 <Shield className="h-5 w-5" />
+              </a>
+            )}
+            {user ? (
+              <button onClick={() => { import("@/integrations/supabase/client").then(m => m.supabase.auth.signOut()); }} className="text-muted-foreground hover:text-primary transition-colors">
+                <LogOut className="h-5 w-5" />
+              </button>
+            ) : (
+              <a href="/login" className="text-muted-foreground hover:text-primary transition-colors">
+                <LogIn className="h-5 w-5" />
               </a>
             )}
             <a href="/survey" className="text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-accent transition-colors">
