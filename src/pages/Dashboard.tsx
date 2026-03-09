@@ -403,6 +403,7 @@ const Dashboard = () => {
             <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><BarChart3 className="h-4 w-4" /> Compare</TabsTrigger>
             <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><StickyNote className="h-4 w-4" /> Notes</TabsTrigger>
             <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Sparkles className="h-4 w-4" /> Insights</TabsTrigger>
+            <TabsTrigger value="map" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><MapPin className="h-4 w-4" /> Map</TabsTrigger>
           </TabsList>
 
           {/* 2. College Matches */}
