@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +23,7 @@ import {
   ChevronDown, Users, BookOpen, Briefcase, Award
 } from "lucide-react";
 import type { College } from "@/types/college";
+const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 
 type SavedCollege = {
   id: string;
@@ -397,12 +399,13 @@ const Dashboard = () => {
         </motion.section>
 
         <Tabs defaultValue="matches" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
             <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
             <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>
             <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><BarChart3 className="h-4 w-4" /> Compare</TabsTrigger>
             <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><StickyNote className="h-4 w-4" /> Notes</TabsTrigger>
             <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Sparkles className="h-4 w-4" /> Insights</TabsTrigger>
+            <TabsTrigger value="map" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><MapPin className="h-4 w-4" /> Map</TabsTrigger>
           </TabsList>
 
           {/* 2. College Matches */}
@@ -977,6 +980,22 @@ const Dashboard = () => {
               )}
             </motion.div>
           </TabsContent>
+
+          {/* Map Tab */}
+          <TabsContent value="map">
+            <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">College Map</h2>
+              </div>
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+                <CollegeMap matchedColleges={colleges} savedColleges={savedColleges} />
+              </Suspense>
+            </motion.div>
+          </TabsContent>
+
         </Tabs>
       </main>
     </div>
