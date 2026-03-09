@@ -296,11 +296,11 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
     console.error("COLLEGE_SCORECARD_API_KEY missing or too short");
     return { data: "", count: 0 };
   }
-  console.log("COLLEGE_SCORECARD_API_KEY present:", true, "length:", apiKey.length, "starts:", apiKey.substring(0, 4));
+  console.log("COLLEGE_SCORECARD_API_KEY present:", true);
 
   const baseQuery = buildScorecardQuery(prefs);
   const baseUrl = "https://api.data.gov/ed/collegescorecard/v1/schools";
-  console.log("Scorecard query params:", baseQuery);
+  console.log("Scorecard query params:", baseQuery.replace(/api_key=[^&]+/, 'api_key=REDACTED'));
 
   // Helper to run a query and return results
   const runQuery = async (q: string): Promise<any[]> => {
@@ -591,7 +591,7 @@ serve(async (req) => {
         prefs[key] = s || raw[key];
       }
     }
-    console.log("Received preferences:", JSON.stringify(prefs, null, 2));
+    console.log("Processing preferences for areaOfStudy:", prefs.areaOfStudy, "campusSize:", prefs.campusSize);
 
     // Parse exclude list for "discover more" requests
     const excludeColleges: string[] = Array.isArray(body?.excludeColleges)
