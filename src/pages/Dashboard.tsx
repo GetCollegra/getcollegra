@@ -984,11 +984,16 @@ const Dashboard = () => {
           {/* Map Tab */}
           <TabsContent value="map">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <MapPin className="h-5 w-5 text-primary" />
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-foreground">College Map</h2>
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">College Map</h2>
+                <Button variant="outline" size="sm" onClick={() => navigate("/college-map")} className="gap-1.5">
+                  <MapPin className="h-4 w-4" /> Full Map View
+                </Button>
               </div>
               <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
                 <CollegeMap matchedColleges={colleges} savedColleges={savedColleges} />
