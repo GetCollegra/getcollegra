@@ -502,6 +502,7 @@ function buildUserPrompt(prefs: Record<string, any>, collegeData: string, exclud
 - Campus life interests: ${prefs.campusLife || "No preference"}
 - Academic importance: ${prefs.academicImportance || "No preference"}
 - Distance from home: ${prefs.distanceFromHome || "No preference"}
+- Weather/Region preference: ${prefs.weatherRegion || "No preference"}
 - Area of study: ${prefs.areaOfStudy || "Undecided"}
 
 All survey responses:

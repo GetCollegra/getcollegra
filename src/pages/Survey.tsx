@@ -124,6 +124,7 @@ const Survey = () => {
           { keywords: ["campus size", "size"], paramKey: "campus_size" },
           { keywords: ["vibe"], paramKey: "campus_vibe" },
           { keywords: ["location", "type of location"], paramKey: "location_type" },
+          { keywords: ["weather", "region"], paramKey: "weather_region" },
           { keywords: ["maximum", "pay", "cost", "willing to pay"], paramKey: "max_cost" },
           { keywords: ["acceptance rate"], paramKey: "acceptance_rate_pref" },
           { keywords: ["financial aid", "scholarships"], paramKey: "financial_aid" },
@@ -255,6 +256,7 @@ const Survey = () => {
           campusLife: clean(pick("campus_life", "campusLife"), "No preference"),
           academicImportance: clean(pick("academic_importance", "academicImportance"), "No preference"),
           distanceFromHome: clean(pick("distance_from_home", "distanceFromHome"), "No preference"),
+          weatherRegion: clean(pick("weather_region", "weatherRegion"), "No preference"),
           areaOfStudy: clean(pick("area_of_study", "areaOfStudy"), "Undecided"),
           allResponses: cleanedResponses,
         };
