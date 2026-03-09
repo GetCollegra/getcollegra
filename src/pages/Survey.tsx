@@ -256,6 +256,7 @@ const Survey = () => {
           campusLife: clean(pick("campus_life", "campusLife"), "No preference"),
           academicImportance: clean(pick("academic_importance", "academicImportance"), "No preference"),
           distanceFromHome: clean(pick("distance_from_home", "distanceFromHome"), "No preference"),
+          weatherRegion: clean(pick("weather_region", "weatherRegion"), "No preference"),
           areaOfStudy: clean(pick("area_of_study", "areaOfStudy"), "Undecided"),
           allResponses: cleanedResponses,
         };
