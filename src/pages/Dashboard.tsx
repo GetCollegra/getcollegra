@@ -23,6 +23,7 @@ import {
   ChevronDown, Users, BookOpen, Briefcase, Award
 } from "lucide-react";
 import type { College } from "@/types/college";
+const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 
 type SavedCollege = {
   id: string;
