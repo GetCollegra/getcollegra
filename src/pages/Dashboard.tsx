@@ -747,74 +747,10 @@ const Dashboard = () => {
             </motion.div>
           </TabsContent>
 
-          {/* 7. AI Insights */}
+          {/* 7. AI Insights (Premium) */}
           <TabsContent value="insights">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">AI Insights</h2>
-                  <p className="text-sm text-muted-foreground">Key takeaways from your college matches.</p>
-                </div>
-              </div>
-              {!insights ? (
-                <Card className="bg-card border-border border-dashed">
-                  <CardContent className="p-12 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                      <Sparkles className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No insights yet</h3>
-                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">Take the quiz to see personalized AI insights about your matches.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-3">
-                  {[
-                    {
-                      icon: Trophy,
-                      title: "Best Academic Match",
-                      name: insights.bestMatch.name,
-                      detail: `${insights.bestMatch.fitScore}% match · ${insights.bestMatch.location}`,
-                      accent: "primary",
-                    },
-                    {
-                      icon: Wallet,
-                      title: "Most Affordable",
-                      name: insights.mostAffordable.name,
-                      detail: `${insights.mostAffordable.netPrice} net price`,
-                      accent: "accent",
-                    },
-                    ...(insights.safetySchool ? [{
-                      icon: Shield,
-                      title: "Top Safety School",
-                      name: insights.safetySchool.name,
-                      detail: `${insights.safetySchool.acceptanceRate} acceptance rate`,
-                      accent: "accent" as const,
-                    }] : []),
-                  ].map((item, i) => {
-                    const Icon = item.icon;
-                    return (
-                      <motion.div key={item.title} variants={fadeIn} custom={i + 1}>
-                        <Card className="bg-card border-border hover:shadow-card transition-all duration-300 h-full overflow-hidden">
-                          <div className={`h-1 w-full ${item.accent === "primary" ? "bg-primary" : "bg-accent"}`} style={{ opacity: 0.6 }} />
-                          <CardContent className="p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className={`p-2.5 rounded-xl ${item.accent === "primary" ? "bg-primary/10" : "bg-accent/10"}`}>
-                                <Icon className={`h-5 w-5 ${item.accent === "primary" ? "text-primary" : "text-accent"}`} />
-                              </div>
-                              <h3 className="font-semibold text-muted-foreground text-sm">{item.title}</h3>
-                            </div>
-                            <p className="text-xl font-bold text-foreground mb-1">{item.name}</p>
-                            <p className="text-sm text-muted-foreground">{item.detail}</p>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              )}
+              <PremiumPaywall />
             </motion.div>
           </TabsContent>
 
