@@ -1,15 +1,42 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense, Component, type ReactNode, type ErrorInfo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
-import { Loader2, MapPin, Lock } from "lucide-react";
+import { Loader2, MapPin, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { College } from "@/types/college";
 
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
+
+// Error boundary to catch react-leaflet rendering issues
+class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("CollegeMap error:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
+          <AlertTriangle className="h-10 w-10 text-destructive" />
+          <p className="text-lg font-medium">Map failed to load</p>
+          <p className="text-sm max-w-md text-center">{this.state.error?.message || "An unexpected error occurred."}</p>
+          <Button variant="outline" onClick={() => this.setState({ hasError: false })}>Try Again</Button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const CollegeMapPage = () => {
   const { user, loading: authLoading } = useAuth();
