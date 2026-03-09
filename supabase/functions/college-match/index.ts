@@ -591,7 +591,7 @@ serve(async (req) => {
         prefs[key] = s || raw[key];
       }
     }
-    console.log("Received preferences:", JSON.stringify(prefs, null, 2));
+    console.log("Processing preferences for areaOfStudy:", prefs.areaOfStudy, "campusSize:", prefs.campusSize);
 
     // Parse exclude list for "discover more" requests
     const excludeColleges: string[] = Array.isArray(body?.excludeColleges)
