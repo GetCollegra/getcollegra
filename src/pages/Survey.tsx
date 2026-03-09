@@ -124,6 +124,7 @@ const Survey = () => {
           { keywords: ["campus size", "size"], paramKey: "campus_size" },
           { keywords: ["vibe"], paramKey: "campus_vibe" },
           { keywords: ["location", "type of location"], paramKey: "location_type" },
+          { keywords: ["weather", "region"], paramKey: "weather_region" },
           { keywords: ["maximum", "pay", "cost", "willing to pay"], paramKey: "max_cost" },
           { keywords: ["acceptance rate"], paramKey: "acceptance_rate_pref" },
           { keywords: ["financial aid", "scholarships"], paramKey: "financial_aid" },
