@@ -176,23 +176,25 @@ const CollegeMapPage = () => {
           </div>
 
           {/* Map */}
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center py-32">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            }
-          >
-            <CollegeMap
-              matchedColleges={colleges}
-              savedColleges={savedColleges}
-              homeLocation={homeLocation}
-              savedCollegeNames={savedNames}
-              onSaveCollege={handleSaveCollege}
-              savingCollege={savingCollege}
-              fullPage
-            />
-          </Suspense>
+          <MapErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-32">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              }
+            >
+              <CollegeMap
+                matchedColleges={colleges}
+                savedColleges={savedColleges}
+                homeLocation={homeLocation}
+                savedCollegeNames={savedNames}
+                onSaveCollege={handleSaveCollege}
+                savingCollege={savingCollege}
+                fullPage
+              />
+            </Suspense>
+          </MapErrorBoundary>
         </motion.div>
       </main>
     </div>
