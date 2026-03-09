@@ -20,9 +20,10 @@ import {
   GraduationCap, Star, BookmarkPlus, Bookmark, BarChart3, StickyNote,
   Sparkles, MapPin, DollarSign, Target, Shield, TrendingUp,
   LogOut, Trophy, Navigation, Wallet, Loader2, Trash2, Plus, Search,
-  ChevronDown, Users, BookOpen, Briefcase, Award
+  ChevronDown, Users, BookOpen, Briefcase, Award, Lock
 } from "lucide-react";
 import type { College } from "@/types/college";
+import PremiumPaywall from "@/components/PremiumPaywall";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 
 type SavedCollege = {
@@ -402,10 +403,10 @@ const Dashboard = () => {
           <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
             <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
             <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>
-            <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><BarChart3 className="h-4 w-4" /> Compare</TabsTrigger>
-            <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><StickyNote className="h-4 w-4" /> Notes</TabsTrigger>
-            <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Sparkles className="h-4 w-4" /> Insights</TabsTrigger>
-            <TabsTrigger value="map" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><MapPin className="h-4 w-4" /> Map</TabsTrigger>
+            <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><BarChart3 className="h-4 w-4" /> Compare <Lock className="h-3 w-3 text-muted-foreground" /></TabsTrigger>
+            <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><StickyNote className="h-4 w-4" /> Notes <Lock className="h-3 w-3 text-muted-foreground" /></TabsTrigger>
+            <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Sparkles className="h-4 w-4" /> Insights <Lock className="h-3 w-3 text-muted-foreground" /></TabsTrigger>
+            <TabsTrigger value="map" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><MapPin className="h-4 w-4" /> Map <Lock className="h-3 w-3 text-muted-foreground" /></TabsTrigger>
           </TabsList>
 
           {/* 2. College Matches */}
@@ -732,272 +733,31 @@ const Dashboard = () => {
             </motion.div>
           </TabsContent>
 
-          {/* 5. Compare Colleges */}
+          {/* 5. Compare Colleges (Premium) */}
           <TabsContent value="compare">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">Compare Colleges</h2>
-                  <p className="text-muted-foreground text-sm">Select up to 4 saved colleges to compare side-by-side.</p>
-                </div>
-              </div>
-
-              {savedColleges.length === 0 ? (
-                <Card className="bg-card border-border mt-6">
-                  <CardContent className="p-10 text-center">
-                    <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Save some colleges first to compare them.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <>
-                  <div className="flex flex-wrap gap-2 mt-6 mb-8">
-                    {savedColleges.map(s => {
-                      const isSelected = compareIds.has(s.id);
-                      const cat = fitCategoryConfig[s.college_data.fitCategory] || fitCategoryConfig.Match;
-                      return (
-                        <label
-                          key={s.id}
-                          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                            isSelected
-                              ? "bg-primary/5 border-primary shadow-soft"
-                              : "bg-card border-border hover:border-primary/30 hover:shadow-soft"
-                          }`}
-                        >
-                          <Checkbox checked={isSelected} onCheckedChange={() => toggleCompare(s.id)} />
-                          <span className="text-sm font-medium text-foreground">{s.college_name}</span>
-                          <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px] px-1.5 py-0`}>
-                            {s.college_data.fitScore}%
-                          </Badge>
-                        </label>
-                      );
-                    })}
-                  </div>
-
-                  {comparedColleges.length >= 2 && (
-                    <div className="space-y-0">
-                      {/* College Header Cards */}
-                      <div className={`grid gap-4 mb-6`} style={{ gridTemplateColumns: `repeat(${comparedColleges.length}, minmax(0, 1fr))` }}>
-                        {comparedColleges.map(c => {
-                          const cat = fitCategoryConfig[c.college_data.fitCategory] || fitCategoryConfig.Match;
-                          const CatIcon = cat.icon;
-                          return (
-                            <Card key={c.id} className="bg-card border-border overflow-hidden">
-                              <div className="h-1.5 bg-primary w-full" style={{ opacity: c.college_data.fitScore / 100 }} />
-                              <CardContent className="p-5 text-center">
-                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                                  <GraduationCap className="h-6 w-6 text-primary" />
-                                </div>
-                                <h3 className="font-bold text-foreground text-sm leading-tight mb-1">{c.college_name}</h3>
-                                <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-3">
-                                  <MapPin className="h-3 w-3" />{c.college_data.location}
-                                </div>
-                                <div className="text-2xl font-bold text-primary mb-1">{c.college_data.fitScore}%</div>
-                                <Badge className={`${cat.bg} ${cat.color} border-0 text-xs`}>
-                                  <CatIcon className="h-3 w-3 mr-1" />{c.college_data.fitCategory}
-                                </Badge>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
-
-                      {/* Comparison Rows */}
-                      <div className="rounded-xl border border-border overflow-hidden bg-card">
-                        {[
-                          { label: "Acceptance Rate", icon: Target, key: (c: College) => c.acceptanceRate },
-                          { label: "Net Price", icon: DollarSign, key: (c: College) => c.netPrice },
-                          { label: "Student Body", icon: GraduationCap, key: (c: College) => c.studentBody },
-                          { label: "Setting", icon: MapPin, key: (c: College) => c.setting },
-                          { label: "Graduation Rate", icon: Trophy, key: (c: College) => c.graduationRate },
-                          { label: "Avg Starting Salary", icon: Wallet, key: (c: College) => c.avgStartingSalary },
-                          { label: "Top Programs", icon: Star, key: (c: College) => c.topPrograms?.join(", ") || "—" },
-                          { label: "Campus Vibe", icon: Navigation, key: (c: College) => c.campusVibe },
-                        ].map((row, idx) => {
-                          const RowIcon = row.icon;
-                          return (
-                            <div
-                              key={row.label}
-                              className={`grid items-center gap-4 px-5 py-4 ${idx % 2 === 0 ? "bg-card" : "bg-muted/30"} ${idx > 0 ? "border-t border-border/50" : ""}`}
-                              style={{ gridTemplateColumns: `180px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
-                            >
-                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                                <RowIcon className="h-4 w-4 shrink-0" />
-                                {row.label}
-                              </div>
-                              {comparedColleges.map(c => (
-                                <div key={c.id} className="text-sm font-medium text-foreground">
-                                  {row.key(c.college_data)}
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {comparedColleges.length < 2 && comparedColleges.length > 0 && (
-                    <Card className="bg-card border-border border-dashed">
-                      <CardContent className="p-8 text-center">
-                        <p className="text-sm text-muted-foreground">Select at least <span className="font-semibold text-foreground">2 colleges</span> to see the comparison.</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </>
-              )}
+              <PremiumPaywall />
             </motion.div>
           </TabsContent>
 
-          {/* 6. Personal Notes */}
+          {/* 6. Personal Notes (Premium) */}
           <TabsContent value="notes">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <StickyNote className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">Personal Notes</h2>
-                  <p className="text-sm text-muted-foreground">Jot down your thoughts about each school.</p>
-                </div>
-              </div>
-              {savedColleges.length === 0 ? (
-                <Card className="bg-card border-border border-dashed">
-                  <CardContent className="p-12 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                      <StickyNote className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No notes yet</h3>
-                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">Save colleges first, then come back to add your notes here.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-5 md:grid-cols-2">
-                  {savedColleges.map(saved => {
-                    const cat = fitCategoryConfig[saved.college_data.fitCategory] || fitCategoryConfig.Match;
-                    return (
-                      <Card key={saved.id} className="bg-card border-border hover:shadow-soft transition-all">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-base flex items-center gap-2.5">
-                              <div className="p-1.5 rounded-lg bg-primary/10">
-                                <GraduationCap className="h-4 w-4 text-primary" />
-                              </div>
-                              <span className="truncate">{saved.college_name}</span>
-                            </CardTitle>
-                            <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px]`}>{saved.status}</Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <Textarea
-                            placeholder="What stands out about this school? What are your concerns?"
-                            value={saved.notes}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSavedColleges(prev => prev.map(s => s.id === saved.id ? { ...s, notes: val } : s));
-                            }}
-                            onBlur={(e) => updateNotes(saved.id, e.target.value)}
-                            className="min-h-[120px] text-sm bg-muted/30 border-border/50 focus:bg-card resize-none"
-                          />
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
+              <PremiumPaywall />
             </motion.div>
           </TabsContent>
 
-          {/* 7. AI Insights */}
+          {/* 7. AI Insights (Premium) */}
           <TabsContent value="insights">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">AI Insights</h2>
-                  <p className="text-sm text-muted-foreground">Key takeaways from your college matches.</p>
-                </div>
-              </div>
-              {!insights ? (
-                <Card className="bg-card border-border border-dashed">
-                  <CardContent className="p-12 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                      <Sparkles className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No insights yet</h3>
-                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">Take the quiz to see personalized AI insights about your matches.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-3">
-                  {[
-                    {
-                      icon: Trophy,
-                      title: "Best Academic Match",
-                      name: insights.bestMatch.name,
-                      detail: `${insights.bestMatch.fitScore}% match · ${insights.bestMatch.location}`,
-                      accent: "primary",
-                    },
-                    {
-                      icon: Wallet,
-                      title: "Most Affordable",
-                      name: insights.mostAffordable.name,
-                      detail: `${insights.mostAffordable.netPrice} net price`,
-                      accent: "accent",
-                    },
-                    ...(insights.safetySchool ? [{
-                      icon: Shield,
-                      title: "Top Safety School",
-                      name: insights.safetySchool.name,
-                      detail: `${insights.safetySchool.acceptanceRate} acceptance rate`,
-                      accent: "accent" as const,
-                    }] : []),
-                  ].map((item, i) => {
-                    const Icon = item.icon;
-                    return (
-                      <motion.div key={item.title} variants={fadeIn} custom={i + 1}>
-                        <Card className="bg-card border-border hover:shadow-card transition-all duration-300 h-full overflow-hidden">
-                          <div className={`h-1 w-full ${item.accent === "primary" ? "bg-primary" : "bg-accent"}`} style={{ opacity: 0.6 }} />
-                          <CardContent className="p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className={`p-2.5 rounded-xl ${item.accent === "primary" ? "bg-primary/10" : "bg-accent/10"}`}>
-                                <Icon className={`h-5 w-5 ${item.accent === "primary" ? "text-primary" : "text-accent"}`} />
-                              </div>
-                              <h3 className="font-semibold text-muted-foreground text-sm">{item.title}</h3>
-                            </div>
-                            <p className="text-xl font-bold text-foreground mb-1">{item.name}</p>
-                            <p className="text-sm text-muted-foreground">{item.detail}</p>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              )}
+              <PremiumPaywall />
             </motion.div>
           </TabsContent>
 
-          {/* Map Tab */}
+          {/* Map Tab (Premium) */}
           <TabsContent value="map">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <MapPin className="h-5 w-5 text-primary" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-foreground">College Map</h2>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigate("/college-map")} className="gap-1.5">
-                  <MapPin className="h-4 w-4" /> Full Map View
-                </Button>
-              </div>
-              <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-                <CollegeMap matchedColleges={colleges} savedColleges={savedColleges} />
-              </Suspense>
+              <PremiumPaywall />
             </motion.div>
           </TabsContent>
 
