@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect, useMemo, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin } from "lucide-react";
+import { MapPin, BookmarkPlus, Loader2, Filter, Navigation } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { College } from "@/types/college";
 
 // Fix default marker icons
@@ -13,27 +18,44 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const fitCategoryColors: Record<string, string> = {
-  Safety: "#10b981",
-  Match: "hsl(var(--primary))",
-  Reach: "#ea580c",
-};
-
 function createColorIcon(color: string) {
   return L.divIcon({
     className: "custom-marker",
     html: `<div style="
-      width: 28px; height: 28px; border-radius: 50% 50% 50% 0;
+      width: 30px; height: 30px; border-radius: 50% 50% 50% 0;
       background: ${color}; transform: rotate(-45deg);
-      border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.35);
     "></div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -28],
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30],
   });
 }
 
-// Simple US state/city geocoding fallback
+// Home marker icon
+function createHomeIcon() {
+  return L.divIcon({
+    className: "home-marker",
+    html: `<div style="
+      width: 32px; height: 32px; border-radius: 50%;
+      background: hsl(var(--destructive)); 
+      border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 16px;
+    ">🏠</div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
+  });
+}
+
+const FIT_COLORS: Record<string, string> = {
+  Safety: "#10b981",
+  Match: "#1d6fd3",
+  Reach: "#ea580c",
+};
+
+// US state coordinates for geocoding
 const STATE_COORDS: Record<string, [number, number]> = {
   AL: [32.8, -86.8], AK: [64.2, -152.5], AZ: [34.0, -111.1], AR: [35.2, -91.8],
   CA: [36.8, -119.4], CO: [39.1, -105.4], CT: [41.6, -72.7], DE: [38.9, -75.5],
@@ -50,69 +72,139 @@ const STATE_COORDS: Record<string, [number, number]> = {
   WI: [43.8, -88.8], WY: [43.1, -107.6], DC: [38.9, -77.0],
 };
 
-function geocodeLocation(location: string): [number, number] | null {
+const STATE_NAMES: Record<string, string> = {
+  "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR",
+  "california": "CA", "colorado": "CO", "connecticut": "CT", "delaware": "DE",
+  "florida": "FL", "georgia": "GA", "hawaii": "HI", "idaho": "ID",
+  "illinois": "IL", "indiana": "IN", "iowa": "IA", "kansas": "KS",
+  "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
+  "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
+  "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV",
+  "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
+  "north carolina": "NC", "north dakota": "ND", "ohio": "OH", "oklahoma": "OK",
+  "oregon": "OR", "pennsylvania": "PA", "rhode island": "RI", "south carolina": "SC",
+  "south dakota": "SD", "tennessee": "TN", "texas": "TX", "utah": "UT",
+  "vermont": "VT", "virginia": "VA", "washington": "WA", "west virginia": "WV",
+  "wisconsin": "WI", "wyoming": "WY", "district of columbia": "DC",
+};
+
+function resolveStateAbbr(input: string): string | null {
+  const upper = input.trim().toUpperCase();
+  if (STATE_COORDS[upper]) return upper;
+  return STATE_NAMES[input.trim().toLowerCase()] || null;
+}
+
+export function geocodeLocation(location: string): [number, number] | null {
   if (!location || location === "—") return null;
-  // Try to extract state abbreviation
   const parts = location.split(",").map(s => s.trim());
-  const stateStr = parts[parts.length - 1]?.toUpperCase();
-  if (stateStr && STATE_COORDS[stateStr]) {
-    // Add slight random offset so markers don't overlap
-    const [lat, lng] = STATE_COORDS[stateStr];
-    return [lat + (Math.random() - 0.5) * 1.5, lng + (Math.random() - 0.5) * 1.5];
-  }
-  // Try full state name match
-  const stateNames: Record<string, string> = {
-    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR",
-    "california": "CA", "colorado": "CO", "connecticut": "CT", "delaware": "DE",
-    "florida": "FL", "georgia": "GA", "hawaii": "HI", "idaho": "ID",
-    "illinois": "IL", "indiana": "IN", "iowa": "IA", "kansas": "KS",
-    "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
-    "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
-    "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV",
-    "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
-    "north carolina": "NC", "north dakota": "ND", "ohio": "OH", "oklahoma": "OK",
-    "oregon": "OR", "pennsylvania": "PA", "rhode island": "RI", "south carolina": "SC",
-    "south dakota": "SD", "tennessee": "TN", "texas": "TX", "utah": "UT",
-    "vermont": "VT", "virginia": "VA", "washington": "WA", "west virginia": "WV",
-    "wisconsin": "WI", "wyoming": "WY", "district of columbia": "DC",
-  };
-  const abbr = stateNames[stateStr?.toLowerCase()];
+  const stateStr = parts[parts.length - 1];
+  const abbr = stateStr ? resolveStateAbbr(stateStr) : null;
   if (abbr && STATE_COORDS[abbr]) {
     const [lat, lng] = STATE_COORDS[abbr];
-    return [lat + (Math.random() - 0.5) * 1.5, lng + (Math.random() - 0.5) * 1.5];
+    // Deterministic offset based on city name to avoid random repositioning
+    const cityHash = parts[0] ? [...parts[0]].reduce((a, c) => a + c.charCodeAt(0), 0) : 0;
+    const offset1 = ((cityHash % 100) / 100 - 0.5) * 1.2;
+    const offset2 = (((cityHash * 7) % 100) / 100 - 0.5) * 1.2;
+    return [lat + offset1, lng + offset2];
   }
   return null;
 }
 
-type CollegeWithSource = {
+/** Calculate distance in miles between two [lat, lng] points */
+function haversineDistance(a: [number, number], b: [number, number]): number {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const R = 3959; // Earth radius in miles
+  const dLat = toRad(b[0] - a[0]);
+  const dLon = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+// Auto-fit bounds component
+function FitBounds({ positions }: { positions: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (positions.length > 0) {
+      const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 });
+    }
+  }, [positions, map]);
+  return null;
+}
+
+export type MarkerData = {
+  pos: [number, number];
   college: College;
-  source: "match" | "saved";
+  distance: number | null; // miles from home
 };
 
 type CollegeMapProps = {
   matchedColleges: College[];
   savedColleges: { college_data: College; college_name: string }[];
+  homeLocation?: string; // e.g. "Dallas, TX"
+  savedCollegeNames?: Set<string>;
+  onSaveCollege?: (college: College) => void;
+  savingCollege?: string | null;
+  fullPage?: boolean;
 };
 
-export default function CollegeMap({ matchedColleges, savedColleges }: CollegeMapProps) {
-  const [markers, setMarkers] = useState<{ pos: [number, number]; college: College; source: string }[]>([]);
+export default function CollegeMap({
+  matchedColleges,
+  savedColleges,
+  homeLocation,
+  savedCollegeNames,
+  onSaveCollege,
+  savingCollege,
+  fullPage = false,
+}: CollegeMapProps) {
+  const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Safety", "Match", "Reach"]));
+  const [distanceFilter, setDistanceFilter] = useState<string>("all");
 
-  useEffect(() => {
-    const all = new Map<string, CollegeWithSource>();
-    matchedColleges.forEach(c => all.set(c.name, { college: c, source: "match" }));
+  const homePos = useMemo(() => {
+    if (!homeLocation) return null;
+    return geocodeLocation(homeLocation);
+  }, [homeLocation]);
+
+  const markers = useMemo(() => {
+    const all = new Map<string, College>();
+    matchedColleges.forEach(c => all.set(c.name, c));
     savedColleges.forEach(s => {
-      if (!all.has(s.college_name)) {
-        all.set(s.college_name, { college: s.college_data, source: "saved" });
-      }
+      if (!all.has(s.college_name)) all.set(s.college_name, s.college_data);
     });
 
-    const result: { pos: [number, number]; college: College; source: string }[] = [];
-    all.forEach(({ college, source }) => {
+    const result: MarkerData[] = [];
+    all.forEach((college) => {
       const pos = geocodeLocation(college.location);
-      if (pos) result.push({ pos, college, source });
+      if (!pos) return;
+      const distance = homePos ? Math.round(haversineDistance(homePos, pos)) : null;
+      result.push({ pos, college, distance });
     });
-    setMarkers(result);
-  }, [matchedColleges, savedColleges]);
+    return result;
+  }, [matchedColleges, savedColleges, homePos]);
+
+  const filteredMarkers = useMemo(() => {
+    return markers.filter(m => {
+      if (!filterCategories.has(m.college.fitCategory)) return false;
+      if (distanceFilter !== "all" && m.distance !== null) {
+        const maxMiles = parseInt(distanceFilter);
+        if (m.distance > maxMiles) return false;
+      }
+      return true;
+    });
+  }, [markers, filterCategories, distanceFilter]);
+
+  const toggleCategory = (cat: string) => {
+    setFilterCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
+
+  const mapHeight = fullPage ? "calc(100vh - 280px)" : "480px";
 
   if (markers.length === 0) {
     return (
@@ -126,7 +218,57 @@ export default function CollegeMap({ matchedColleges, savedColleges }: CollegeMa
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+      {/* Filter Bar */}
+      <Card className="bg-card border-border shadow-soft">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span>Filters</span>
+            </div>
+            <div className="h-6 w-px bg-border hidden sm:block" />
+            {/* Fit Category Filters */}
+            {(["Safety", "Match", "Reach"] as const).map(cat => {
+              const checked = filterCategories.has(cat);
+              const dotColor = cat === "Safety" ? "bg-emerald-500" : cat === "Match" ? "bg-primary" : "bg-orange-500";
+              return (
+                <label key={cat} className="flex items-center gap-2 cursor-pointer select-none">
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={() => toggleCategory(cat)}
+                  />
+                  <span className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                  <span className="text-sm text-foreground">{cat}</span>
+                </label>
+              );
+            })}
+            <div className="h-6 w-px bg-border hidden sm:block" />
+            {/* Distance Filter */}
+            <div className="flex items-center gap-2">
+              <Navigation className="h-4 w-4 text-muted-foreground" />
+              <Select value={distanceFilter} onValueChange={setDistanceFilter}>
+                <SelectTrigger className="h-8 w-[160px] text-sm">
+                  <SelectValue placeholder="Distance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All distances</SelectItem>
+                  <SelectItem value="100">Within 100 mi</SelectItem>
+                  <SelectItem value="250">Within 250 mi</SelectItem>
+                  <SelectItem value="500">Within 500 mi</SelectItem>
+                  <SelectItem value="1000">Within 1,000 mi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Count */}
+            <Badge variant="secondary" className="ml-auto text-xs">
+              {filteredMarkers.length} of {markers.length} colleges
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-5 text-sm text-muted-foreground px-1">
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" /> Safety
         </span>
@@ -134,10 +276,17 @@ export default function CollegeMap({ matchedColleges, savedColleges }: CollegeMa
           <span className="w-3 h-3 rounded-full bg-primary inline-block" /> Match
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-orange-600 inline-block" /> Reach
+          <span className="w-3 h-3 rounded-full bg-orange-500 inline-block" /> Reach
         </span>
+        {homePos && (
+          <span className="flex items-center gap-1.5">
+            <span className="text-base">🏠</span> Your Home
+          </span>
+        )}
       </div>
-      <div className="rounded-xl overflow-hidden border border-border shadow-soft" style={{ height: 480 }}>
+
+      {/* Map */}
+      <div className="rounded-xl overflow-hidden border border-border shadow-card" style={{ height: mapHeight, minHeight: 400 }}>
         <MapContainer
           center={[39.8, -98.6]}
           zoom={4}
@@ -148,31 +297,94 @@ export default function CollegeMap({ matchedColleges, savedColleges }: CollegeMa
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          {markers.map((m, i) => (
-            <Marker
-              key={`${m.college.name}-${i}`}
-              position={m.pos}
-              icon={createColorIcon(fitCategoryColors[m.college.fitCategory] || fitCategoryColors.Match)}
-            >
+          <FitBounds positions={[...filteredMarkers.map(m => m.pos), ...(homePos ? [homePos] : [])]} />
+
+          {/* Home marker */}
+          {homePos && (
+            <Marker position={homePos} icon={createHomeIcon()}>
               <Popup>
-                <div className="min-w-[180px]">
-                  <p className="font-bold text-sm mb-1">{m.college.name}</p>
-                  <p className="text-xs text-gray-600 mb-2">{m.college.location}</p>
-                  <div className="flex flex-wrap gap-1 mb-1">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 font-medium">
-                      {m.college.fitCategory}
-                    </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 font-medium">
-                      Fit: {m.college.fitScore}/100
-                    </span>
-                  </div>
-                  {m.college.netPrice !== "—" && (
-                    <p className="text-[11px] text-gray-500">Net Price: {m.college.netPrice}</p>
-                  )}
+                <div className="text-center p-1">
+                  <p className="font-bold text-sm">🏠 Your Home</p>
+                  <p className="text-xs text-muted-foreground">{homeLocation}</p>
                 </div>
               </Popup>
             </Marker>
-          ))}
+          )}
+
+          {/* College markers */}
+          {filteredMarkers.map((m, i) => {
+            const isSaved = savedCollegeNames?.has(m.college.name);
+            const isSaving = savingCollege === m.college.name;
+            return (
+              <Marker
+                key={`${m.college.name}-${i}`}
+                position={m.pos}
+                icon={createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match)}
+              >
+                <Popup minWidth={240} maxWidth={300}>
+                  <div className="p-1">
+                    <p className="font-bold text-sm mb-0.5">{m.college.name}</p>
+                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                      <span>📍</span> {m.college.location}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-3 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Acceptance:</span>
+                        <p className="font-semibold text-foreground">{m.college.acceptanceRate}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Tuition:</span>
+                        <p className="font-semibold text-foreground">{m.college.tuitionOutOfState || m.college.netPrice}</p>
+                      </div>
+                      {m.distance !== null && (
+                        <div>
+                          <span className="text-muted-foreground">Distance:</span>
+                          <p className="font-semibold text-foreground">~{m.distance.toLocaleString()} mi</p>
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-muted-foreground">Fit:</span>
+                        <p className="font-semibold text-foreground">{m.college.fitScore}/100</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge
+                        variant="secondary"
+                        className={`text-[10px] ${
+                          m.college.fitCategory === "Safety"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : m.college.fitCategory === "Reach"
+                            ? "bg-orange-100 text-orange-700"
+                            : "bg-primary/10 text-primary"
+                        }`}
+                      >
+                        {m.college.fitCategory}
+                      </Badge>
+                    </div>
+
+                    {onSaveCollege && (
+                      <Button
+                        size="sm"
+                        variant={isSaved ? "secondary" : "default"}
+                        className="w-full text-xs h-8"
+                        disabled={isSaved || isSaving}
+                        onClick={() => onSaveCollege(m.college)}
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : (
+                          <BookmarkPlus className="h-3 w-3 mr-1" />
+                        )}
+                        {isSaved ? "Already Saved" : "Add to My College List"}
+                      </Button>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
     </div>
