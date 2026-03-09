@@ -740,62 +740,10 @@ const Dashboard = () => {
             </motion.div>
           </TabsContent>
 
-          {/* 6. Personal Notes */}
+          {/* 6. Personal Notes (Premium) */}
           <TabsContent value="notes">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <StickyNote className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">Personal Notes</h2>
-                  <p className="text-sm text-muted-foreground">Jot down your thoughts about each school.</p>
-                </div>
-              </div>
-              {savedColleges.length === 0 ? (
-                <Card className="bg-card border-border border-dashed">
-                  <CardContent className="p-12 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                      <StickyNote className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No notes yet</h3>
-                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">Save colleges first, then come back to add your notes here.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-5 md:grid-cols-2">
-                  {savedColleges.map(saved => {
-                    const cat = fitCategoryConfig[saved.college_data.fitCategory] || fitCategoryConfig.Match;
-                    return (
-                      <Card key={saved.id} className="bg-card border-border hover:shadow-soft transition-all">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-base flex items-center gap-2.5">
-                              <div className="p-1.5 rounded-lg bg-primary/10">
-                                <GraduationCap className="h-4 w-4 text-primary" />
-                              </div>
-                              <span className="truncate">{saved.college_name}</span>
-                            </CardTitle>
-                            <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px]`}>{saved.status}</Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <Textarea
-                            placeholder="What stands out about this school? What are your concerns?"
-                            value={saved.notes}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSavedColleges(prev => prev.map(s => s.id === saved.id ? { ...s, notes: val } : s));
-                            }}
-                            onBlur={(e) => updateNotes(saved.id, e.target.value)}
-                            className="min-h-[120px] text-sm bg-muted/30 border-border/50 focus:bg-card resize-none"
-                          />
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
+              <PremiumPaywall />
             </motion.div>
           </TabsContent>
 
