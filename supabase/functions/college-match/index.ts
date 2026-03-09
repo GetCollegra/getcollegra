@@ -296,7 +296,7 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
     console.error("COLLEGE_SCORECARD_API_KEY missing or too short");
     return { data: "", count: 0 };
   }
-  console.log("COLLEGE_SCORECARD_API_KEY present:", true, "length:", apiKey.length, "starts:", apiKey.substring(0, 4));
+  console.log("COLLEGE_SCORECARD_API_KEY present:", true);
 
   const baseQuery = buildScorecardQuery(prefs);
   const baseUrl = "https://api.data.gov/ed/collegescorecard/v1/schools";
