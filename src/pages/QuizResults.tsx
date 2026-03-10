@@ -11,6 +11,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 import { trackClick } from "@/lib/analytics";
+import { startCheckout } from "@/lib/checkout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { College, Recommendations } from "@/types/college";
