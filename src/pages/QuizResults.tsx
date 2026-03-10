@@ -973,12 +973,14 @@ const QuizResults = () => {
                     <div className="flex items-center gap-2">📍 <span>Side-by-side</span></div>
                   </div>
 
-                  <Link to="/coming-soon" onClick={() => trackClick("Unlock Full Results CTA", "QuizResults")} className="block">
-                    <Button size="xl" className="rounded-full px-8 sm:px-12 gap-2 sm:gap-2.5 bg-white text-primary hover:bg-white/95 font-bold text-base sm:text-lg shadow-elevated hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                  <button onClick={() => { trackClick("Unlock Full Results CTA", "QuizResults"); startCheckout(toast); }} className="block">
+                    <Button size="xl" className="rounded-full px-8 sm:px-12 gap-2 sm:gap-2.5 bg-white text-primary hover:bg-white/95 font-bold text-base sm:text-lg shadow-elevated hover:scale-[1.03] active:scale-[0.98] transition-all duration-200" asChild>
+                      <span>
                       Unlock Full Results – $9.99/mo
                       <ArrowRight className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                      </span>
                     </Button>
-                  </Link>
+                  </button>
                 </motion.div>
               </div>
             </section>

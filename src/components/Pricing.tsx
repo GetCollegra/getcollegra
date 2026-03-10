@@ -2,15 +2,16 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { trackClick } from "@/lib/analytics";
-import { useNavigate } from "react-router-dom";
+import { startCheckout } from "@/lib/checkout";
+import { useToast } from "@/hooks/use-toast";
 
 
 const Pricing = () => {
-  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handlePricingClick = (label: string, section: string) => {
     trackClick(label, section);
-    navigate("/coming-soon");
+    startCheckout(toast);
   };
 
   return (
