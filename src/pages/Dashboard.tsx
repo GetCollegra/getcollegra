@@ -41,7 +41,7 @@ const fitCategoryConfig: Record<string, { color: string; bg: string; icon: typeo
 };
 
 const Dashboard = () => {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut, isSubscribed, refreshSubscription } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -119,6 +119,16 @@ const Dashboard = () => {
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
   }, [authLoading, user, navigate]);
+
+  // Refresh subscription after checkout redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upgraded") === "true") {
+      refreshSubscription();
+      // Clean URL
+      window.history.replaceState({}, "", "/dashboard");
+    }
+  }, [refreshSubscription]);
 
   // Load profile name
   useEffect(() => {
@@ -403,10 +413,10 @@ const Dashboard = () => {
           <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
             <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
             <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>
-            <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><BarChart3 className="h-4 w-4" /> Compare <Lock className="h-3 w-3 text-muted-foreground" /></TabsTrigger>
-            <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><StickyNote className="h-4 w-4" /> Notes <Lock className="h-3 w-3 text-muted-foreground" /></TabsTrigger>
-            <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Sparkles className="h-4 w-4" /> Insights <Lock className="h-3 w-3 text-muted-foreground" /></TabsTrigger>
-            <TabsTrigger value="map" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><MapPin className="h-4 w-4" /> Map <Lock className="h-3 w-3 text-muted-foreground" /></TabsTrigger>
+            <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><BarChart3 className="h-4 w-4" /> Compare {!isSubscribed && <Lock className="h-3 w-3 text-muted-foreground" />}</TabsTrigger>
+            <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><StickyNote className="h-4 w-4" /> Notes {!isSubscribed && <Lock className="h-3 w-3 text-muted-foreground" />}</TabsTrigger>
+            <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Sparkles className="h-4 w-4" /> Insights {!isSubscribed && <Lock className="h-3 w-3 text-muted-foreground" />}</TabsTrigger>
+            <TabsTrigger value="map" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><MapPin className="h-4 w-4" /> Map {!isSubscribed && <Lock className="h-3 w-3 text-muted-foreground" />}</TabsTrigger>
           </TabsList>
 
           {/* 2. College Matches */}
@@ -736,28 +746,170 @@ const Dashboard = () => {
           {/* 5. Compare Colleges (Premium) */}
           <TabsContent value="compare">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <PremiumPaywall />
+              {isSubscribed ? (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 rounded-lg bg-primary/10"><BarChart3 className="h-5 w-5 text-primary" /></div>
+                    <h2 className="text-2xl font-bold text-foreground">Compare Colleges</h2>
+                  </div>
+                  {savedColleges.length < 2 ? (
+                    <Card className="bg-card border-border"><CardContent className="p-10 text-center">
+                      <p className="text-muted-foreground">Save at least 2 colleges to compare them side by side.</p>
+                    </CardContent></Card>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-2 mb-6">
+                        {savedColleges.map(s => (
+                          <Button key={s.id} variant={compareIds.has(s.id) ? "default" : "outline"} size="sm" onClick={() => toggleCompare(s.id)}>
+                            {s.college_name}
+                          </Button>
+                        ))}
+                      </div>
+                      {comparedColleges.length >= 2 && (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-[160px]">Metric</TableHead>
+                                {comparedColleges.map(c => <TableHead key={c.id}>{c.college_name}</TableHead>)}
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {[
+                                { label: "Fit Score", key: "fitScore", suffix: "%" },
+                                { label: "Acceptance Rate", key: "acceptanceRate" },
+                                { label: "Net Price", key: "netPrice" },
+                                { label: "Graduation Rate", key: "graduationRate" },
+                                { label: "Student:Faculty", key: "studentFacultyRatio" },
+                                { label: "Avg Starting Salary", key: "avgStartingSalary" },
+                                { label: "Campus Size", key: "campusSize" },
+                                { label: "Setting", key: "setting" },
+                              ].map(row => (
+                                <TableRow key={row.label}>
+                                  <TableCell className="font-medium">{row.label}</TableCell>
+                                  {comparedColleges.map(c => (
+                                    <TableCell key={c.id}>
+                                      {(c.college_data as any)[row.key]}{row.suffix || ""}
+                                    </TableCell>
+                                  ))}
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : <PremiumPaywall />}
             </motion.div>
           </TabsContent>
 
           {/* 6. Personal Notes (Premium) */}
           <TabsContent value="notes">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <PremiumPaywall />
+              {isSubscribed ? (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 rounded-lg bg-primary/10"><StickyNote className="h-5 w-5 text-primary" /></div>
+                    <h2 className="text-2xl font-bold text-foreground">Personal Notes</h2>
+                  </div>
+                  {savedColleges.length === 0 ? (
+                    <Card className="bg-card border-border"><CardContent className="p-10 text-center">
+                      <p className="text-muted-foreground">Save some colleges first to add notes.</p>
+                    </CardContent></Card>
+                  ) : (
+                    <div className="space-y-4">
+                      {savedColleges.map(saved => (
+                        <Card key={saved.id} className="bg-card border-border">
+                          <CardContent className="p-5">
+                            <h3 className="font-semibold text-foreground mb-3">{saved.college_name}</h3>
+                            <Textarea
+                              placeholder="Add your personal notes about this school..."
+                              value={saved.notes}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSavedColleges(prev => prev.map(s => s.id === saved.id ? { ...s, notes: val } : s));
+                              }}
+                              onBlur={() => updateNotes(saved.id, saved.notes)}
+                              className="min-h-[100px] bg-muted/30"
+                            />
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : <PremiumPaywall />}
             </motion.div>
           </TabsContent>
 
           {/* 7. AI Insights (Premium) */}
           <TabsContent value="insights">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <PremiumPaywall />
+              {isSubscribed ? (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 rounded-lg bg-primary/10"><Sparkles className="h-5 w-5 text-primary" /></div>
+                    <h2 className="text-2xl font-bold text-foreground">AI Insights</h2>
+                  </div>
+                  {!insights ? (
+                    <Card className="bg-card border-border"><CardContent className="p-10 text-center">
+                      <p className="text-muted-foreground">Take the quiz to get AI-powered insights.</p>
+                    </CardContent></Card>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {insights.bestMatch && (
+                        <Card className="bg-card border-border">
+                          <CardContent className="p-5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Trophy className="h-5 w-5 text-primary" />
+                              <p className="text-sm font-semibold text-muted-foreground">Best Overall Match</p>
+                            </div>
+                            <p className="text-lg font-bold text-foreground">{insights.bestMatch.name}</p>
+                            <p className="text-sm text-primary font-semibold">{insights.bestMatch.fitScore}% fit</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                      {insights.mostAffordable && (
+                        <Card className="bg-card border-border">
+                          <CardContent className="p-5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Wallet className="h-5 w-5 text-emerald-600" />
+                              <p className="text-sm font-semibold text-muted-foreground">Most Affordable</p>
+                            </div>
+                            <p className="text-lg font-bold text-foreground">{insights.mostAffordable.name}</p>
+                            <p className="text-sm text-emerald-600 font-semibold">{insights.mostAffordable.netPrice}</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                      {insights.safetySchool && (
+                        <Card className="bg-card border-border">
+                          <CardContent className="p-5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Shield className="h-5 w-5 text-accent" />
+                              <p className="text-sm font-semibold text-muted-foreground">Top Safety School</p>
+                            </div>
+                            <p className="text-lg font-bold text-foreground">{insights.safetySchool.name}</p>
+                            <p className="text-sm text-accent font-semibold">{insights.safetySchool.fitScore}% fit</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : <PremiumPaywall />}
             </motion.div>
           </TabsContent>
 
           {/* Map Tab (Premium) */}
           <TabsContent value="map">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <PremiumPaywall />
+              {isSubscribed ? (
+                <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+                  <CollegeMap matchedColleges={colleges} savedColleges={savedColleges.map(s => ({ college_data: s.college_data, college_name: s.college_name }))} />
+                </Suspense>
+              ) : <PremiumPaywall />}
             </motion.div>
           </TabsContent>
 

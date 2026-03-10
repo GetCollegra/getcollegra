@@ -1,7 +1,10 @@
-import { Lock, Crown, BarChart3, StickyNote, Sparkles, MapPin } from "lucide-react";
+import { useState } from "react";
+import { Lock, Crown, BarChart3, StickyNote, Sparkles, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const premiumFeatures = [
   { icon: BarChart3, label: "Side-by-side college comparison" },
@@ -11,6 +14,28 @@ const premiumFeatures = [
 ];
 
 export default function PremiumPaywall() {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleUpgrade = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Could not start checkout. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card className="bg-card border-border overflow-hidden">
       <div className="h-1.5 bg-gradient-to-r from-primary via-accent to-primary w-full" />
@@ -49,10 +74,11 @@ export default function PremiumPaywall() {
           size="xl"
           variant="hero"
           className="rounded-full gap-2"
-          onClick={() => window.location.href = "/coming-soon"}
+          onClick={handleUpgrade}
+          disabled={loading}
         >
-          <Crown className="h-5 w-5" />
-          Upgrade to Premium — $9.99/mo
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Crown className="h-5 w-5" />}
+          {loading ? "Starting checkout..." : "Upgrade to Premium — $9.99/mo"}
         </Button>
         <p className="text-xs text-muted-foreground mt-3">Cancel anytime. No commitment.</p>
       </CardContent>
