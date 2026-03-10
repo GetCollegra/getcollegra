@@ -41,7 +41,7 @@ const fitCategoryConfig: Record<string, { color: string; bg: string; icon: typeo
 };
 
 const Dashboard = () => {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut, isSubscribed, refreshSubscription } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
