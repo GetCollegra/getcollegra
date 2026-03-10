@@ -276,17 +276,19 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
                 <div className="flex items-center gap-1.5 sm:gap-2 text-left">⭐ <span>Save & notes</span></div>
                 <div className="flex items-center gap-1.5 sm:gap-2 text-left">📍 <span>Side-by-side</span></div>
               </div>
-              <Link
-                to="/coming-soon"
-                onClick={() => trackClick("Unlock Premium Breakdown", "QuizResults")}
-                className="block"
+              <button
+                onClick={() => { trackClick("Unlock Premium Breakdown", "QuizResults"); startCheckout(toast); }}
+                className="block w-full"
               >
                 <Button
                   size="lg"
                   className="rounded-full px-6 sm:px-8 gap-2 sm:gap-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-bold shadow-elevated hover:shadow-card hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 w-full text-sm sm:text-base"
+                  asChild
                 >
+                  <span>
                   Unlock Full Results – $9.99/mo
                   <ArrowRight className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                  </span>
                 </Button>
               </Link>
             </div>
