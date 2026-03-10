@@ -11,6 +11,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 import { trackClick } from "@/lib/analytics";
+import { startCheckout } from "@/lib/checkout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { College, Recommendations } from "@/types/college";
@@ -42,6 +43,7 @@ const fadeInUp = {
 const CollegeCard = ({ college, index }: { college: College; index: number }) => {
   const [expanded, setExpanded] = useState(false);
   const [challengesExpanded, setChallengesExpanded] = useState(false);
+  const { toast } = useToast();
   const catConfig = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
   const CatIcon = catConfig.icon;
 
@@ -276,19 +278,21 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
                 <div className="flex items-center gap-1.5 sm:gap-2 text-left">⭐ <span>Save & notes</span></div>
                 <div className="flex items-center gap-1.5 sm:gap-2 text-left">📍 <span>Side-by-side</span></div>
               </div>
-              <Link
-                to="/coming-soon"
-                onClick={() => trackClick("Unlock Premium Breakdown", "QuizResults")}
-                className="block"
+              <button
+                onClick={() => { trackClick("Unlock Premium Breakdown", "QuizResults"); startCheckout(toast); }}
+                className="block w-full"
               >
                 <Button
                   size="lg"
                   className="rounded-full px-6 sm:px-8 gap-2 sm:gap-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-bold shadow-elevated hover:shadow-card hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 w-full text-sm sm:text-base"
+                  asChild
                 >
+                  <span>
                   Unlock Full Results – $9.99/mo
                   <ArrowRight className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                  </span>
                 </Button>
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -971,12 +975,14 @@ const QuizResults = () => {
                     <div className="flex items-center gap-2">📍 <span>Side-by-side</span></div>
                   </div>
 
-                  <Link to="/coming-soon" onClick={() => trackClick("Unlock Full Results CTA", "QuizResults")} className="block">
-                    <Button size="xl" className="rounded-full px-8 sm:px-12 gap-2 sm:gap-2.5 bg-white text-primary hover:bg-white/95 font-bold text-base sm:text-lg shadow-elevated hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                  <button onClick={() => { trackClick("Unlock Full Results CTA", "QuizResults"); startCheckout(toast); }} className="block">
+                    <Button size="xl" className="rounded-full px-8 sm:px-12 gap-2 sm:gap-2.5 bg-white text-primary hover:bg-white/95 font-bold text-base sm:text-lg shadow-elevated hover:scale-[1.03] active:scale-[0.98] transition-all duration-200" asChild>
+                      <span>
                       Unlock Full Results – $9.99/mo
                       <ArrowRight className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                      </span>
                     </Button>
-                  </Link>
+                  </button>
                 </motion.div>
               </div>
             </section>
