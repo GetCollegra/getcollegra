@@ -120,6 +120,16 @@ const Dashboard = () => {
     if (!authLoading && !user) navigate("/login");
   }, [authLoading, user, navigate]);
 
+  // Refresh subscription after checkout redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upgraded") === "true") {
+      refreshSubscription();
+      // Clean URL
+      window.history.replaceState({}, "", "/dashboard");
+    }
+  }, [refreshSubscription]);
+
   // Load profile name
   useEffect(() => {
     if (!user) return;
