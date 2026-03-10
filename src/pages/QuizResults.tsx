@@ -43,6 +43,7 @@ const fadeInUp = {
 const CollegeCard = ({ college, index }: { college: College; index: number }) => {
   const [expanded, setExpanded] = useState(false);
   const [challengesExpanded, setChallengesExpanded] = useState(false);
+  const { toast } = useToast();
   const catConfig = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
   const CatIcon = catConfig.icon;
 
