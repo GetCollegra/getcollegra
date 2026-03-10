@@ -19,6 +19,8 @@ export default function PremiumPaywall() {
 
   const handleUpgrade = async () => {
     setLoading(true);
+    // Open window synchronously to avoid popup blocker
+    const checkoutWindow = window.open("about:blank", "_blank");
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
@@ -37,8 +39,10 @@ export default function PremiumPaywall() {
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Checkout failed");
-      if (data?.url) {
-        window.open(data.url, "_blank");
+      if (data?.url && checkoutWindow) {
+        checkoutWindow.location.href = data.url;
+      } else if (data?.url) {
+        window.location.href = data.url;
       }
     } catch (err) {
       toast({
