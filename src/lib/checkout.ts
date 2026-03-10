@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export async function startCheckout(toast: (opts: { title: string; description: string; variant?: string }) => void) {
+export async function startCheckout(toast: (opts: { title: string; description: string; variant?: "default" | "destructive" }) => void) {
   const checkoutWindow = window.open("about:blank", "_blank");
   try {
     const { data: sessionData } = await supabase.auth.getSession();
