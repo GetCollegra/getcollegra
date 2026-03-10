@@ -907,7 +907,7 @@ const Dashboard = () => {
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
               {isSubscribed ? (
                 <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-                  <CollegeMap colleges={[...colleges, ...savedColleges.map(s => s.college_data)]} />
+                  <CollegeMap matchedColleges={colleges} savedColleges={savedColleges.map(s => ({ college_data: s.college_data, college_name: s.college_name }))} />
                 </Suspense>
               ) : <PremiumPaywall />}
             </motion.div>
