@@ -290,7 +290,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
                   <ArrowRight className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                   </span>
                 </Button>
-              </Link>
+              </button>
             </div>
           </div>
         </div>
