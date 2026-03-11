@@ -383,6 +383,10 @@ export default function CollegeMap({
                         {isSaved ? "Already Saved" : "Add to My College List"}
                       </Button>
                     )}
+
+                    {homeAddress && (
+                      <TravelFromHome college={m.college} homeAddress={homeAddress} />
+                    )}
                   </div>
                 </Popup>
               </Marker>
