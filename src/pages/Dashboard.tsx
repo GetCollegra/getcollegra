@@ -58,6 +58,7 @@ const Dashboard = () => {
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [firstName, setFirstName] = useState("");
+  const [homeAddress, setHomeAddress] = useState("");
   const [storedPreferences, setStoredPreferences] = useState<Record<string, any> | null>(null);
   const [addCollegeName, setAddCollegeName] = useState("");
   const [addingCollege, setAddingCollege] = useState(false);
