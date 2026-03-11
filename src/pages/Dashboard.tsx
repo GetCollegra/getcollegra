@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Header from "@/components/Header";
+import CollegeComparison from "@/components/CollegeComparison";
 import CollegeNotesPanel, { parseNotes, type StructuredNotes } from "@/components/CollegeNotesPanel";
 import {
   GraduationCap, Star, BookmarkPlus, Bookmark, BarChart3, StickyNote,
@@ -60,6 +61,7 @@ const Dashboard = () => {
   const [addCollegeName, setAddCollegeName] = useState("");
   const [addingCollege, setAddingCollege] = useState(false);
   const [notesPanelId, setNotesPanelId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("matches");
 
   const notesPanelCollege = savedColleges.find(s => s.id === notesPanelId);
 
@@ -420,7 +422,7 @@ const Dashboard = () => {
           </Card>
         </motion.section>
 
-        <Tabs defaultValue="matches" className="space-y-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
             <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
             <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>
@@ -761,56 +763,19 @@ const Dashboard = () => {
                 <>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 rounded-lg bg-primary/10"><BarChart3 className="h-5 w-5 text-primary" /></div>
-                    <h2 className="text-2xl font-bold text-foreground">Compare Colleges</h2>
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">Compare Colleges</h2>
+                      <p className="text-sm text-muted-foreground">Select up to 4 colleges for a visual side-by-side comparison.</p>
+                    </div>
                   </div>
-                  {savedColleges.length < 2 ? (
-                    <Card className="bg-card border-border"><CardContent className="p-10 text-center">
-                      <p className="text-muted-foreground">Save at least 2 colleges to compare them side by side.</p>
-                    </CardContent></Card>
-                  ) : (
-                    <>
-                      <div className="flex flex-wrap gap-2 mb-6">
-                        {savedColleges.map(s => (
-                          <Button key={s.id} variant={compareIds.has(s.id) ? "default" : "outline"} size="sm" onClick={() => toggleCompare(s.id)}>
-                            {s.college_name}
-                          </Button>
-                        ))}
-                      </div>
-                      {comparedColleges.length >= 2 && (
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-[160px]">Metric</TableHead>
-                                {comparedColleges.map(c => <TableHead key={c.id}>{c.college_name}</TableHead>)}
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {[
-                                { label: "Fit Score", key: "fitScore", suffix: "%" },
-                                { label: "Acceptance Rate", key: "acceptanceRate" },
-                                { label: "Net Price", key: "netPrice" },
-                                { label: "Graduation Rate", key: "graduationRate" },
-                                { label: "Student:Faculty", key: "studentFacultyRatio" },
-                                { label: "Avg Starting Salary", key: "avgStartingSalary" },
-                                { label: "Campus Size", key: "campusSize" },
-                                { label: "Setting", key: "setting" },
-                              ].map(row => (
-                                <TableRow key={row.label}>
-                                  <TableCell className="font-medium">{row.label}</TableCell>
-                                  {comparedColleges.map(c => (
-                                    <TableCell key={c.id}>
-                                      {(c.college_data as any)[row.key]}{row.suffix || ""}
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
-                    </>
-                  )}
+                  <CollegeComparison
+                    savedColleges={savedColleges}
+                    comparedColleges={comparedColleges}
+                    compareIds={compareIds}
+                    onToggleCompare={toggleCompare}
+                    onOpenNotes={(id) => { setNotesPanelId(id); }}
+                    onSwitchToMap={() => setActiveTab("map")}
+                  />
                 </>
               ) : <PremiumPaywall />}
             </motion.div>
