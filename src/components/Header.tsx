@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { LogIn, LayoutDashboard } from "lucide-react";
+import { LogIn, LayoutDashboard, Settings, User } from "lucide-react";
 
 const Header = () => {
   const { user } = useAuth();
