@@ -324,6 +324,13 @@ const Profile = () => {
                   <Input id="cityState" value={cityState} onChange={e => setCityState(e.target.value)} placeholder="e.g. Austin, TX" />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="homeAddress" className="flex items-center gap-1.5">
+                    <Home className="h-3.5 w-3.5 text-primary" /> Home Address
+                  </Label>
+                  <Input id="homeAddress" value={homeAddress} onChange={e => setHomeAddress(e.target.value)} placeholder="e.g. 123 Main St, Austin, TX 78701" />
+                  <p className="text-[10px] text-muted-foreground">Used to estimate travel options to your colleges</p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="gradYear">Graduation Year</Label>
                   <Input id="gradYear" value={gradYear} onChange={e => setGradYear(e.target.value)} placeholder="e.g. 2026" />
                 </div>
