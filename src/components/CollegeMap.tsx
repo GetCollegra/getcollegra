@@ -163,6 +163,8 @@ export default function CollegeMap({
   onSaveCollege,
   savingCollege,
   fullPage = false,
+  onCollegeSelect,
+  selectedCollege,
 }: CollegeMapProps) {
   const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Safety", "Match", "Reach"]));
   const [distanceFilter, setDistanceFilter] = useState<string>("all");
