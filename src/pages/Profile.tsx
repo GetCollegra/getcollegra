@@ -130,7 +130,8 @@ const Profile = () => {
     try {
       await supabase.from("profiles").update({
         first_name: firstName,
-      }).eq("id", user.id);
+        home_address: homeAddress,
+      } as any).eq("id", user.id);
       saveProfilePrefsToLocal();
       toast({ title: "Profile saved", description: "Your information has been updated." });
     } catch {
