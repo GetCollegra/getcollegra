@@ -367,7 +367,7 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
   }
 
   const data = results.length > 0 ? formatScorecardResults(results) : "";
-  return { data, count: results.length };
+  return { data, count: results.length, raw: results };
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
