@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Header from "@/components/Header";
+import CollegeComparison from "@/components/CollegeComparison";
 import CollegeNotesPanel, { parseNotes, type StructuredNotes } from "@/components/CollegeNotesPanel";
 import {
   GraduationCap, Star, BookmarkPlus, Bookmark, BarChart3, StickyNote,
