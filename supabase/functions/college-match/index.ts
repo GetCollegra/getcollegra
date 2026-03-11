@@ -370,21 +370,62 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
   return { data, count: results.length, raw: results };
 }
 
+// ─── Fallback Results (when AI is unavailable) ──────────────────────────────
+
+function generateFallbackResults(rawResults: any[], prefs: Record<string, any>): any {
+  const colleges = rawResults.slice(0, 5).map((r: any, i: number) => {
+    const admRate = r["latest.admissions.admission_rate.overall"];
+    const locale = r["school.locale"];
+    const setting = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
+    const gradRate = r["latest.completion.rate_suppressed.overall"];
+    const earnings = r["latest.earnings.10_yrs_after_entry.median"];
+    const size = r["latest.student.size"];
+
+    return {
+      name: r["school.name"] || "Unknown",
+      location: `${r["school.city"] || ""}, ${r["school.state"] || ""}`,
+      acceptanceRate: admRate != null ? `${(admRate * 100).toFixed(0)}%` : "N/A",
+      ranking: "Based on U.S. Dept. of Education data",
+      tuitionInState: r["latest.cost.tuition.in_state"] ? `$${Number(r["latest.cost.tuition.in_state"]).toLocaleString()}` : "N/A",
+      tuitionOutOfState: r["latest.cost.tuition.out_of_state"] ? `$${Number(r["latest.cost.tuition.out_of_state"]).toLocaleString()}` : "N/A",
+      avgFinancialAid: "See school website",
+      netPrice: r["latest.cost.avg_net_price.overall"] ? `$${Number(r["latest.cost.avg_net_price.overall"]).toLocaleString()}` : "N/A",
+      topPrograms: ["See school website for program details"],
+      campusSize: size ? `${Number(size).toLocaleString()} students` : "N/A",
+      studentBody: size ? `${Number(size).toLocaleString()} students` : "N/A",
+      studentFacultyRatio: "See school website",
+      setting,
+      graduationRate: gradRate != null ? `${(gradRate * 100).toFixed(0)}%` : "N/A",
+      avgStartingSalary: earnings ? `$${Number(earnings).toLocaleString()}` : "N/A",
+      fitScore: Math.max(50, 80 - i * 5),
+      fitCategory: admRate != null ? (admRate < 0.25 ? "Reach" : admRate < 0.5 ? "Match" : "Safety") : "Match",
+      whyFit: "This school matches your search criteria based on Department of Education data.",
+      prosForStudent: ["Meets your stated preferences", "Strong graduation and outcomes data"],
+      consForStudent: ["Personalized analysis temporarily unavailable"],
+      challengesForStudent: [],
+      howToGetIn: "Visit the school's admissions website for detailed application requirements and deadlines.",
+      campusVibe: setting === "Urban" ? "City campus environment" : setting === "Suburban" ? "Suburban campus setting" : "Close-knit campus community",
+      notableFeature: gradRate != null && gradRate > 0.8 ? `High graduation rate (${(gradRate * 100).toFixed(0)}%)` : "Accredited institution",
+    };
+  });
+
+  return {
+    studentProfile: {
+      summary: `Based on your survey responses, we found ${colleges.length} schools that match your criteria. Note: Our AI advisor was temporarily unavailable, so these results are based on statistical data from the U.S. Department of Education.`,
+      topPriorities: [
+        prefs.areaOfStudy && prefs.areaOfStudy !== "Undecided" ? prefs.areaOfStudy : "Academic quality",
+        prefs.campusSize && prefs.campusSize !== "No preference" ? `${prefs.campusSize} campus` : "Campus fit",
+        prefs.financialAid === "Essential" ? "Financial aid" : "Affordability",
+      ],
+      idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
+    },
+    colleges,
+    comparisonInsight: `These ${colleges.length} schools were selected from U.S. Department of Education data based on your preferences. For a fully personalized AI analysis with detailed fit scores and admissions strategies, please refresh the page or retake the quiz.`,
+  };
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// PROVIDER PLACEHOLDER: Backup Source
-// To add a second data source (IPEDS, Niche API, Peterson's, etc.):
-//
-//   async function fetchFromBackup(prefs): Promise<{ data: string; count: number }> {
-//     // 1. Call the backup API
-//     // 2. Format results into a plain-text block like formatScorecardResults
-//     // 3. Return { data, count }
-//   }
-//
-// Then in the main handler, merge:
-//   if (scorecardResult.count < 5) {
-//     const backup = await fetchFromBackup(prefs);
-//     realCollegeData += "\n\n--- BACKUP SOURCE ---\n" + backup.data;
-//   }
+// PROVIDER PLACEHOLDER: Backup Source (IPEDS, Niche, Peterson's, etc.)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ─── AI Prompt ───────────────────────────────────────────────────────────────
