@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
-import TravelFromHome from "@/components/TravelFromHome";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 
 type SavedCollege = {
