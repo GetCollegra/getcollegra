@@ -885,50 +885,225 @@ const Dashboard = () => {
                 <>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 rounded-lg bg-primary/10"><Sparkles className="h-5 w-5 text-primary" /></div>
-                    <h2 className="text-2xl font-bold text-foreground">AI Insights</h2>
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">Decision Insights</h2>
+                      <p className="text-sm text-muted-foreground">Personalized analysis to help you decide — not just describe.</p>
+                    </div>
                   </div>
-                  {!insights ? (
+                  {colleges.length === 0 ? (
                     <Card className="bg-card border-border"><CardContent className="p-10 text-center">
-                      <p className="text-muted-foreground">Take the quiz to get AI-powered insights.</p>
+                      <p className="text-muted-foreground">Take the quiz to get decision-focused insights.</p>
                     </CardContent></Card>
                   ) : (
-                    <div className="grid gap-4 md:grid-cols-3">
-                      {insights.bestMatch && (
-                        <Card className="bg-card border-border">
-                          <CardContent className="p-5">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Trophy className="h-5 w-5 text-primary" />
-                              <p className="text-sm font-semibold text-muted-foreground">Best Overall Match</p>
-                            </div>
-                            <p className="text-lg font-bold text-foreground">{insights.bestMatch.name}</p>
-                            <p className="text-sm text-primary font-semibold">{insights.bestMatch.fitScore}% fit</p>
-                          </CardContent>
-                        </Card>
+                    <div className="space-y-6">
+                      {/* Summary Cards */}
+                      {insights && (
+                        <div className="grid gap-4 md:grid-cols-3 mb-2">
+                          {insights.bestMatch && (
+                            <Card className="bg-card border-border">
+                              <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-primary/10"><Trophy className="h-5 w-5 text-primary" /></div>
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground">Best Overall Match</p>
+                                  <p className="text-sm font-bold text-foreground">{insights.bestMatch.name}</p>
+                                  <p className="text-xs text-primary font-semibold">{insights.bestMatch.fitScore}% fit</p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                          {insights.mostAffordable && (
+                            <Card className="bg-card border-border">
+                              <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-emerald-50"><Wallet className="h-5 w-5 text-emerald-600" /></div>
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground">Most Affordable</p>
+                                  <p className="text-sm font-bold text-foreground">{insights.mostAffordable.name}</p>
+                                  <p className="text-xs text-emerald-600 font-semibold">{insights.mostAffordable.netPrice}</p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                          {insights.safetySchool && (
+                            <Card className="bg-card border-border">
+                              <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-accent/10"><Shield className="h-5 w-5 text-accent" /></div>
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground">Top Safety School</p>
+                                  <p className="text-sm font-bold text-foreground">{insights.safetySchool.name}</p>
+                                  <p className="text-xs text-accent font-semibold">{insights.safetySchool.fitScore}% fit</p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </div>
                       )}
-                      {insights.mostAffordable && (
-                        <Card className="bg-card border-border">
-                          <CardContent className="p-5">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Wallet className="h-5 w-5 text-emerald-600" />
-                              <p className="text-sm font-semibold text-muted-foreground">Most Affordable</p>
-                            </div>
-                            <p className="text-lg font-bold text-foreground">{insights.mostAffordable.name}</p>
-                            <p className="text-sm text-emerald-600 font-semibold">{insights.mostAffordable.netPrice}</p>
-                          </CardContent>
-                        </Card>
-                      )}
-                      {insights.safetySchool && (
-                        <Card className="bg-card border-border">
-                          <CardContent className="p-5">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Shield className="h-5 w-5 text-accent" />
-                              <p className="text-sm font-semibold text-muted-foreground">Top Safety School</p>
-                            </div>
-                            <p className="text-lg font-bold text-foreground">{insights.safetySchool.name}</p>
-                            <p className="text-sm text-accent font-semibold">{insights.safetySchool.fitScore}% fit</p>
-                          </CardContent>
-                        </Card>
-                      )}
+
+                      {/* Per-College Decision Cards */}
+                      {colleges.map((college, idx) => {
+                        const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
+                        const CatIcon = cat.icon;
+                        const isSaved = savedColleges.some(s => s.college_name === college.name);
+                        const savedEntry = savedColleges.find(s => s.college_name === college.name);
+
+                        // Compute fit breakdown dimensions from college data
+                        const parseRate = (s: string) => { const n = parseFloat(s?.replace(/[^0-9.]/g, "") || "0"); return isNaN(n) ? 0 : n; };
+                        const academicsScore = Math.min(100, Math.round(
+                          (parseRate(college.graduationRate) > 0 ? parseRate(college.graduationRate) : 50) * 0.5 +
+                          (college.topPrograms?.length > 0 ? Math.min(college.topPrograms.length * 15, 50) : 25)
+                        ));
+                        const costScore = Math.min(100, Math.round(
+                          college.netPrice ? Math.max(0, 100 - (parseInt(college.netPrice.replace(/[^0-9]/g, "")) || 50000) / 600) : 50
+                        ));
+                        const distanceScore = college.fitScore >= 80 ? 85 : college.fitScore >= 60 ? 70 : 55;
+                        const campusSizeScore = college.fitScore >= 70 ? 80 : 60;
+                        const lifestyleScore = Math.min(100, Math.round(college.fitScore * 0.9 + (college.campusVibe && college.campusVibe !== "—" ? 10 : 0)));
+
+                        const fitDimensions = [
+                          { label: "Academics", score: academicsScore, icon: BookOpen },
+                          { label: "Cost", score: costScore, icon: DollarSign },
+                          { label: "Distance", score: distanceScore, icon: Navigation },
+                          { label: "Campus Size", score: campusSizeScore, icon: Users },
+                          { label: "Lifestyle Fit", score: lifestyleScore, icon: Heart },
+                        ];
+
+                        // Build personalized "Why this fits you" reasons from quiz prefs + college data
+                        const whyReasons: string[] = [];
+                        if (college.prosForStudent?.length > 0) whyReasons.push(college.prosForStudent[0]);
+                        if (college.whyFit && college.whyFit !== "—") {
+                          const sentences = college.whyFit.split(/\.\s+/);
+                          if (sentences.length > 1) whyReasons.push(sentences[1].replace(/\.$/, "") + ".");
+                          else if (whyReasons.length === 0) whyReasons.push(college.whyFit);
+                        }
+                        if (storedPreferences) {
+                          const area = storedPreferences["area_of_study"] || storedPreferences["areaOfStudy"];
+                          if (area && college.topPrograms?.some(p => p.toLowerCase().includes(area.toLowerCase().split(" ")[0]))) {
+                            whyReasons.push(`Offers strong programs in ${area}, which matches your intended area of study.`);
+                          }
+                        }
+                        if (college.notableFeature && college.notableFeature !== "—" && whyReasons.length < 3) {
+                          whyReasons.push(college.notableFeature);
+                        }
+
+                        // "What to watch out for"
+                        const watchOuts: string[] = [];
+                        if (college.consForStudent?.length > 0) watchOuts.push(...college.consForStudent.slice(0, 2));
+                        if (college.challengesForStudent?.length > 0 && watchOuts.length < 2) {
+                          watchOuts.push(...college.challengesForStudent.slice(0, 2 - watchOuts.length));
+                        }
+                        if (watchOuts.length === 0) watchOuts.push("No major concerns identified based on your preferences.");
+
+                        const scoreColor = (s: number) => s >= 75 ? "text-emerald-600" : s >= 50 ? "text-amber-500" : "text-destructive";
+                        const barColor = (s: number) => s >= 75 ? "bg-emerald-500" : s >= 50 ? "bg-amber-400" : "bg-destructive";
+
+                        return (
+                          <motion.div key={college.name} variants={fadeIn} custom={idx + 1}>
+                            <Card className="bg-card border-border overflow-hidden">
+                              <CardContent className="p-0">
+                                {/* Header */}
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 pb-4 border-b border-border/50">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h3 className="text-lg font-bold text-foreground truncate">{college.name}</h3>
+                                      <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0 text-xs`}>
+                                        <CatIcon className="h-3 w-3 mr-0.5" />{college.fitCategory}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                      <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{college.location}</span>
+                                      <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{college.acceptanceRate}</span>
+                                      <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{college.netPrice}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <div className="text-center">
+                                      <div className="text-3xl font-bold text-primary leading-none">{college.fitScore}%</div>
+                                      <p className="text-[10px] font-medium text-muted-foreground mt-0.5">FIT SCORE</p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Fit Breakdown */}
+                                <div className="p-5 grid md:grid-cols-2 gap-6">
+                                  <div>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Fit Breakdown</p>
+                                    <div className="space-y-3">
+                                      {fitDimensions.map(dim => (
+                                        <div key={dim.label} className="flex items-center gap-3">
+                                          <dim.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between mb-1">
+                                              <span className="text-xs font-medium text-foreground">{dim.label}</span>
+                                              <span className={`text-xs font-bold ${scoreColor(dim.score)}`}>{dim.score}%</span>
+                                            </div>
+                                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                              <div className={`h-full rounded-full transition-all duration-500 ${barColor(dim.score)}`} style={{ width: `${dim.score}%` }} />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-5">
+                                    {/* Why this fits you */}
+                                    <div>
+                                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" /> Why This Fits You
+                                      </p>
+                                      <ul className="space-y-1.5">
+                                        {whyReasons.slice(0, 3).map((reason, i) => (
+                                          <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                                            <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>
+                                            <span>{reason}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+
+                                    {/* What to watch out for */}
+                                    <div>
+                                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <Eye className="h-3.5 w-3.5 text-amber-500" /> What to Watch Out For
+                                      </p>
+                                      <ul className="space-y-1.5">
+                                        {watchOuts.slice(0, 2).map((item, i) => (
+                                          <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                                            <span className="text-amber-500 mt-0.5 shrink-0">⚠</span>
+                                            <span>{item}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Next Steps */}
+                                <div className="border-t border-border/50 bg-muted/20 px-5 py-3 flex flex-wrap items-center gap-2">
+                                  <span className="text-xs font-semibold text-muted-foreground mr-1">Next step:</span>
+                                  {!isSaved ? (
+                                    <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => saveCollege(college)}>
+                                      <BookmarkPlus className="h-3.5 w-3.5" /> Save This School
+                                    </Button>
+                                  ) : (
+                                    <Badge variant="secondary" className="text-xs gap-1"><Bookmark className="h-3 w-3" /> Saved</Badge>
+                                  )}
+                                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => {
+                                    if (savedEntry) { toggleCompare(savedEntry.id); setActiveTab("compare"); }
+                                    else { saveCollege(college).then(() => { toast({ title: "Saved! Head to Compare tab." }); setActiveTab("compare"); }); }
+                                  }}>
+                                    <BarChart3 className="h-3.5 w-3.5" /> Compare
+                                  </Button>
+                                  {savedEntry && (
+                                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setNotesPanelId(savedEntry.id); }}>
+                                      <StickyNote className="h-3.5 w-3.5" /> Add a Note
+                                    </Button>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   )}
                 </>
