@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { motion } from "framer-motion";
@@ -16,11 +16,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Header from "@/components/Header";
+import CollegeNotesPanel, { parseNotes, type StructuredNotes } from "@/components/CollegeNotesPanel";
 import {
   GraduationCap, Star, BookmarkPlus, Bookmark, BarChart3, StickyNote,
   Sparkles, MapPin, DollarSign, Target, Shield, TrendingUp,
   LogOut, Trophy, Navigation, Wallet, Loader2, Trash2, Plus, Search,
-  ChevronDown, Users, BookOpen, Briefcase, Award, Lock
+  ChevronDown, Users, BookOpen, Briefcase, Award, Lock, Heart, Zap, Eye
 } from "lucide-react";
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
