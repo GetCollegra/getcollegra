@@ -330,22 +330,22 @@ export default function CollegeMap({
                 key={`${m.college.name}-${i}`}
                 position={m.pos}
                 icon={createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match)}
+                eventHandlers={{
+                  click: () => {
+                    if (onCollegeSelect) onCollegeSelect(m.college);
+                  },
+                }}
               >
-                <Popup minWidth={280} maxWidth={400} autoPan={true} autoPanPadding={L.point(50, 50)} className="college-popup">
-                  <div className="p-1 max-h-[350px] overflow-y-auto">
+                <Popup minWidth={220} maxWidth={300} autoPan={true} autoPanPadding={L.point(50, 50)} className="college-popup">
+                  <div className="p-1">
                     <p className="font-bold text-sm mb-0.5">{m.college.name}</p>
                     <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                       <span>📍</span> {m.college.location}
                     </p>
-
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-3 text-xs">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-2 text-xs">
                       <div>
-                        <span className="text-muted-foreground">Acceptance:</span>
-                        <p className="font-semibold text-foreground">{m.college.acceptanceRate}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Tuition:</span>
-                        <p className="font-semibold text-foreground">{m.college.tuitionOutOfState || m.college.netPrice}</p>
+                        <span className="text-muted-foreground">Fit:</span>
+                        <p className="font-semibold text-foreground">{m.college.fitScore}/100</p>
                       </div>
                       {m.distance !== null && (
                         <div>
@@ -353,59 +353,20 @@ export default function CollegeMap({
                           <p className="font-semibold text-foreground">~{m.distance.toLocaleString()} mi</p>
                         </div>
                       )}
-                      <div>
-                        <span className="text-muted-foreground">Fit:</span>
-                        <p className="font-semibold text-foreground">{m.college.fitScore}/100</p>
-                      </div>
                     </div>
-
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge
-                        variant="secondary"
-                        className={`text-[10px] ${
-                          m.college.fitCategory === "Safety"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : m.college.fitCategory === "Reach"
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-primary/10 text-primary"
-                        }`}
-                      >
-                        {m.college.fitCategory}
-                      </Badge>
-                    </div>
-
-                    {onSaveCollege && (
-                      <Button
-                        size="sm"
-                        variant={isSaved ? "secondary" : "default"}
-                        className="w-full text-xs h-8"
-                        disabled={isSaved || isSaving}
-                        onClick={() => onSaveCollege(m.college)}
-                      >
-                        {isSaving ? (
-                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                        ) : (
-                          <BookmarkPlus className="h-3 w-3 mr-1" />
-                        )}
-                        {isSaved ? "Already Saved" : "Add to My College List"}
-                      </Button>
-                    )}
-
-                    {onCollegeSelect && (
-                      <Button
-                        size="sm"
-                        variant={selectedCollege === m.college.name ? "secondary" : "outline"}
-                        className="w-full text-xs h-8 mt-1.5"
-                        onClick={() => onCollegeSelect(m.college)}
-                      >
-                        <MapPin className="h-3 w-3 mr-1" />
-                        {selectedCollege === m.college.name ? "Viewing Neighborhood" : "Explore Neighborhood"}
-                      </Button>
-                    )}
-
-                    {homeAddress && (
-                      <TravelFromHome college={m.college} homeAddress={homeAddress} />
-                    )}
+                    <Badge
+                      variant="secondary"
+                      className={`text-[10px] ${
+                        m.college.fitCategory === "Safety"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : m.college.fitCategory === "Reach"
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-primary/10 text-primary"
+                      }`}
+                    >
+                      {m.college.fitCategory}
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground mt-2">↓ Details shown below the map</p>
                   </div>
                 </Popup>
               </Marker>
