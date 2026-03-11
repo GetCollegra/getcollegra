@@ -45,14 +45,9 @@ const Header = () => {
             )}
 
             {user ? (
-              <>
-                <a href="/dashboard" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                  <User className="h-4 w-4" /> My Account
-                </a>
-                <button onClick={() => { import("@/integrations/supabase/client").then(m => m.supabase.auth.signOut()); }} className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                  <LogOut className="h-4 w-4" /> Sign Out
-                </button>
-              </>
+              <a href="/dashboard" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                <User className="h-4 w-4" /> Dashboard
+              </a>
             ) : (
               <a href="/login" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 <LogIn className="h-4 w-4" /> Sign In
