@@ -58,8 +58,16 @@ const Dashboard = () => {
   const [storedPreferences, setStoredPreferences] = useState<Record<string, any> | null>(null);
   const [addCollegeName, setAddCollegeName] = useState("");
   const [addingCollege, setAddingCollege] = useState(false);
+  const [notesPanelId, setNotesPanelId] = useState<string | null>(null);
 
-  const addCustomCollege = async () => {
+  const notesPanelCollege = savedColleges.find(s => s.id === notesPanelId);
+
+  const saveStructuredNotes = useCallback(async (id: string, structured: StructuredNotes) => {
+    const json = JSON.stringify(structured);
+    await supabase.from("saved_colleges").update({ notes: json }).eq("id", id);
+    setSavedColleges(prev => prev.map(s => s.id === id ? { ...s, notes: json } : s));
+  }, []);
+
     const name = addCollegeName.trim();
     if (!name || !user) return;
     if (name.length > 200) {
