@@ -58,9 +58,6 @@ const Header = () => {
                 <a href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors" title="Dashboard">
                   <LayoutDashboard className="h-5 w-5" />
                 </a>
-                <a href="/profile#settings" className="text-muted-foreground hover:text-primary transition-colors" title="Settings">
-                  <Settings className="h-5 w-5" />
-                </a>
               </>
             ) : (
               <a href="/login" className="text-muted-foreground hover:text-primary transition-colors">
