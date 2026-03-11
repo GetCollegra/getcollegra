@@ -38,9 +38,6 @@ const Header = () => {
                 <a href="/profile" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                   <User className="h-4 w-4" /> Profile
                 </a>
-                <a href="/profile#settings" className="text-muted-foreground hover:text-primary transition-colors" title="Settings">
-                  <Settings className="h-4 w-4" />
-                </a>
               </>
             ) : (
               <a href="/login" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
