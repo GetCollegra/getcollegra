@@ -311,6 +311,7 @@ const QuizResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const [dbSurveyContext, setDbSurveyContext] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   // Read results passed via router state from Survey page
