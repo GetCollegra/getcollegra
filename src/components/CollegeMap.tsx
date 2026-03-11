@@ -327,8 +327,8 @@ export default function CollegeMap({
                 position={m.pos}
                 icon={createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match)}
               >
-                <Popup minWidth={280} maxWidth={400}>
-                  <div className="p-1">
+                <Popup minWidth={280} maxWidth={400} autoPan={true} autoPanPadding={L.point(50, 50)} className="college-popup">
+                  <div className="p-1 max-h-[350px] overflow-y-auto">
                     <p className="font-bold text-sm mb-0.5">{m.college.name}</p>
                     <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                       <span>📍</span> {m.college.location}
