@@ -150,6 +150,13 @@ const Dashboard = () => {
     if (!user) return;
     const name = user.user_metadata?.first_name || user.email?.split("@")[0] || "Student";
     setFirstName(name);
+    // Load home address from profile
+    (async () => {
+      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      if (data && (data as any).home_address) {
+        setHomeAddress((data as any).home_address);
+      }
+    })();
   }, [user]);
 
   // Load college matches
