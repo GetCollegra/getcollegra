@@ -822,31 +822,66 @@ const Dashboard = () => {
                 <>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 rounded-lg bg-primary/10"><StickyNote className="h-5 w-5 text-primary" /></div>
-                    <h2 className="text-2xl font-bold text-foreground">Personal Notes</h2>
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">Personal Notes</h2>
+                      <p className="text-sm text-muted-foreground">Click any college to open your structured notes workspace.</p>
+                    </div>
                   </div>
                   {savedColleges.length === 0 ? (
                     <Card className="bg-card border-border"><CardContent className="p-10 text-center">
                       <p className="text-muted-foreground">Save some colleges first to add notes.</p>
                     </CardContent></Card>
                   ) : (
-                    <div className="space-y-4">
-                      {savedColleges.map(saved => (
-                        <Card key={saved.id} className="bg-card border-border">
-                          <CardContent className="p-5">
-                            <h3 className="font-semibold text-foreground mb-3">{saved.college_name}</h3>
-                            <Textarea
-                              placeholder="Add your personal notes about this school..."
-                              value={saved.notes}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setSavedColleges(prev => prev.map(s => s.id === saved.id ? { ...s, notes: val } : s));
-                              }}
-                              onBlur={() => updateNotes(saved.id, saved.notes)}
-                              className="min-h-[100px] bg-muted/30"
-                            />
-                          </CardContent>
-                        </Card>
-                      ))}
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {savedColleges.map(saved => {
+                        const parsed = parseNotes(saved.notes);
+                        const hasTags = parsed.tags.length > 0;
+                        const hasNotes = parsed.general.trim().length > 0;
+                        const prosCount = parsed.pros.filter(p => p.trim()).length;
+                        const consCount = parsed.cons.filter(c => c.trim()).length;
+                        const checkDone = Object.values(parsed.checklist).filter(Boolean).length;
+                        return (
+                          <Card
+                            key={saved.id}
+                            className="bg-card border-border hover:shadow-card hover:border-primary/20 transition-all cursor-pointer group"
+                            onClick={() => setNotesPanelId(saved.id)}
+                          >
+                            <CardContent className="p-5">
+                              <div className="flex items-start justify-between gap-2 mb-3">
+                                <div className="min-w-0">
+                                  <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{saved.college_name}</h3>
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                    <MapPin className="h-3 w-3" />
+                                    <span className="truncate">{saved.college_data.location}</span>
+                                  </div>
+                                </div>
+                                <StickyNote className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
+                              </div>
+                              {hasTags && (
+                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                  {parsed.tags.slice(0, 3).map(tag => (
+                                    <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0">{tag}</Badge>
+                                  ))}
+                                  {parsed.tags.length > 3 && (
+                                    <Badge variant="secondary" className="text-[10px] px-2 py-0">+{parsed.tags.length - 3}</Badge>
+                                  )}
+                                </div>
+                              )}
+                              {hasNotes && (
+                                <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{parsed.general}</p>
+                              )}
+                              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                                {prosCount > 0 && <span className="flex items-center gap-0.5"><ThumbsUp className="h-2.5 w-2.5 text-emerald-600" /> {prosCount}</span>}
+                                {consCount > 0 && <span className="flex items-center gap-0.5"><ThumbsDown className="h-2.5 w-2.5 text-rose-500" /> {consCount}</span>}
+                                {checkDone > 0 && <span className="flex items-center gap-0.5"><Eye className="h-2.5 w-2.5" /> {checkDone}/4</span>}
+                                {!hasTags && !hasNotes && prosCount === 0 && consCount === 0 && (
+                                  <span className="text-muted-foreground/60 italic">No notes yet — click to add</span>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   )}
                 </>
