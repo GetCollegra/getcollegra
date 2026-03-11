@@ -391,6 +391,18 @@ export default function CollegeMap({
                       </Button>
                     )}
 
+                    {onCollegeSelect && (
+                      <Button
+                        size="sm"
+                        variant={selectedCollege === m.college.name ? "secondary" : "outline"}
+                        className="w-full text-xs h-8 mt-1.5"
+                        onClick={() => onCollegeSelect(m.college)}
+                      >
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {selectedCollege === m.college.name ? "Viewing Neighborhood" : "Explore Neighborhood"}
+                      </Button>
+                    )}
+
                     {homeAddress && (
                       <TravelFromHome college={m.college} homeAddress={homeAddress} />
                     )}
