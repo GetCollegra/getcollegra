@@ -533,27 +533,7 @@ const QuizResults = () => {
     loadLatest();
   }, [routerState, searchParams]);
 
-  // Persist results to college_matches for premium dashboard
-  useEffect(() => {
-    if (!recommendations) return;
-    const saveToDb = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      const { data: existing } = await supabase
-        .from("college_matches")
-        .select("id")
-        .eq("user_id", session.user.id)
-        .limit(1);
-      if (existing && existing.length > 0) return;
-      await supabase.from("college_matches").insert({
-        user_id: session.user.id,
-        college_data: recommendations.colleges,
-        student_profile: recommendations.studentProfile,
-        comparison_insight: recommendations.comparisonInsight,
-      } as any);
-    };
-    saveToDb();
-  }, [recommendations]);
+  // Results are now persisted by the edge function — no client-side save needed
 
   const allCollegeNames = useMemo(() => {
     const names = recommendations?.colleges?.map(c => c.name) ?? [];

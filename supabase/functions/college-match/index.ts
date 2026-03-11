@@ -587,6 +587,22 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  let matchId: string | null = null;
+
+  // Helper to update match status in DB
+  const updateMatch = async (updates: Record<string, any>) => {
+    if (!matchId) return;
+    try {
+      const sb = createClient(supabaseUrl, serviceKey);
+      await sb.from("college_matches").update(updates).eq("id", matchId);
+      console.log(`[college-match] Updated match ${matchId} → ${updates.ai_status || "data"}`);
+    } catch (e) {
+      console.error("[college-match] DB update failed:", e);
+    }
+  };
+
   try {
     // Rate limit
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -601,13 +617,10 @@ serve(async (req) => {
     let isPremiumUser = false;
     const authHeader = req.headers.get("authorization");
     if (authHeader) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const sbAdmin = createClient(supabaseUrl, serviceKey);
       const token = authHeader.replace("Bearer ", "");
       const { data: { user: authUser } } = await sbAdmin.auth.getUser(token);
       if (authUser) {
-        // Check admin role
         const { data: roleData } = await sbAdmin
           .from("user_roles")
           .select("role")
@@ -616,7 +629,6 @@ serve(async (req) => {
           .maybeSingle();
         if (roleData) isPremiumUser = true;
 
-        // Check Stripe subscription if not admin
         if (!isPremiumUser) {
           try {
             const checkResp = await fetch(`${supabaseUrl}/functions/v1/check-subscription`, {
@@ -636,6 +648,8 @@ serve(async (req) => {
     // Parse & validate input
     const body = await req.json();
     const raw = body?.preferences;
+    matchId = typeof body?.matchId === "string" ? body.matchId : null;
+
     if (!raw || typeof raw !== "object") {
       return new Response(JSON.stringify({ error: "Invalid input: preferences object required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -645,6 +659,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Input too large" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Mark as processing in DB
+    if (matchId) {
+      await updateMatch({ ai_status: "processing" });
     }
 
     // Sanitize
@@ -668,9 +687,9 @@ serve(async (req) => {
         prefs[key] = s || raw[key];
       }
     }
-    console.log("Processing preferences for areaOfStudy:", prefs.areaOfStudy, "campusSize:", prefs.campusSize);
+    console.log("[college-match] Processing:", prefs.areaOfStudy, "campusSize:", prefs.campusSize);
 
-    // Parse exclude list for "discover more" requests
+    // Parse exclude list for "discover more"
     const excludeColleges: string[] = Array.isArray(body?.excludeColleges)
       ? body.excludeColleges.filter((n: any) => typeof n === "string").slice(0, 20)
       : [];
@@ -679,6 +698,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       console.error("LOVABLE_API_KEY is not configured");
+      await updateMatch({ ai_status: "failed", ai_error: "Service configuration error" });
       return new Response(JSON.stringify({ error: "Service configuration error" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -686,61 +706,85 @@ serve(async (req) => {
 
     // ── Step 1: Fetch college data from primary source ──
     const scorecard = await fetchFromScorecard(prefs);
+    console.log(`[college-match] Scorecard returned ${scorecard.count} colleges`);
 
-    // ── (Future) Step 1b: Fetch from backup if primary returned too few ──
-    // if (scorecard.count < 5) {
-    //   const backup = await fetchFromBackup(prefs);
-    //   scorecard.data += "\n\n--- BACKUP SOURCE ---\n" + backup.data;
-    // }
+    // ── Step 2: AI ranking (with fallback) ──
+    let recommendations: any;
+    let aiFailed = false;
+    let aiErrorMsg = "";
 
-    // ── Step 2: AI ranking ──
-    const userPrompt = buildUserPrompt(prefs, scorecard.data, excludeColleges);
-    console.log("Sending to AI with", userPrompt.length, "chars");
+    try {
+      const userPrompt = buildUserPrompt(prefs, scorecard.data, excludeColleges);
+      console.log("[college-match] Sending to AI with", userPrompt.length, "chars");
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.4,
-      }),
-    });
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.4,
+        }),
+      });
 
-    if (!aiResp.ok) {
-      if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (!aiResp.ok) {
+        const errBody = await aiResp.text();
+        if (aiResp.status === 429) {
+          await updateMatch({ ai_status: "failed", ai_error: "Rate limit exceeded" });
+          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (aiResp.status === 402) {
+          await updateMatch({ ai_status: "failed", ai_error: "AI usage limit reached" });
+          return new Response(JSON.stringify({ error: "AI usage limit reached. Please try again later." }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw new Error(`AI gateway ${aiResp.status}: ${errBody.substring(0, 200)}`);
+      }
+
+      const aiData = await aiResp.json();
+      const content = aiData.choices?.[0]?.message?.content;
+      if (!content) throw new Error("Empty AI response");
+
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      recommendations = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+      console.log("[college-match] AI generated", recommendations.colleges?.length, "colleges");
+    } catch (aiErr) {
+      console.error("[college-match] AI generation failed:", aiErr);
+      aiFailed = true;
+      aiErrorMsg = aiErr instanceof Error ? aiErr.message : "AI generation failed";
+
+      // Generate fallback from scorecard data
+      if (scorecard.raw.length > 0) {
+        recommendations = generateFallbackResults(scorecard.raw, prefs);
+        console.log("[college-match] Using fallback results from", scorecard.raw.length, "scorecard records");
+      } else {
+        await updateMatch({ ai_status: "failed", ai_error: aiErrorMsg });
+        return new Response(JSON.stringify({ error: "Failed to generate recommendations. Please try again." }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "AI usage limit reached. Please try again later." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      console.error("AI gateway error:", aiResp.status, await aiResp.text());
-      return new Response(JSON.stringify({ error: "Failed to generate recommendations" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    }
+
+    // ── Step 3: Save results to database ──
+    if (matchId) {
+      await updateMatch({
+        college_data: recommendations.colleges || [],
+        student_profile: recommendations.studentProfile || {},
+        comparison_insight: recommendations.comparisonInsight || "",
+        ai_status: aiFailed ? "failed" : "completed",
+        ai_error: aiFailed ? aiErrorMsg : null,
+        results_generated_at: new Date().toISOString(),
+        results_version: 1,
       });
     }
 
-    const aiData = await aiResp.json();
-    const content = aiData.choices?.[0]?.message?.content;
-    if (!content) throw new Error("No content in AI response");
-
-    let recommendations;
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      recommendations = JSON.parse(jsonMatch ? jsonMatch[0] : content);
-    } catch {
-      console.error("Failed to parse AI response:", content);
-      throw new Error("Failed to parse college recommendations");
-    }
-
-    // Mask premium fields for free tier only
+    // Mask premium fields for free tier
     if (!isPremiumUser) {
       recommendations = maskPremiumFields(recommendations);
     }
@@ -749,7 +793,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("college-match error:", e);
+    console.error("[college-match] Unexpected error:", e);
+    await updateMatch({
+      ai_status: "failed",
+      ai_error: e instanceof Error ? e.message : "Unexpected error",
+    });
     return new Response(JSON.stringify({ error: "An unexpected error occurred. Please try again." }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

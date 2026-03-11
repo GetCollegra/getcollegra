@@ -16,26 +16,41 @@ export type Database = {
     Tables: {
       college_matches: {
         Row: {
+          ai_error: string | null
+          ai_status: string
           college_data: Json
           comparison_insight: string | null
           created_at: string
           id: string
+          raw_preferences: Json
+          results_generated_at: string | null
+          results_version: number
           student_profile: Json
           user_id: string
         }
         Insert: {
+          ai_error?: string | null
+          ai_status?: string
           college_data?: Json
           comparison_insight?: string | null
           created_at?: string
           id?: string
+          raw_preferences?: Json
+          results_generated_at?: string | null
+          results_version?: number
           student_profile?: Json
           user_id: string
         }
         Update: {
+          ai_error?: string | null
+          ai_status?: string
           college_data?: Json
           comparison_insight?: string | null
           created_at?: string
           id?: string
+          raw_preferences?: Json
+          results_generated_at?: string | null
+          results_version?: number
           student_profile?: Json
           user_id?: string
         }
