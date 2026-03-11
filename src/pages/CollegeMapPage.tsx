@@ -59,7 +59,7 @@ const CollegeMapPage = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [matchRes, savedRes] = await Promise.all([
+      const [matchRes, savedRes, profileRes] = await Promise.all([
         supabase
           .from("college_matches")
           .select("*")
@@ -70,6 +70,11 @@ const CollegeMapPage = () => {
           .from("saved_colleges")
           .select("*")
           .eq("user_id", user.id),
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single(),
       ]);
 
       if (matchRes.data?.[0]) {
