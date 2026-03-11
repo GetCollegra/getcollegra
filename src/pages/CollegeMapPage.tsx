@@ -92,6 +92,10 @@ const CollegeMapPage = () => {
         );
       }
 
+      if (profileRes.data && (profileRes.data as any).home_address) {
+        setHomeAddress((profileRes.data as any).home_address);
+      }
+
       // Try to get home location from session storage (survey preferences)
       try {
         const raw = sessionStorage.getItem("latest_survey_preferences");
