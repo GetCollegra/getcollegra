@@ -23,10 +23,11 @@ import {
   Sparkles, MapPin, DollarSign, Target, Shield, TrendingUp,
   LogOut, Trophy, Navigation, Wallet, Loader2, Trash2, Plus, Search,
   ChevronDown, Users, BookOpen, Briefcase, Award, Lock, Heart, Zap, Eye,
-  ThumbsUp, ThumbsDown, Settings
+  ThumbsUp, ThumbsDown, Settings, X
 } from "lucide-react";
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
+import TravelFromHome from "@/components/TravelFromHome";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
@@ -1123,20 +1124,173 @@ const Dashboard = () => {
                       matchedColleges={colleges}
                       savedColleges={savedColleges.map(s => ({ college_data: s.college_data, college_name: s.college_name }))}
                       homeAddress={homeAddress}
-                      onCollegeSelect={(c) => setMapSelectedCollege(prev => prev?.name === c.name ? null : c)}
+                      onCollegeSelect={(c) => setMapSelectedCollege(c)}
                       selectedCollege={mapSelectedCollege?.name || null}
                     />
                   </Suspense>
                   <AnimatePresence>
-                    {mapSelectedCollege && (
-                      <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
-                        <CampusNeighborhood
-                          key={mapSelectedCollege.name}
-                          college={mapSelectedCollege}
-                          onClose={() => setMapSelectedCollege(null)}
-                        />
-                      </Suspense>
-                    )}
+                    {mapSelectedCollege && (() => {
+                      const college = mapSelectedCollege;
+                      const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
+                      const CatIcon = cat.icon;
+                      const isSaved = savedColleges.some(s => s.college_name === college.name);
+                      const savedEntry = savedColleges.find(s => s.college_name === college.name);
+                      return (
+                        <motion.div
+                          key={college.name}
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.4, ease: "easeInOut" }}
+                          className="overflow-hidden"
+                        >
+                          <Card className="bg-card border-border shadow-soft mt-4">
+                            <CardContent className="p-0">
+                              {/* College Header */}
+                              <div className="flex items-center justify-between p-5 pb-4 border-b border-border/50">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
+                                    <GraduationCap className="h-5 w-5 text-primary" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                      <h3 className="text-lg font-bold text-foreground truncate">{college.name}</h3>
+                                      <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0 text-xs`}>
+                                        <CatIcon className="h-3 w-3 mr-0.5" />{college.fitCategory}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                      <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{college.location}</span>
+                                      <span className="font-semibold text-primary">{college.fitScore}% match</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setMapSelectedCollege(null)}>
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              <div className="p-5 space-y-5">
+                                {/* Key Stats */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                  {[
+                                    { label: "Acceptance Rate", value: college.acceptanceRate, icon: Target },
+                                    { label: "Net Price", value: college.netPrice, icon: DollarSign },
+                                    { label: "Graduation Rate", value: college.graduationRate, icon: Award },
+                                    { label: "Student Body", value: college.studentBody, icon: Users },
+                                    { label: "In-State Tuition", value: college.tuitionInState, icon: DollarSign },
+                                    { label: "Out-of-State Tuition", value: college.tuitionOutOfState, icon: DollarSign },
+                                    { label: "Financial Aid", value: college.avgFinancialAid, icon: Wallet },
+                                    { label: "Avg Starting Salary", value: college.avgStartingSalary, icon: Briefcase },
+                                  ].map(item => {
+                                    const Icon = item.icon;
+                                    return (
+                                      <div key={item.label} className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                                          <Icon className="h-3 w-3" />{item.label}
+                                        </div>
+                                        <p className="text-sm font-semibold text-foreground">{item.value || "—"}</p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Why It Fits + Campus Vibe */}
+                                <div className="grid md:grid-cols-3 gap-4">
+                                  <div className="bg-muted/20 rounded-lg p-4 border border-border/50">
+                                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">Why It's a Good Fit</p>
+                                    <p className="text-sm text-foreground">{college.whyFit || "—"}</p>
+                                  </div>
+                                  <div className="bg-muted/20 rounded-lg p-4 border border-border/50">
+                                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">Campus Vibe</p>
+                                    <p className="text-sm text-foreground">{college.campusVibe || "—"}</p>
+                                  </div>
+                                  <div className="bg-muted/20 rounded-lg p-4 border border-border/50">
+                                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">Notable Feature</p>
+                                    <p className="text-sm text-foreground">{college.notableFeature || "—"}</p>
+                                  </div>
+                                </div>
+
+                                {/* Top Programs */}
+                                {college.topPrograms?.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground mb-2">Top Programs</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {college.topPrograms.map((prog, i) => (
+                                        <Badge key={i} variant="secondary" className="text-xs">{prog}</Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Pros / Cons */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                  {college.prosForStudent?.length > 0 && (
+                                    <div className="bg-secondary/50 rounded-lg p-4 border border-border/50">
+                                      <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1"><ThumbsUp className="h-3 w-3 text-emerald-600" /> Pros</p>
+                                      <ul className="space-y-1">
+                                        {college.prosForStudent.map((pro, i) => (
+                                          <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
+                                            <span className="text-primary mt-0.5">•</span>{pro}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {college.consForStudent?.length > 0 && (
+                                    <div className="bg-destructive/5 rounded-lg p-4 border border-destructive/10">
+                                      <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1"><ThumbsDown className="h-3 w-3 text-destructive" /> Cons</p>
+                                      <ul className="space-y-1">
+                                        {college.consForStudent.map((con, i) => (
+                                          <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
+                                            <span className="text-destructive mt-0.5">•</span>{con}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Travel from home */}
+                                {homeAddress && (
+                                  <TravelFromHome college={college} homeAddress={homeAddress} />
+                                )}
+                              </div>
+
+                              {/* Action Bar */}
+                              <div className="border-t border-border/50 bg-muted/20 px-5 py-3 flex flex-wrap items-center gap-2">
+                                {!isSaved ? (
+                                  <Button size="sm" className="h-8 text-xs gap-1" onClick={() => saveCollege(college)}>
+                                    <BookmarkPlus className="h-3.5 w-3.5" /> Save This School
+                                  </Button>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs gap-1"><Bookmark className="h-3 w-3" /> Saved</Badge>
+                                )}
+                                <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => {
+                                  if (savedEntry) { toggleCompare(savedEntry.id); setActiveTab("compare"); }
+                                  else { saveCollege(college); toast({ title: "Saved! Head to Compare tab." }); setActiveTab("compare"); }
+                                }}>
+                                  <BarChart3 className="h-3.5 w-3.5" /> Compare
+                                </Button>
+                                {savedEntry && (
+                                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setNotesPanelId(savedEntry.id)}>
+                                    <StickyNote className="h-3.5 w-3.5" /> Add a Note
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Neighborhood amenities */}
+                          <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                            <CampusNeighborhood
+                              college={college}
+                              onClose={() => setMapSelectedCollege(null)}
+                            />
+                          </Suspense>
+                        </motion.div>
+                      );
+                    })()}
                   </AnimatePresence>
                 </div>
               ) : <PremiumPaywall />}
