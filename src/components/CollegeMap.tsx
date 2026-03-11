@@ -295,6 +295,9 @@ export default function CollegeMap({
           zoom={4}
           style={{ height: "100%", width: "100%" }}
           scrollWheelZoom={true}
+          maxBounds={[[24, -130], [50, -65]]}
+          maxBoundsViscosity={1.0}
+          minZoom={3}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
