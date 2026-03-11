@@ -420,14 +420,13 @@ const Dashboard = () => {
         </motion.section>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
             <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
             <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>
             <TabsTrigger value="compare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><BarChart3 className="h-4 w-4" /> Compare {!isSubscribed && <Lock className="h-3 w-3 text-muted-foreground" />}</TabsTrigger>
             <TabsTrigger value="notes" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><StickyNote className="h-4 w-4" /> Notes {!isSubscribed && <Lock className="h-3 w-3 text-muted-foreground" />}</TabsTrigger>
             <TabsTrigger value="insights" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Sparkles className="h-4 w-4" /> Insights {!isSubscribed && <Lock className="h-3 w-3 text-muted-foreground" />}</TabsTrigger>
             <TabsTrigger value="map" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><MapPin className="h-4 w-4" /> Map {!isSubscribed && <Lock className="h-3 w-3 text-muted-foreground" />}</TabsTrigger>
-            <TabsTrigger value="settings" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Settings className="h-4 w-4" /> Settings</TabsTrigger>
           </TabsList>
 
           {/* 2. College Matches */}
@@ -919,26 +918,6 @@ const Dashboard = () => {
                   <CollegeMap matchedColleges={colleges} savedColleges={savedColleges.map(s => ({ college_data: s.college_data, college_name: s.college_name }))} />
                 </Suspense>
               ) : <PremiumPaywall />}
-            </motion.div>
-          </TabsContent>
-          {/* Settings */}
-          <TabsContent value="settings">
-            <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-primary/10"><Settings className="h-5 w-5 text-primary" /></div>
-                <h2 className="text-2xl font-bold text-foreground">Settings</h2>
-              </div>
-              <div className="max-w-lg space-y-4">
-                <Card className="bg-card border-border">
-                  <CardContent className="p-5">
-                    <h3 className="text-sm font-semibold text-foreground mb-1">Account</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{user?.email}</p>
-                    <Button variant="outline" onClick={signOut} className="text-muted-foreground border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 gap-2">
-                      <LogOut className="h-4 w-4" /> Sign Out
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
             </motion.div>
           </TabsContent>
 

@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { LogIn, LayoutDashboard } from "lucide-react";
+import { LogIn, LayoutDashboard, Settings, User } from "lucide-react";
 
 const Header = () => {
   const { user } = useAuth();
@@ -31,9 +31,17 @@ const Header = () => {
             <a href="/#pricing" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Pricing</a>
 
             {user ? (
-              <a href="/dashboard" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                <LayoutDashboard className="h-4 w-4" /> Dashboard
-              </a>
+              <>
+                <a href="/dashboard" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <LayoutDashboard className="h-4 w-4" /> Dashboard
+                </a>
+                <a href="/profile" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <User className="h-4 w-4" /> Profile
+                </a>
+                <a href="/profile#settings" className="text-muted-foreground hover:text-primary transition-colors" title="Settings">
+                  <Settings className="h-4 w-4" />
+                </a>
+              </>
             ) : (
               <a href="/login" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 <LogIn className="h-4 w-4" /> Sign In
@@ -46,9 +54,17 @@ const Header = () => {
           </nav>
           <div className="md:hidden flex items-center gap-3">
             {user ? (
-              <a href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
-                <LayoutDashboard className="h-5 w-5" />
-              </a>
+              <>
+                <a href="/profile" className="text-muted-foreground hover:text-primary transition-colors" title="Profile">
+                  <User className="h-5 w-5" />
+                </a>
+                <a href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors" title="Dashboard">
+                  <LayoutDashboard className="h-5 w-5" />
+                </a>
+                <a href="/profile#settings" className="text-muted-foreground hover:text-primary transition-colors" title="Settings">
+                  <Settings className="h-5 w-5" />
+                </a>
+              </>
             ) : (
               <a href="/login" className="text-muted-foreground hover:text-primary transition-colors">
                 <LogIn className="h-5 w-5" />
