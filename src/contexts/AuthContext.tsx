@@ -43,6 +43,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     try {
+      // Check if user is admin — admins get premium access
+      const { data: isAdmin } = await (supabase.rpc as any)("has_role", {
+        _user_id: currentSession.user.id,
+        _role: "admin",
+      });
+      if (isAdmin) {
+        setIsSubscribed(true);
+        setSubscriptionEnd(null);
+        setSubscriptionLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (error) throw error;
       setIsSubscribed(data?.subscribed ?? false);
