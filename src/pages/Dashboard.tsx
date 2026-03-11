@@ -68,6 +68,7 @@ const Dashboard = () => {
     setSavedColleges(prev => prev.map(s => s.id === id ? { ...s, notes: json } : s));
   }, []);
 
+  const addCustomCollege = async () => {
     const name = addCollegeName.trim();
     if (!name || !user) return;
     if (name.length > 200) {
