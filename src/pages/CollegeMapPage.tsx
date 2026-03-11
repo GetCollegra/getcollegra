@@ -198,6 +198,7 @@ const CollegeMapPage = () => {
                 matchedColleges={colleges}
                 savedColleges={savedColleges}
                 homeLocation={homeLocation}
+                homeAddress={homeAddress}
                 savedCollegeNames={savedNames}
                 onSaveCollege={handleSaveCollege}
                 savingCollege={savingCollege}
