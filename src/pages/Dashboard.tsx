@@ -921,6 +921,26 @@ const Dashboard = () => {
               ) : <PremiumPaywall />}
             </motion.div>
           </TabsContent>
+          {/* Settings */}
+          <TabsContent value="settings">
+            <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-primary/10"><Settings className="h-5 w-5 text-primary" /></div>
+                <h2 className="text-2xl font-bold text-foreground">Settings</h2>
+              </div>
+              <div className="max-w-lg space-y-4">
+                <Card className="bg-card border-border">
+                  <CardContent className="p-5">
+                    <h3 className="text-sm font-semibold text-foreground mb-1">Account</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{user?.email}</p>
+                    <Button variant="outline" onClick={signOut} className="text-muted-foreground border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 gap-2">
+                      <LogOut className="h-4 w-4" /> Sign Out
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </motion.div>
+          </TabsContent>
 
         </Tabs>
       </main>
