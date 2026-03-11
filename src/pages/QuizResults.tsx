@@ -974,8 +974,6 @@ const QuizResults = () => {
               </div>
             </section>
 
-            {/* Ask AI Section */}
-            <AskAI surveyContext={surveyContext} recommendedCollegeNames={recommendedCollegeNames} />
 
             {/* CTA Section */}
             <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
