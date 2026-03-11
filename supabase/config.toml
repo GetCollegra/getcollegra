@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.customer-portal]
 verify_jwt = false
+
+[functions.auth-rate-check]
+verify_jwt = false
+
+[functions.admin-monitoring]
+verify_jwt = false
+
+[functions.storage-backup]
+verify_jwt = false

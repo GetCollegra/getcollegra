@@ -20,6 +20,21 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Check rate limit before attempting login
+    try {
+      const { data: rateCheck } = await supabase.functions.invoke("auth-rate-check", {
+        body: { action: "login" },
+      });
+      if (rateCheck && !rateCheck.allowed) {
+        toast({ title: "Too many attempts", description: rateCheck.error || "Please wait before trying again.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Fail open — don't block login if rate limiter is down
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
 
