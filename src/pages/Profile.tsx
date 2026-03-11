@@ -29,6 +29,7 @@ const Profile = () => {
   // Profile info state
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [homeAddress, setHomeAddress] = useState("");
   const [cityState, setCityState] = useState("");
   const [gradYear, setGradYear] = useState("");
   const [gpaRange, setGpaRange] = useState("");
