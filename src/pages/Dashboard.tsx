@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +28,7 @@ import {
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
+const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
 type SavedCollege = {
   id: string;
@@ -63,6 +64,7 @@ const Dashboard = () => {
   const [addingCollege, setAddingCollege] = useState(false);
   const [notesPanelId, setNotesPanelId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("matches");
+  const [mapSelectedCollege, setMapSelectedCollege] = useState<College | null>(null);
 
   const notesPanelCollege = savedColleges.find(s => s.id === notesPanelId);
 
@@ -1115,9 +1117,28 @@ const Dashboard = () => {
           <TabsContent value="map">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
               {isSubscribed ? (
-                <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-                  <CollegeMap matchedColleges={colleges} savedColleges={savedColleges.map(s => ({ college_data: s.college_data, college_name: s.college_name }))} homeAddress={homeAddress} />
-                </Suspense>
+                <div className="space-y-0">
+                  <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+                    <CollegeMap
+                      matchedColleges={colleges}
+                      savedColleges={savedColleges.map(s => ({ college_data: s.college_data, college_name: s.college_name }))}
+                      homeAddress={homeAddress}
+                      onCollegeSelect={(c) => setMapSelectedCollege(prev => prev?.name === c.name ? null : c)}
+                      selectedCollege={mapSelectedCollege?.name || null}
+                    />
+                  </Suspense>
+                  <AnimatePresence>
+                    {mapSelectedCollege && (
+                      <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                        <CampusNeighborhood
+                          key={mapSelectedCollege.name}
+                          college={mapSelectedCollege}
+                          onClose={() => setMapSelectedCollege(null)}
+                        />
+                      </Suspense>
+                    )}
+                  </AnimatePresence>
+                </div>
               ) : <PremiumPaywall />}
             </motion.div>
           </TabsContent>

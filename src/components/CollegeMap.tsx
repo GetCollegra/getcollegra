@@ -150,6 +150,8 @@ type CollegeMapProps = {
   onSaveCollege?: (college: College) => void;
   savingCollege?: string | null;
   fullPage?: boolean;
+  onCollegeSelect?: (college: College) => void;
+  selectedCollege?: string | null;
 };
 
 export default function CollegeMap({
@@ -161,6 +163,8 @@ export default function CollegeMap({
   onSaveCollege,
   savingCollege,
   fullPage = false,
+  onCollegeSelect,
+  selectedCollege,
 }: CollegeMapProps) {
   const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Safety", "Match", "Reach"]));
   const [distanceFilter, setDistanceFilter] = useState<string>("all");
@@ -384,6 +388,18 @@ export default function CollegeMap({
                           <BookmarkPlus className="h-3 w-3 mr-1" />
                         )}
                         {isSaved ? "Already Saved" : "Add to My College List"}
+                      </Button>
+                    )}
+
+                    {onCollegeSelect && (
+                      <Button
+                        size="sm"
+                        variant={selectedCollege === m.college.name ? "secondary" : "outline"}
+                        className="w-full text-xs h-8 mt-1.5"
+                        onClick={() => onCollegeSelect(m.college)}
+                      >
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {selectedCollege === m.college.name ? "Viewing Neighborhood" : "Explore Neighborhood"}
                       </Button>
                     )}
 
