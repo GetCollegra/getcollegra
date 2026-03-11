@@ -324,7 +324,7 @@ export default function CollegeMap({
                 position={m.pos}
                 icon={createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match)}
               >
-                <Popup minWidth={240} maxWidth={300}>
+                <Popup minWidth={280} maxWidth={400}>
                   <div className="p-1">
                     <p className="font-bold text-sm mb-0.5">{m.college.name}</p>
                     <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
