@@ -23,7 +23,7 @@ import {
   Sparkles, MapPin, DollarSign, Target, Shield, TrendingUp,
   LogOut, Trophy, Navigation, Wallet, Loader2, Trash2, Plus, Search,
   ChevronDown, Users, BookOpen, Briefcase, Award, Lock, Heart, Zap, Eye,
-  ThumbsUp, ThumbsDown, Settings
+  ThumbsUp, ThumbsDown, Settings, X
 } from "lucide-react";
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
