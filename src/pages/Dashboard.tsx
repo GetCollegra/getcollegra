@@ -961,6 +961,18 @@ const Dashboard = () => {
 
         </Tabs>
       </main>
+
+      {/* Notes slide-out panel */}
+      {notesPanelCollege && (
+        <CollegeNotesPanel
+          open={!!notesPanelId}
+          onClose={() => setNotesPanelId(null)}
+          college={notesPanelCollege.college_data}
+          collegeName={notesPanelCollege.college_name}
+          notes={parseNotes(notesPanelCollege.notes)}
+          onSave={(structured) => saveStructuredNotes(notesPanelCollege.id, structured)}
+        />
+      )}
     </div>
   );
 };
