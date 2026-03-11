@@ -89,6 +89,7 @@ const Profile = () => {
         .single();
       if (data) {
         setFirstName(data.first_name || "");
+        if ((data as any).home_address) setHomeAddress((data as any).home_address);
       }
     })();
 
