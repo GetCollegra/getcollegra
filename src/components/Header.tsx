@@ -54,9 +54,17 @@ const Header = () => {
           </nav>
           <div className="md:hidden flex items-center gap-3">
             {user ? (
-              <a href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
-                <LayoutDashboard className="h-5 w-5" />
-              </a>
+              <>
+                <a href="/profile" className="text-muted-foreground hover:text-primary transition-colors" title="Profile">
+                  <User className="h-5 w-5" />
+                </a>
+                <a href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors" title="Dashboard">
+                  <LayoutDashboard className="h-5 w-5" />
+                </a>
+                <a href="/profile#settings" className="text-muted-foreground hover:text-primary transition-colors" title="Settings">
+                  <Settings className="h-5 w-5" />
+                </a>
+              </>
             ) : (
               <a href="/login" className="text-muted-foreground hover:text-primary transition-colors">
                 <LogIn className="h-5 w-5" />
