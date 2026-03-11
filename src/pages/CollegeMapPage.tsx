@@ -47,6 +47,7 @@ const CollegeMapPage = () => {
   const [savedColleges, setSavedColleges] = useState<{ id: string; college_name: string; college_data: College }[]>([]);
   const [loading, setLoading] = useState(true);
   const [homeLocation, setHomeLocation] = useState<string>("");
+  const [homeAddress, setHomeAddress] = useState<string>("");
   const [savingCollege, setSavingCollege] = useState<string | null>(null);
 
   // Redirect if not authenticated
