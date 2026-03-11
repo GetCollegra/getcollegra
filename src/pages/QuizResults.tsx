@@ -351,23 +351,26 @@ const QuizResults = () => {
   }, []);
 
   const surveyContext = useMemo(() => {
-    // Prefer router state survey context
+    // Priority 1: DB context from match record
+    if (Object.keys(dbSurveyContext).length > 0) return dbSurveyContext;
+
+    // Priority 2: Router state survey context
     if (routerState?.surveyContext && Object.keys(routerState.surveyContext).length > 0) {
       return routerState.surveyContext;
     }
 
-    // Fallback to URL params
+    // Priority 3: URL params
     const context: Record<string, string> = {};
     searchParams.forEach((value, key) => {
-      if (key === "__lovable_token" || key === "submission_id" || key.startsWith("__")) return;
+      if (key === "__lovable_token" || key === "submission_id" || key === "match_id" || key.startsWith("__")) return;
       if (value.trim()) context[key] = value;
     });
 
     if (Object.keys(context).length > 0) return context;
 
-    // Last-resort fallback to persisted survey answers in this tab/session
+    // Priority 4: Session storage fallback
     return persistedSurveyContext;
-  }, [routerState, searchParams, persistedSurveyContext]);
+  }, [dbSurveyContext, routerState, searchParams, persistedSurveyContext]);
 
   const recommendedCollegeNames = useMemo(
     () => recommendations?.colleges?.map((college) => college.name) ?? [],
