@@ -156,6 +156,7 @@ export default function CollegeMap({
   matchedColleges,
   savedColleges,
   homeLocation,
+  homeAddress,
   savedCollegeNames,
   onSaveCollege,
   savingCollege,
