@@ -198,7 +198,7 @@ const Survey = () => {
           }
         }
 
-        // Persist latest parsed answers so QuizResults can recover if a hard redirect drops router state
+        // Persist latest parsed answers in sessionStorage as fallback
         if (Object.keys(preferencesData).length > 0) {
           try {
             sessionStorage.setItem(
@@ -210,14 +210,14 @@ const Survey = () => {
           }
         }
 
-        // Save to database
+        // Save to survey_submissions (audit trail)
         const email = preferencesData.email || null;
         await supabase.from("survey_submissions").insert({
           email,
           preferences: preferencesData,
         });
 
-        // Build preferences object for the edge function (same format QuizResults used)
+        // Build preferences object for the edge function
         const clean = (val: string | undefined, fallback: string): string => {
           if (!val) return fallback;
           const trimmed = val.trim();
@@ -261,27 +261,61 @@ const Survey = () => {
           allResponses: cleanedResponses,
         };
 
-        // Call edge function and WAIT for results
-        console.log("Calling college-match with preferences:", JSON.stringify(preferences, null, 2));
-        const { data, error: fnError } = await supabase.functions.invoke("college-match", {
-          body: { preferences },
-        });
+        // Deduplication: check for recent pending/processing match
+        if (user) {
+          const { data: recentMatches } = await supabase
+            .from("college_matches")
+            .select("*")
+            .eq("user_id", user.id)
+            .gte("created_at", new Date(Date.now() - 2 * 60 * 1000).toISOString())
+            .order("created_at", { ascending: false })
+            .limit(1);
 
-        if (fnError) throw new Error(fnError.message);
-        if (data?.error) throw new Error(data.error);
+          if (recentMatches && recentMatches.length > 0) {
+            const recent = recentMatches[0] as any;
+            if (recent.ai_status === "pending" || recent.ai_status === "processing") {
+              console.log("[Survey] Found recent pending match, redirecting:", recent.id);
+              hasNavigatedToResultsRef.current = true;
+              navigate(`/quiz-results?match_id=${recent.id}`, { replace: true });
+              return;
+            }
+          }
+        }
 
-        console.log("Received college-match results, navigating...");
+        // Save pending match record to database FIRST
+        const insertPayload: any = {
+          user_id: user!.id,
+          raw_preferences: preferencesData,
+          ai_status: "pending",
+          college_data: [],
+          student_profile: {},
+        };
 
-        // Navigate with results in router state — no more re-fetching on the results page
+        const { data: matchRow, error: insertError } = await supabase
+          .from("college_matches")
+          .insert(insertPayload)
+          .select("id")
+          .single();
+
+        if (insertError || !matchRow) {
+          console.error("[Survey] Failed to create match record:", insertError);
+          throw new Error("Failed to save your submission. Please try again.");
+        }
+
+        const matchId = matchRow.id;
+        console.log("[Survey] Created match record:", matchId);
+
+        // Fire edge function in background — QuizResults will poll for completion
+        supabase.functions.invoke("college-match", {
+          body: { preferences, matchId },
+        }).then(({ error: fnError }) => {
+          if (fnError) console.error("[Survey] Edge function error:", fnError);
+          else console.log("[Survey] Edge function completed for match:", matchId);
+        }).catch(err => console.error("[Survey] Edge function call failed:", err));
+
+        // Navigate immediately — results page will poll DB
         hasNavigatedToResultsRef.current = true;
-        const submissionId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        navigate(`/quiz-results?submission_id=${encodeURIComponent(submissionId)}`, {
-          replace: true,
-          state: {
-            recommendations: data,
-            surveyContext: preferencesData,
-          },
-        });
+        navigate(`/quiz-results?match_id=${matchId}`, { replace: true });
       } catch (err) {
         console.error("Error processing survey submission:", err);
         setIsSubmitting(false);

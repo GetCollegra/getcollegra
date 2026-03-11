@@ -311,6 +311,7 @@ const QuizResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const [dbSurveyContext, setDbSurveyContext] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   // Read results passed via router state from Survey page
@@ -350,23 +351,26 @@ const QuizResults = () => {
   }, []);
 
   const surveyContext = useMemo(() => {
-    // Prefer router state survey context
+    // Priority 1: DB context from match record
+    if (Object.keys(dbSurveyContext).length > 0) return dbSurveyContext;
+
+    // Priority 2: Router state survey context
     if (routerState?.surveyContext && Object.keys(routerState.surveyContext).length > 0) {
       return routerState.surveyContext;
     }
 
-    // Fallback to URL params
+    // Priority 3: URL params
     const context: Record<string, string> = {};
     searchParams.forEach((value, key) => {
-      if (key === "__lovable_token" || key === "submission_id" || key.startsWith("__")) return;
+      if (key === "__lovable_token" || key === "submission_id" || key === "match_id" || key.startsWith("__")) return;
       if (value.trim()) context[key] = value;
     });
 
     if (Object.keys(context).length > 0) return context;
 
-    // Last-resort fallback to persisted survey answers in this tab/session
+    // Priority 4: Session storage fallback
     return persistedSurveyContext;
-  }, [routerState, searchParams, persistedSurveyContext]);
+  }, [dbSurveyContext, routerState, searchParams, persistedSurveyContext]);
 
   const recommendedCollegeNames = useMemo(
     () => recommendations?.colleges?.map((college) => college.name) ?? [],
@@ -381,8 +385,103 @@ const QuizResults = () => {
     return () => clearInterval(interval);
   }, [loading]);
 
+  // Helper to extract survey context from raw_preferences
+  const extractSurveyContext = (rawPrefs: unknown) => {
+    if (rawPrefs && typeof rawPrefs === "object" && !Array.isArray(rawPrefs)) {
+      const ctx: Record<string, string> = {};
+      for (const [k, v] of Object.entries(rawPrefs as Record<string, unknown>)) {
+        if (typeof v === "string") ctx[k] = v;
+      }
+      if (Object.keys(ctx).length > 0) setDbSurveyContext(ctx);
+    }
+  };
+
+  // Helper to build Recommendations from a DB row
+  const buildRecommendations = (match: any): Recommendations | null => {
+    const colleges = Array.isArray(match.college_data) ? match.college_data : [];
+    if (colleges.length === 0) return null;
+
+    const profile = match.student_profile && typeof match.student_profile === "object"
+      ? match.student_profile
+      : { summary: "", topPriorities: [], idealSchoolType: "" };
+
+    return {
+      colleges: colleges as any,
+      studentProfile: {
+        summary: profile.summary || "",
+        topPriorities: profile.topPriorities || [],
+        idealSchoolType: profile.idealSchoolType || "",
+      },
+      comparisonInsight: match.comparison_insight || "",
+    };
+  };
+
   useEffect(() => {
-    // If results were passed via router state, use them directly — no fetch needed
+    const matchId = searchParams.get("match_id");
+
+    // ── Priority 1: Load from DB by match_id (production flow) ──
+    if (matchId) {
+      let cancelled = false;
+      let pollCount = 0;
+      const MAX_POLLS = 20; // 20 × 3s = 60s max
+
+      const loadMatch = async () => {
+        try {
+          const { data: match, error: fetchErr } = await supabase
+            .from("college_matches")
+            .select("*")
+            .eq("id", matchId)
+            .single();
+
+          if (fetchErr || !match) {
+            if (!cancelled) {
+              setError("Could not find your results. Please try the quiz again.");
+              setLoading(false);
+            }
+            return;
+          }
+
+          // Extract survey context from raw_preferences
+          extractSurveyContext((match as any).raw_preferences);
+
+          const status = (match as any).ai_status || "completed";
+
+          if (status === "completed" || status === "failed") {
+            const recs = buildRecommendations(match);
+            if (!recs) {
+              const aiError = (match as any).ai_error;
+              setError(aiError || "No results were generated. Please try the quiz again.");
+            } else {
+              setRecommendations(recs);
+            }
+            setLoading(false);
+            return;
+          }
+
+          // Still pending/processing — poll
+          pollCount++;
+          if (pollCount >= MAX_POLLS && !cancelled) {
+            setError("Results are taking longer than expected. Please refresh the page or try again.");
+            setLoading(false);
+            return;
+          }
+
+          if (!cancelled) {
+            setTimeout(loadMatch, 3000);
+          }
+        } catch {
+          if (!cancelled) {
+            setError("Failed to load results. Please try again.");
+            setLoading(false);
+          }
+        }
+      };
+
+      loadMatch();
+      return () => { cancelled = true; };
+    }
+
+    // ── Priority 2: Legacy router state ──
     if (routerState?.recommendations) {
       console.log("Using pre-fetched results from router state");
       setRecommendations(routerState.recommendations);
@@ -390,114 +489,51 @@ const QuizResults = () => {
       return;
     }
 
-    // Fallback: fetch from edge function using URL params (e.g. direct URL access)
-    const fetchRecommendations = async () => {
-      const clean = (val: string | undefined, fallback: string): string => {
-        if (!val) return fallback;
-        const trimmed = val.trim();
-        if (!trimmed || /^\{.*\}$/.test(trimmed)) return fallback;
-        return trimmed;
-      };
-
-      const urlParams: Record<string, string> = {};
-      searchParams.forEach((value, key) => {
-        if (key === "__lovable_token" || key === "submission_id" || key.startsWith("__")) return;
-        urlParams[key] = value;
-      });
-
-      let allParams: Record<string, string> = { ...urlParams };
-      let cleanedResponses: Record<string, string> = {};
-
-      for (const [key, val] of Object.entries(allParams)) {
-        const cleaned = clean(val, "");
-        if (cleaned) cleanedResponses[key] = cleaned;
-      }
-
-      // If URL params are placeholders/empty, recover from Survey session storage
-      if (Object.keys(cleanedResponses).length === 0 && Object.keys(persistedSurveyContext).length > 0) {
-        allParams = { ...persistedSurveyContext };
-        cleanedResponses = {};
-        for (const [key, val] of Object.entries(allParams)) {
-          const cleaned = clean(val, "");
-          if (cleaned) cleanedResponses[key] = cleaned;
-        }
-      }
-
-      if (Object.keys(cleanedResponses).length === 0) {
-        setError("No valid survey data found. Please take the quiz again.");
-        setLoading(false);
-        return;
-      }
-
-      const pickParam = (...keys: string[]) => {
-        for (const key of keys) {
-          const value = allParams[key];
-          if (typeof value === "string" && value.trim()) return value;
-        }
-        return "";
-      };
-
-      const preferences = {
-        firstName: pickParam("first_name", "firstName"),
-        email: pickParam("email"),
-        cityState: clean(pickParam("city_state", "cityState"), "No preference"),
-        gpa: clean(pickParam("gpa"), ""),
-        testScore: clean(pickParam("test_score", "testScore"), "None"),
-        satScore: clean(pickParam("sat_score", "satScore"), ""),
-        actScore: clean(pickParam("act_score", "actScore"), ""),
-        campusSize: clean(pickParam("campus_size", "campusSize"), "No preference"),
-        campusVibe: clean(pickParam("campus_vibe", "campusVibe"), "No preference"),
-        locationType: clean(pickParam("location_type", "locationType"), "No preference"),
-        maxCost: clean(pickParam("max_cost", "maxCost"), "No preference"),
-        acceptanceRatePref: clean(pickParam("acceptance_rate_pref", "acceptanceRatePref"), "No preference"),
-        financialAid: clean(pickParam("financial_aid", "financialAid"), "Important"),
-        campusLife: clean(pickParam("campus_life", "campusLife"), "No preference"),
-        academicImportance: clean(pickParam("academic_importance", "academicImportance"), "No preference"),
-        distanceFromHome: clean(pickParam("distance_from_home", "distanceFromHome"), "No preference"),
-        areaOfStudy: clean(pickParam("area_of_study", "areaOfStudy"), "Undecided"),
-        allResponses: cleanedResponses,
-      };
-
+    // ── Priority 3: Load latest match from DB for current user ──
+    const loadLatest = async () => {
       try {
-        const { data, error: fnError } = await supabase.functions.invoke("college-match", {
-          body: { preferences },
-        });
-        if (fnError) throw new Error(fnError.message);
-        if (data?.error) throw new Error(data.error);
-        setRecommendations(data);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load recommendations";
-        setError(message);
-        toast({ title: "Error", description: message, variant: "destructive" });
-      } finally {
-        setLoading(false);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          setError("Please log in to view your results.");
+          setLoading(false);
+          return;
+        }
+
+        const { data: matches } = await supabase
+          .from("college_matches")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (matches && matches.length > 0) {
+          const match = matches[0];
+          const status = (match as any).ai_status || "completed";
+
+          if (status === "completed" || status === "failed") {
+            const recs = buildRecommendations(match);
+            if (recs) {
+              setRecommendations(recs);
+              extractSurveyContext((match as any).raw_preferences);
+            } else {
+              setError("No results found. Please take the quiz first.");
+            }
+          } else {
+            setError("Your results are still being generated. Please refresh in a moment.");
+          }
+        } else {
+          setError("No results found. Please take the quiz first.");
+        }
+      } catch {
+        setError("Failed to load results.");
       }
+      setLoading(false);
     };
 
-    fetchRecommendations();
-  }, [routerState, searchParams, toast, persistedSurveyContext]);
+    loadLatest();
+  }, [routerState, searchParams]);
 
-  // Persist results to college_matches for premium dashboard
-  useEffect(() => {
-    if (!recommendations) return;
-    const saveToDb = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      const { data: existing } = await supabase
-        .from("college_matches")
-        .select("id")
-        .eq("user_id", session.user.id)
-        .limit(1);
-      if (existing && existing.length > 0) return;
-      await supabase.from("college_matches").insert({
-        user_id: session.user.id,
-        college_data: recommendations.colleges,
-        student_profile: recommendations.studentProfile,
-        comparison_insight: recommendations.comparisonInsight,
-      } as any);
-    };
-    saveToDb();
-  }, [recommendations]);
+  // Results are now persisted by the edge function — no client-side save needed
 
   const allCollegeNames = useMemo(() => {
     const names = recommendations?.colleges?.map(c => c.name) ?? [];
