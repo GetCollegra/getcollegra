@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AskAI from "@/components/AskAI";
 
 import { trackClick } from "@/lib/analytics";
 import { startCheckout } from "@/lib/checkout";
@@ -937,6 +938,8 @@ const QuizResults = () => {
               </div>
             </section>
 
+            {/* Ask AI Section */}
+            <AskAI surveyContext={surveyContext} recommendedCollegeNames={recommendedCollegeNames} />
 
             {/* CTA Section */}
             <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
