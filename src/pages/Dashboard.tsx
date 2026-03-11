@@ -61,7 +61,7 @@ const Dashboard = () => {
   const [addCollegeName, setAddCollegeName] = useState("");
   const [addingCollege, setAddingCollege] = useState(false);
   const [notesPanelId, setNotesPanelId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("matches");
+  const [activeTab, setActiveTab] = useState<string>("matches");
 
   const notesPanelCollege = savedColleges.find(s => s.id === notesPanelId);
 
