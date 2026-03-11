@@ -556,6 +556,42 @@ serve(async (req) => {
       });
     }
 
+    // Check if user is premium (subscribed or admin)
+    let isPremiumUser = false;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sbAdmin = createClient(supabaseUrl, serviceKey);
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user: authUser } } = await sbAdmin.auth.getUser(token);
+      if (authUser) {
+        // Check admin role
+        const { data: roleData } = await sbAdmin
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", authUser.id)
+          .eq("role", "admin")
+          .maybeSingle();
+        if (roleData) isPremiumUser = true;
+
+        // Check Stripe subscription if not admin
+        if (!isPremiumUser) {
+          try {
+            const checkResp = await fetch(`${supabaseUrl}/functions/v1/check-subscription`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+              body: JSON.stringify({ userId: authUser.id }),
+            });
+            if (checkResp.ok) {
+              const subData = await checkResp.json();
+              if (subData.subscribed) isPremiumUser = true;
+            }
+          } catch { /* ignore subscription check failures */ }
+        }
+      }
+    }
+
     // Parse & validate input
     const body = await req.json();
     const raw = body?.preferences;
