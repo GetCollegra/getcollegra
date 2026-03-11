@@ -47,6 +47,7 @@ const CollegeMapPage = () => {
   const [savedColleges, setSavedColleges] = useState<{ id: string; college_name: string; college_data: College }[]>([]);
   const [loading, setLoading] = useState(true);
   const [homeLocation, setHomeLocation] = useState<string>("");
+  const [homeAddress, setHomeAddress] = useState<string>("");
   const [savingCollege, setSavingCollege] = useState<string | null>(null);
 
   // Redirect if not authenticated
@@ -58,7 +59,7 @@ const CollegeMapPage = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [matchRes, savedRes] = await Promise.all([
+      const [matchRes, savedRes, profileRes] = await Promise.all([
         supabase
           .from("college_matches")
           .select("*")
@@ -69,6 +70,11 @@ const CollegeMapPage = () => {
           .from("saved_colleges")
           .select("*")
           .eq("user_id", user.id),
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single(),
       ]);
 
       if (matchRes.data?.[0]) {
@@ -84,6 +90,10 @@ const CollegeMapPage = () => {
             college_data: d.college_data as unknown as College,
           }))
         );
+      }
+
+      if (profileRes.data && (profileRes.data as any).home_address) {
+        setHomeAddress((profileRes.data as any).home_address);
       }
 
       // Try to get home location from session storage (survey preferences)
@@ -188,6 +198,7 @@ const CollegeMapPage = () => {
                 matchedColleges={colleges}
                 savedColleges={savedColleges}
                 homeLocation={homeLocation}
+                homeAddress={homeAddress}
                 savedCollegeNames={savedNames}
                 onSaveCollege={handleSaveCollege}
                 savingCollege={savingCollege}

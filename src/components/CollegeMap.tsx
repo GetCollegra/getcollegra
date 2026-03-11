@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import TravelFromHome from "@/components/TravelFromHome";
 import type { College } from "@/types/college";
 
 // Fix default marker icons
@@ -144,6 +145,7 @@ type CollegeMapProps = {
   matchedColleges: College[];
   savedColleges: { college_data: College; college_name: string }[];
   homeLocation?: string; // e.g. "Dallas, TX"
+  homeAddress?: string; // full address for travel estimation
   savedCollegeNames?: Set<string>;
   onSaveCollege?: (college: College) => void;
   savingCollege?: string | null;
@@ -154,6 +156,7 @@ export default function CollegeMap({
   matchedColleges,
   savedColleges,
   homeLocation,
+  homeAddress,
   savedCollegeNames,
   onSaveCollege,
   savingCollege,
@@ -321,7 +324,7 @@ export default function CollegeMap({
                 position={m.pos}
                 icon={createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match)}
               >
-                <Popup minWidth={240} maxWidth={300}>
+                <Popup minWidth={280} maxWidth={400}>
                   <div className="p-1">
                     <p className="font-bold text-sm mb-0.5">{m.college.name}</p>
                     <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
@@ -379,6 +382,10 @@ export default function CollegeMap({
                         )}
                         {isSaved ? "Already Saved" : "Add to My College List"}
                       </Button>
+                    )}
+
+                    {homeAddress && (
+                      <TravelFromHome college={m.college} homeAddress={homeAddress} />
                     )}
                   </div>
                 </Popup>
