@@ -145,6 +145,7 @@ type CollegeMapProps = {
   matchedColleges: College[];
   savedColleges: { college_data: College; college_name: string }[];
   homeLocation?: string; // e.g. "Dallas, TX"
+  homeAddress?: string; // full address for travel estimation
   savedCollegeNames?: Set<string>;
   onSaveCollege?: (college: College) => void;
   savingCollege?: string | null;
