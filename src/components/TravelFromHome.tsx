@@ -40,30 +40,6 @@ export default function TravelFromHome({ college, homeAddress }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // When content expands, find the Leaflet popup and call update() to re-pan
-  useEffect(() => {
-    if (containerRef.current) {
-      setTimeout(() => {
-        const popupContentWrapper = containerRef.current?.closest(".leaflet-popup-content-wrapper");
-        const popupEl = popupContentWrapper?.parentElement;
-        if (popupEl && (popupEl as any)._leaflet_id) {
-          // Walk up to the map and find the open popup
-          const mapContainer = popupEl.closest(".leaflet-container");
-          if (mapContainer && (mapContainer as any)._leaflet_id) {
-            const mapInstance = (mapContainer as any)._leaflet;
-            // Use simpler approach: scroll the popup content to top
-          }
-        }
-        // Simplest fix: scroll the popup content area to top after expansion
-        const popupContent = containerRef.current?.closest(".leaflet-popup-content");
-        if (popupContent) {
-          popupContent.scrollTop = 0;
-        }
-      }, 150);
-    }
-  }, [expanded, travel]);
 
   const fetchTravel = async () => {
     if (travel) {
