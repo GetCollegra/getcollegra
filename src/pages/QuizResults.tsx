@@ -431,7 +431,7 @@ const QuizResults = () => {
             .from("college_matches")
             .select("*")
             .eq("id", matchId)
-            .single();
+            .maybeSingle();
 
           if (fetchErr || !match) {
             if (!cancelled) {
