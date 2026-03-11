@@ -699,8 +699,10 @@ serve(async (req) => {
       throw new Error("Failed to parse college recommendations");
     }
 
-    // Mask premium fields for free tier
-    recommendations = maskPremiumFields(recommendations);
+    // Mask premium fields for free tier only
+    if (!isPremiumUser) {
+      recommendations = maskPremiumFields(recommendations);
+    }
 
     return new Response(JSON.stringify(recommendations), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
