@@ -28,6 +28,7 @@ import {
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
+const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
 type SavedCollege = {
   id: string;
