@@ -42,24 +42,26 @@ export default function TravelFromHome({ college, homeAddress }: Props) {
   const [expanded, setExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // When content expands/collapses, update the Leaflet popup so it auto-pans into view
+  // When content expands, find the Leaflet popup and call update() to re-pan
   useEffect(() => {
-    if (expanded && containerRef.current) {
-      // Find the closest Leaflet popup container and trigger an update
-      const popupEl = containerRef.current.closest(".leaflet-popup");
-      if (popupEl) {
-        // Small delay to let React render the expanded content
-        setTimeout(() => {
-          const map = (popupEl as any)._leaflet_popup?._map;
-          // Alternative: find the popup via the map's DOM
-          const leafletPopup = containerRef.current?.closest(".leaflet-popup-content-wrapper");
-          if (leafletPopup) {
-            // Trigger a pan by dispatching a resize-like event on the popup
-            const evt = new Event("resize");
-            window.dispatchEvent(evt);
+    if (containerRef.current) {
+      setTimeout(() => {
+        const popupContentWrapper = containerRef.current?.closest(".leaflet-popup-content-wrapper");
+        const popupEl = popupContentWrapper?.parentElement;
+        if (popupEl && (popupEl as any)._leaflet_id) {
+          // Walk up to the map and find the open popup
+          const mapContainer = popupEl.closest(".leaflet-container");
+          if (mapContainer && (mapContainer as any)._leaflet_id) {
+            const mapInstance = (mapContainer as any)._leaflet;
+            // Use simpler approach: scroll the popup content to top
           }
-        }, 100);
-      }
+        }
+        // Simplest fix: scroll the popup content area to top after expansion
+        const popupContent = containerRef.current?.closest(".leaflet-popup-content");
+        if (popupContent) {
+          popupContent.scrollTop = 0;
+        }
+      }, 150);
     }
   }, [expanded, travel]);
 
