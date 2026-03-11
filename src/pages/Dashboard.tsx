@@ -363,9 +363,6 @@ const Dashboard = () => {
                 Organize, compare, and plan your college journey — all in one place.
               </p>
             </div>
-            <Button variant="outline" onClick={signOut} className="text-muted-foreground border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30">
-              <LogOut className="mr-2 h-4 w-4" /> Sign Out
-            </Button>
           </div>
           {studentProfile && (
             <Card className="mt-6 bg-card border-border shadow-soft overflow-hidden">
