@@ -290,7 +290,7 @@ function formatScorecardResults(results: any[]): string {
  */
 const MIN_RESULTS = 15;
 
-async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: string; count: number }> {
+async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: string; count: number; raw: any[] }> {
   const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
   if (!apiKey || apiKey.trim().length < 10) {
     console.error("COLLEGE_SCORECARD_API_KEY missing or too short");
