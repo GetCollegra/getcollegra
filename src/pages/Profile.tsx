@@ -17,7 +17,7 @@ import { startCheckout } from "@/lib/checkout";
 import {
   User, MapPin, GraduationCap, DollarSign, Bell, Database,
   Shield, CreditCard, Palette, LogOut, Loader2, Trash2, Download,
-  Lock, Sun, Moon, Monitor, Save, RefreshCw, KeyRound
+  Lock, Sun, Moon, Monitor, Save, RefreshCw, KeyRound, Home
 } from "lucide-react";
 
 const Profile = () => {
