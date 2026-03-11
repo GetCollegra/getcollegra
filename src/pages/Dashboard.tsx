@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
+import TravelFromHome from "@/components/TravelFromHome";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 
 type SavedCollege = {
@@ -57,6 +58,7 @@ const Dashboard = () => {
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [firstName, setFirstName] = useState("");
+  const [homeAddress, setHomeAddress] = useState("");
   const [storedPreferences, setStoredPreferences] = useState<Record<string, any> | null>(null);
   const [addCollegeName, setAddCollegeName] = useState("");
   const [addingCollege, setAddingCollege] = useState(false);
@@ -148,6 +150,13 @@ const Dashboard = () => {
     if (!user) return;
     const name = user.user_metadata?.first_name || user.email?.split("@")[0] || "Student";
     setFirstName(name);
+    // Load home address from profile
+    (async () => {
+      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      if (data && (data as any).home_address) {
+        setHomeAddress((data as any).home_address);
+      }
+    })();
   }, [user]);
 
   // Load college matches
@@ -741,6 +750,17 @@ const Dashboard = () => {
                                     </div>
                                   )}
                                 </div>
+
+                                {/* Travel From Home */}
+                                {homeAddress && (
+                                  <TravelFromHome college={saved.college_data} homeAddress={homeAddress} />
+                                )}
+                                {!homeAddress && (
+                                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 border border-border/30">
+                                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                    <span>Add your home address in <a href="/profile" className="text-primary underline">Profile</a> to see travel options to this college.</span>
+                                  </div>
+                                )}
                               </div>
                             </CollapsibleContent>
                           </CardContent>

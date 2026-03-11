@@ -17,7 +17,7 @@ import { startCheckout } from "@/lib/checkout";
 import {
   User, MapPin, GraduationCap, DollarSign, Bell, Database,
   Shield, CreditCard, Palette, LogOut, Loader2, Trash2, Download,
-  Lock, Sun, Moon, Monitor, Save, RefreshCw, KeyRound
+  Lock, Sun, Moon, Monitor, Save, RefreshCw, KeyRound, Home
 } from "lucide-react";
 
 const Profile = () => {
@@ -29,6 +29,7 @@ const Profile = () => {
   // Profile info state
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [homeAddress, setHomeAddress] = useState("");
   const [cityState, setCityState] = useState("");
   const [gradYear, setGradYear] = useState("");
   const [gpaRange, setGpaRange] = useState("");
@@ -88,6 +89,7 @@ const Profile = () => {
         .single();
       if (data) {
         setFirstName(data.first_name || "");
+        if ((data as any).home_address) setHomeAddress((data as any).home_address);
       }
     })();
 
@@ -128,7 +130,8 @@ const Profile = () => {
     try {
       await supabase.from("profiles").update({
         first_name: firstName,
-      }).eq("id", user.id);
+        home_address: homeAddress,
+      } as any).eq("id", user.id);
       saveProfilePrefsToLocal();
       toast({ title: "Profile saved", description: "Your information has been updated." });
     } catch {
@@ -319,6 +322,13 @@ const Profile = () => {
                 <div className="space-y-2">
                   <Label htmlFor="cityState">City / State</Label>
                   <Input id="cityState" value={cityState} onChange={e => setCityState(e.target.value)} placeholder="e.g. Austin, TX" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="homeAddress" className="flex items-center gap-1.5">
+                    <Home className="h-3.5 w-3.5 text-primary" /> Home Address
+                  </Label>
+                  <Input id="homeAddress" value={homeAddress} onChange={e => setHomeAddress(e.target.value)} placeholder="e.g. 123 Main St, Austin, TX 78701" />
+                  <p className="text-[10px] text-muted-foreground">Used to estimate travel options to your colleges</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="gradYear">Graduation Year</Label>
