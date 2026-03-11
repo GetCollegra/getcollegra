@@ -40,6 +40,28 @@ export default function TravelFromHome({ college, homeAddress }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // When content expands/collapses, update the Leaflet popup so it auto-pans into view
+  useEffect(() => {
+    if (expanded && containerRef.current) {
+      // Find the closest Leaflet popup container and trigger an update
+      const popupEl = containerRef.current.closest(".leaflet-popup");
+      if (popupEl) {
+        // Small delay to let React render the expanded content
+        setTimeout(() => {
+          const map = (popupEl as any)._leaflet_popup?._map;
+          // Alternative: find the popup via the map's DOM
+          const leafletPopup = containerRef.current?.closest(".leaflet-popup-content-wrapper");
+          if (leafletPopup) {
+            // Trigger a pan by dispatching a resize-like event on the popup
+            const evt = new Event("resize");
+            window.dispatchEvent(evt);
+          }
+        }, 100);
+      }
+    }
+  }, [expanded, travel]);
 
   const fetchTravel = async () => {
     if (travel) {
