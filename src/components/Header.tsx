@@ -65,9 +65,9 @@ const Header = () => {
               </a>
             )}
             {user ? (
-              <button onClick={() => { import("@/integrations/supabase/client").then(m => m.supabase.auth.signOut()); }} className="text-muted-foreground hover:text-primary transition-colors">
-                <LogOut className="h-5 w-5" />
-              </button>
+              <a href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
+                <User className="h-5 w-5" />
+              </a>
             ) : (
               <a href="/login" className="text-muted-foreground hover:text-primary transition-colors">
                 <LogIn className="h-5 w-5" />
