@@ -150,6 +150,8 @@ type CollegeMapProps = {
   onSaveCollege?: (college: College) => void;
   savingCollege?: string | null;
   fullPage?: boolean;
+  onCollegeSelect?: (college: College) => void;
+  selectedCollege?: string | null;
 };
 
 export default function CollegeMap({
