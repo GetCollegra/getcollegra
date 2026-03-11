@@ -23,6 +23,21 @@ const Signup = () => {
       return;
     }
     setLoading(true);
+
+    // Check rate limit before attempting signup
+    try {
+      const { data: rateCheck } = await supabase.functions.invoke("auth-rate-check", {
+        body: { action: "signup" },
+      });
+      if (rateCheck && !rateCheck.allowed) {
+        toast({ title: "Too many attempts", description: rateCheck.error || "Please wait before trying again.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Fail open
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
