@@ -147,6 +147,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string | null
+          feedback_completed: boolean
           first_name: string | null
           home_address: string | null
           id: string
@@ -154,6 +155,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email?: string | null
+          feedback_completed?: boolean
           first_name?: string | null
           home_address?: string | null
           id: string
@@ -161,6 +163,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string | null
+          feedback_completed?: boolean
           first_name?: string | null
           home_address?: string | null
           id?: string
