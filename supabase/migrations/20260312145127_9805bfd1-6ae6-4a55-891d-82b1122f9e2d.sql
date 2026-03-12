@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN feedback_completed boolean NOT NULL DEFAULT false;

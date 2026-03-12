@@ -28,6 +28,7 @@ import {
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import TravelFromHome from "@/components/TravelFromHome";
+import FeedbackSurveyModal from "@/components/FeedbackSurveyModal";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
@@ -361,6 +362,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
+      <FeedbackSurveyModal />
       <main className="container px-4 pt-24 pb-16 max-w-7xl mx-auto">
         {/* 1. Welcome Section */}
         <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-12">
