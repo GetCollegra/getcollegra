@@ -497,7 +497,7 @@ Return a JSON object with this exact structure:
       "fitScore": 95,
       "fitCategory": "Safety/Match/Reach",
       "whyFit": "2-3 sentences referencing specific student answers",
-      "prosForStudent": ["Pro quoting student preference", "Pro 2", "Pro 3"],
+      "prosForStudent": ["Pro quoting student preference", "Pro 2 — include a sports/athletics pro if relevant (e.g. 'D1 athletics with 20+ varsity sports')", "Pro 3"],
       "consForStudent": ["Con referencing student preference", "Con 2"],
       "challengesForStudent": ["A specific reason this school may NOT be the best fit for them, referencing their answers (e.g. 'You mentioned wanting a small campus, but this school has 30,000+ students')", "Challenge 2"],
       "howToGetIn": "5-7 detailed, actionable sentences providing a mini admissions strategy for THIS specific school tailored to THIS student. Include ALL of the following: (1) How their GPA and test scores compare to the school's averages and what to aim for if retaking (e.g. 'Your SAT of X is below their 25th percentile of Y — aim for at least Z on a retake'), (2) Specific extracurriculars, clubs, or leadership roles that would strengthen their application for their intended major at this school, (3) Essay topic suggestions that connect their interests to the school's unique programs or values (e.g. 'Write about how [school]'s [specific program/center/initiative] aligns with your passion for [their interest]'), (4) Whether to apply Early Decision/Early Action and why it matters for this school's acceptance rate, (5) Any supplemental materials, interviews, or demonstrated interest steps this school values. Be concrete — name specific programs, centers, or opportunities at the school.",
