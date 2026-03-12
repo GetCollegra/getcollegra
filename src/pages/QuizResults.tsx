@@ -10,7 +10,7 @@ import {
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-
+import { useAuth } from "@/contexts/AuthContext";
 import { trackClick } from "@/lib/analytics";
 import { startCheckout } from "@/lib/checkout";
 import { supabase } from "@/integrations/supabase/client";
