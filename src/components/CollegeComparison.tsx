@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Target, DollarSign, GraduationCap, Users, MapPin, BookOpen,
-  Bookmark, StickyNote, Map, X, Plus, Trophy, TrendingUp, Building2
+  Bookmark, StickyNote, Map as MapIcon, X, Plus, Trophy, TrendingUp, Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -109,6 +109,7 @@ type Props = {
   onToggleCompare: (id: string) => void;
   onOpenNotes: (id: string) => void;
   onSwitchToMap: () => void;
+  matchedColleges?: College[];
 };
 
 export default function CollegeComparison({
@@ -118,15 +119,37 @@ export default function CollegeComparison({
   onToggleCompare,
   onOpenNotes,
   onSwitchToMap,
+  matchedColleges = [],
 }: Props) {
+  // Build lookup of unmasked data from college_matches
+  const unmaskedLookup = useMemo(() => {
+    const map = new Map<string, College>();
+    matchedColleges.forEach(c => map.set(c.name, c));
+    return map;
+  }, [matchedColleges]);
+
+  // Unmask a college's data using matched colleges
+  const unmask = (saved: SavedCollege): SavedCollege => {
+    const unmasked = unmaskedLookup.get(saved.college_name);
+    if (!unmasked) return saved;
+    const merged = { ...saved.college_data };
+    for (const key of Object.keys(merged) as (keyof College)[]) {
+      if ((merged as any)[key] === "Premium" && (unmasked as any)[key] !== undefined) {
+        (merged as any)[key] = (unmasked as any)[key];
+      }
+    }
+    return { ...saved, college_data: merged as College };
+  };
+
+  const unmaskedCompared = useMemo(() => comparedColleges.map(unmask), [comparedColleges, unmaskedLookup]);
   // Find best values for highlighting
   const bestValues = useMemo(() => {
     const bests: Record<string, string> = {};
     COMPARISON_ROWS.forEach(row => {
-      if (row.format === "text" || comparedColleges.length < 2) return;
+      if (row.format === "text" || unmaskedCompared.length < 2) return;
       let bestId = "";
       let bestVal = row.higherIsBetter ? -Infinity : Infinity;
-      comparedColleges.forEach(c => {
+      unmaskedCompared.forEach(c => {
         const val = row.getNumeric(c.college_data);
         if (val === 0 || isNaN(val)) return;
         if (row.higherIsBetter ? val > bestVal : val < bestVal) {
@@ -137,19 +160,19 @@ export default function CollegeComparison({
       if (bestId) bests[row.key] = bestId;
     });
     return bests;
-  }, [comparedColleges]);
+  }, [unmaskedCompared]);
 
   // Progress bar ranges
   const ranges = useMemo(() => {
     const r: Record<string, { min: number; max: number }> = {};
     COMPARISON_ROWS.forEach(row => {
       if (row.format === "text") return;
-      const vals = comparedColleges.map(c => row.getNumeric(c.college_data)).filter(v => v > 0);
+      const vals = unmaskedCompared.map(c => row.getNumeric(c.college_data)).filter(v => v > 0);
       if (vals.length === 0) return;
       r[row.key] = { min: Math.min(...vals) * 0.5, max: Math.max(...vals) * 1.2 };
     });
     return r;
-  }, [comparedColleges]);
+  }, [unmaskedCompared]);
 
   const getProgressPercent = (row: ComparisonRow, college: College): number => {
     const range = ranges[row.key];
@@ -192,7 +215,7 @@ export default function CollegeComparison({
         })}
       </div>
 
-      {comparedColleges.length < 2 && (
+      {unmaskedCompared.length < 2 && (
         <Card className="bg-card border-border">
           <CardContent className="p-8 text-center">
             <p className="text-muted-foreground">Select at least 2 colleges above to start comparing.</p>
@@ -200,14 +223,14 @@ export default function CollegeComparison({
         </Card>
       )}
 
-      {comparedColleges.length >= 2 && (
+      {unmaskedCompared.length >= 2 && (
         <div className="space-y-0">
           {/* Column headers — college cards */}
-          <div className="grid gap-2" style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}>
+          <div className="grid gap-2" style={{ gridTemplateColumns: `140px repeat(${unmaskedCompared.length}, minmax(0, 1fr))` }}>
             {/* Empty top-left cell */}
             <div />
 
-            {comparedColleges.map((c, i) => {
+            {unmaskedCompared.map((c, i) => {
               const college = c.college_data;
               const catColors: Record<string, string> = {
                 Reach: "text-orange-600 bg-orange-50",
@@ -215,7 +238,7 @@ export default function CollegeComparison({
                 Safety: "text-emerald-600 bg-emerald-50",
               };
               const catColor = catColors[college.fitCategory] || catColors.Match;
-              const isCompact = comparedColleges.length >= 4;
+              const isCompact = unmaskedCompared.length >= 4;
 
               return (
                 <motion.div
@@ -267,7 +290,7 @@ export default function CollegeComparison({
                           className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-primary gap-0.5"
                           onClick={onSwitchToMap}
                         >
-                          <Map className="h-2.5 w-2.5" /> Map
+                          <MapIcon className="h-2.5 w-2.5" /> Map
                         </Button>
                         <Button
                           variant="ghost"
@@ -297,7 +320,7 @@ export default function CollegeComparison({
                   className={`grid items-center gap-2 px-3 py-3 ${
                     rowIdx % 2 === 0 ? "bg-card" : "bg-muted/20"
                   } ${rowIdx < COMPARISON_ROWS.length - 1 ? "border-b border-border/50" : ""}`}
-                  style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
+                  style={{ gridTemplateColumns: `140px repeat(${unmaskedCompared.length}, minmax(0, 1fr))` }}
                 >
                   {/* Row label */}
                   <div className="flex items-center gap-2">
@@ -306,7 +329,7 @@ export default function CollegeComparison({
                   </div>
 
                   {/* Values */}
-                  {comparedColleges.map(c => {
+                  {unmaskedCompared.map(c => {
                     const value = row.getValue(c.college_data);
                     const isPremium = typeof value === "string" && value === "Premium";
                     const best = isBest(c.id);
@@ -318,7 +341,7 @@ export default function CollegeComparison({
                           <span className={`text-sm font-semibold truncate ${
                             isPremium ? "text-muted-foreground/50 italic" : best ? "text-primary" : "text-foreground"
                           }`}>
-                            {isPremium ? "🔒 Premium" : value}
+                            {isPremium ? "—" : value}
                           </span>
                           {best && !isPremium && (
                             <Badge className="bg-primary/10 text-primary border-0 text-[9px] px-1.5 py-0 shrink-0">
@@ -348,13 +371,13 @@ export default function CollegeComparison({
           <div className="mt-4 rounded-xl border border-border bg-card overflow-hidden">
             <div
               className="grid items-start gap-2 px-3 py-4"
-              style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: `140px repeat(${unmaskedCompared.length}, minmax(0, 1fr))` }}
             >
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-sm font-medium text-foreground">Top Programs</span>
               </div>
-              {comparedColleges.map(c => (
+              {unmaskedCompared.map(c => (
                 <div key={c.id} className="flex flex-wrap gap-1">
                   {c.college_data.topPrograms.slice(0, 4).map((prog, i) => (
                     <Badge key={i} variant="secondary" className="text-[10px] px-2 py-0.5">

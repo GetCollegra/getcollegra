@@ -835,6 +835,7 @@ const Dashboard = () => {
                     onToggleCompare={toggleCompare}
                     onOpenNotes={(id) => { setNotesPanelId(id); }}
                     onSwitchToMap={() => setActiveTab("map")}
+                    matchedColleges={colleges}
                   />
                 </>
               ) : <PremiumPaywall />}
