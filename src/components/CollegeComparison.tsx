@@ -146,10 +146,10 @@ export default function CollegeComparison({
   const bestValues = useMemo(() => {
     const bests: Record<string, string> = {};
     COMPARISON_ROWS.forEach(row => {
-      if (row.format === "text" || comparedColleges.length < 2) return;
+      if (row.format === "text" || unmaskedCompared.length < 2) return;
       let bestId = "";
       let bestVal = row.higherIsBetter ? -Infinity : Infinity;
-      comparedColleges.forEach(c => {
+      unmaskedCompared.forEach(c => {
         const val = row.getNumeric(c.college_data);
         if (val === 0 || isNaN(val)) return;
         if (row.higherIsBetter ? val > bestVal : val < bestVal) {
@@ -160,19 +160,19 @@ export default function CollegeComparison({
       if (bestId) bests[row.key] = bestId;
     });
     return bests;
-  }, [comparedColleges]);
+  }, [unmaskedCompared]);
 
   // Progress bar ranges
   const ranges = useMemo(() => {
     const r: Record<string, { min: number; max: number }> = {};
     COMPARISON_ROWS.forEach(row => {
       if (row.format === "text") return;
-      const vals = comparedColleges.map(c => row.getNumeric(c.college_data)).filter(v => v > 0);
+      const vals = unmaskedCompared.map(c => row.getNumeric(c.college_data)).filter(v => v > 0);
       if (vals.length === 0) return;
       r[row.key] = { min: Math.min(...vals) * 0.5, max: Math.max(...vals) * 1.2 };
     });
     return r;
-  }, [comparedColleges]);
+  }, [unmaskedCompared]);
 
   const getProgressPercent = (row: ComparisonRow, college: College): number => {
     const range = ranges[row.key];
