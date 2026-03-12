@@ -436,6 +436,25 @@ Your job is to select the 5 best-fit colleges for this student from the real dat
 
 CRITICAL: Each student is UNIQUE. Their answers MUST directly determine which colleges you pick. Two students with different answers should get COMPLETELY DIFFERENT lists.
 
+═══ REQUIRED FIT CATEGORY DISTRIBUTION ═══
+
+You MUST return EXACTLY this distribution:
+- 2 Safety schools (fitCategory: "Safety")
+- 2 Match schools (fitCategory: "Match")  
+- 1 Reach school (fitCategory: "Reach")
+
+═══ REALISTIC REACH SCHOOL RULES ═══
+
+The Reach school must be ASPIRATIONAL BUT REALISTIC — NOT a fantasy pick. Follow these rules strictly:
+
+- GPA below 3.0 → Reach school acceptance rate must be 30-50%. Do NOT suggest schools with <20% acceptance rates. Schools like Harvard, MIT, Stanford, Notre Dame, Duke, etc. are OFF LIMITS.
+- GPA 3.0-3.4 → Reach school acceptance rate must be 20-40%. No schools under 15% acceptance rate.
+- GPA 3.5-3.7 → Reach school acceptance rate can be 15-30%.
+- GPA 3.8+ with strong test scores → Reach school acceptance rate can be 10-25%.
+- GPA 3.9+ with SAT 1500+ or ACT 34+ → Reach school can go as low as 5-15% acceptance rate.
+
+The Reach school should be a school where the student has a REAL CHANCE of admission if they put together a strong application — not a school where they'd need a miracle.
+
 ═══ PRIORITY WEIGHTING SYSTEM ═══
 
 HIGH PRIORITY (weight these most heavily — these are the primary selection criteria):
@@ -463,6 +482,7 @@ SELECTION PROCESS:
 1. First, filter and rank by HIGH PRIORITY factors — these determine which schools make the list.
 2. Then, refine using MEDIUM PRIORITY factors to narrow from candidates to final 5.
 3. Finally, use LOW PRIORITY factors only if multiple schools are still tied after steps 1-2.
+4. VERIFY the final list has exactly 2 Safety, 2 Match, 1 Reach before responding.
 
 TONE & PRONOUNS: ALWAYS address the student directly using "you" and "your" — NEVER use "he", "him", "she", "her", "they", "them", or "the student". If the student's first name is provided, combine it with "you/your" (e.g., "Erin, with your GPA and test scores, the best fit for you is..."). This applies to ALL text fields: whyFit, prosForStudent, consForStudent, challengesForStudent, howToGetIn, studentProfile summary, and comparisonInsight.
 
@@ -505,10 +525,10 @@ Return a JSON object with this exact structure:
       "notableFeature": "One unique relevant thing — if the school has notable athletics (conference, championship history, famous sports programs), highlight that here"
     }
   ],
-  "comparisonInsight": "A detailed 5-8 sentence analysis comparing all 5 recommendations. Address the student BY THEIR FIRST NAME if provided. Explain: (1) Why this specific mix of Safety/Match/Reach schools works for them, (2) How each school addresses their stated priorities differently, (3) What tradeoffs exist between their top picks (e.g. cost vs. prestige, size vs. program strength), (4) Which school might be the best overall fit and why. Reference their specific survey answers throughout."
+  "comparisonInsight": "A detailed 5-8 sentence analysis comparing all 5 recommendations. Address the student BY THEIR FIRST NAME if provided. Explain: (1) Why this specific mix of 2 Safety, 2 Match, and 1 Reach schools works for them, (2) How each school addresses their stated priorities differently, (3) What tradeoffs exist between their top picks (e.g. cost vs. prestige, size vs. program strength), (4) Which school might be the best overall fit and why. Reference their specific survey answers throughout."
 }
 
-Provide exactly 5 colleges sorted by fitScore descending. Include at least one Safety and one Reach. Use real data values only.
+Provide exactly 5 colleges: 2 Safety, 2 Match, 1 Reach. Sort by fitScore descending. Use real data values only. The Reach school MUST be realistic for this student's academic profile.
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
