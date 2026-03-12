@@ -200,7 +200,7 @@ const Dashboard = () => {
     } catch { /* ignore */ }
   }, []);
 
-  // Load saved colleges
+  // Load saved colleges — and unmask premium fields using college_matches data
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -211,16 +211,48 @@ const Dashboard = () => {
         .order("created_at", { ascending: false });
 
       if (data) {
-        setSavedColleges(data.map(d => ({
-          ...d,
-          college_data: d.college_data as unknown as College,
-          notes: d.notes || "",
-        })));
+        // Build a lookup from college_matches (which stores unmasked data)
+        const unmaskedLookup = new Map<string, College>();
+        if (colleges.length > 0) {
+          colleges.forEach(c => unmaskedLookup.set(c.name, c));
+        } else {
+          // Fallback: load from college_matches directly
+          const { data: matchData } = await supabase
+            .from("college_matches")
+            .select("college_data")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(5);
+          if (matchData) {
+            matchData.forEach(m => {
+              const cd = m.college_data as unknown;
+              if (Array.isArray(cd)) {
+                (cd as College[]).forEach(c => unmaskedLookup.set(c.name, c));
+              }
+            });
+          }
+        }
+
+        setSavedColleges(data.map(d => {
+          const saved = d.college_data as unknown as College;
+          const unmasked = unmaskedLookup.get(d.college_name);
+          // Replace "Premium" values with real data from college_matches
+          if (unmasked) {
+            const merged = { ...saved };
+            for (const key of Object.keys(merged) as (keyof College)[]) {
+              if ((merged as any)[key] === "Premium" && (unmasked as any)[key] !== undefined) {
+                (merged as any)[key] = (unmasked as any)[key];
+              }
+            }
+            return { ...d, college_data: merged, notes: d.notes || "" };
+          }
+          return { ...d, college_data: saved, notes: d.notes || "" };
+        }));
       }
       setLoadingSaved(false);
     };
     load();
-  }, [user]);
+  }, [user, colleges]);
 
   const saveCollege = async (college: College) => {
     if (!user) return;
