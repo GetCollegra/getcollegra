@@ -513,34 +513,78 @@ The Reach school must be ASPIRATIONAL BUT REALISTIC — NOT a fantasy pick. Foll
 
 The Reach school should be a school where the student has a REAL CHANCE of admission if they put together a strong application — not a school where they'd need a miracle.
 
-═══ PRIORITY WEIGHTING SYSTEM ═══
+═══ FIT SCORE WEIGHTING SYSTEM ═══
 
-HIGH PRIORITY (weight these most heavily — these are the primary selection criteria):
-1. **Area of Study / Major** → CRITICAL. Prioritize schools with strong programs in their field using program percentage data. A school without their intended major should almost never appear.
-2. **GPA & Test Scores (SAT/ACT)** → CRITICAL for fitCategory. Compare the student's scores against each school's 25th-75th percentile ranges:
-   - Student score ABOVE school's 75th percentile → Safety
-   - Student score WITHIN school's 25th-75th range → Match  
-   - Student score BELOW school's 25th percentile → Reach
-   - If student provides SAT (out of 1600) use SAT data. If ACT (out of 36) use ACT data. If both, use both.
-   - GPA 3.8+ with high scores → can include <15% acceptance schools as Match
-   - GPA 3.0-3.7 → 25-60% acceptance as Match
-   - GPA <3.0 → 50%+ acceptance as Match
-3. **Distance From Home** → Geographic constraint from their home city/state. If they say "close to home", prioritize in-state or neighboring states. If "far away", look nationally.
-4. **Max Cost / Budget** → HARD FILTER. Net price must not exceed budget unless labeled as Reach. If financial aid is "Essential", prioritize high Pell grant rate schools.
+Calculate each college's fitScore (0-100) using these EXACT weights:
 
-MEDIUM PRIORITY (use to refine the list after high-priority filtering):
-5. **Campus Size** → Filter by their size preference (small/medium/large).
-6. **Location Type** → Urban/Suburban/Rural should match their preference.
+1. **Campus Culture & Personality Fit (35%)** — THIS IS THE MOST IMPORTANT FACTOR
+   - Does the school's social environment match what the student wants? (e.g., "spirited" → strong athletics/Greek life, "chill" → laid-back artsy vibe, "tight-knit" → small classes and community)
+   - Sports culture: Does the school's athletic division, sports traditions, and game-day culture match their preferences?
+   - Campus setting: Urban/Suburban/Rural match with student's preference
+   - Student life & nearby amenities: nightlife, outdoor activities, college-town feel, city access
+   - School size feel: Does the campus size create the social dynamic they want?
+   - If the student's campus vibe/life preferences strongly match → award 30-35 points
+   - Partial match → 15-25 points
+   - Poor match → 0-10 points
 
-LOW PRIORITY (use only to break ties between otherwise similar schools):
-7. **Campus Life / Clubs / Extracurriculars** → Tailor picks (e.g., "Greek life" = schools with strong Greek presence).
-8. **Campus Vibe / Social Environment** → Match to known cultures (e.g., "spirited" = strong athletics, "tight knit" = small classes).
+2. **Academic Major Fit (25%)**
+   - Does the school have strong programs in the student's intended area of study?
+   - Use program_percentage data: >10% in their field = strong, 5-10% = moderate, <5% = weak
+   - Strong program match → 20-25 points
+   - Moderate → 10-18 points
+   - Weak/missing → 0-8 points
 
-SELECTION PROCESS:
-1. First, filter and rank by HIGH PRIORITY factors — these determine which schools make the list.
-2. Then, refine using MEDIUM PRIORITY factors to narrow from candidates to final 5.
-3. Finally, use LOW PRIORITY factors only if multiple schools are still tied after steps 1-2.
-4. VERIFY the final list has exactly 2 Safety, 2 Match, 1 Reach before responding.
+3. **Distance From Home (15%)**
+   - Does the school's location match their distance preference?
+   - Perfect match (e.g., "close to home" and school is in-state) → 12-15 points
+   - Acceptable → 6-10 points
+   - Mismatch → 0-5 points
+
+4. **School Size (10%)**
+   - Does enrollment match their campus size preference?
+   - Exact match → 8-10 points
+   - Close → 4-7 points
+   - Mismatch → 0-3 points
+
+5. **Cost & Affordability (10%)**
+   - Is the net price within their budget?
+   - Within budget → 8-10 points
+   - Slightly over → 4-7 points
+   - Way over → 0-3 points
+
+6. **Admission Chances (5%)** — lowest weight, used only as a tiebreaker
+   - Is the student likely to be admitted based on GPA/test scores vs. school's ranges?
+   - Good chance → 4-5 points
+   - Possible → 2-3 points
+   - Unlikely → 0-1 points
+
+IMPORTANT: The fitScore should primarily reflect how well the school's CAMPUS CULTURE AND ENVIRONMENT matches the student's personality and lifestyle preferences. A school with perfect academics but terrible culture fit should score LOWER than a school with good academics and great culture fit.
+
+═══ FIT CATEGORY ASSIGNMENT ═══
+
+fitCategory is still determined by admission chances (GPA/test scores vs. school ranges):
+- Student score ABOVE school's 75th percentile → Safety
+- Student score WITHIN school's 25th-75th range → Match  
+- Student score BELOW school's 25th percentile → Reach
+- GPA 3.8+ with high scores → can include <15% acceptance schools as Match
+- GPA 3.0-3.7 → 25-60% acceptance as Match
+- GPA <3.0 → 50%+ acceptance as Match
+
+═══ SELECTION PROCESS ═══
+
+1. From the provided college data, first FILTER by academic major — remove schools without the student's intended program.
+2. Then RANK remaining schools by campus culture fit (35% weight) — prioritize schools whose vibe, size, setting, sports culture, and social environment match the student's stated preferences.
+3. Refine by distance, size, and cost factors.
+4. Use admission chances only as a final tiebreaker (5% weight).
+5. VERIFY the final list has exactly 2 Safety, 2 Match, 1 Reach before responding.
+
+═══ EXPLANATION REQUIREMENTS ═══
+
+In "whyFit", "prosForStudent", and "campusVibe" fields, LEAD WITH CAMPUS CULTURE REASONS:
+- Start with WHY the school's campus culture matches their personality (e.g., "You said you want a 'spirited' campus — this school's Division I program and 30,000+ game-day crowds deliver exactly that energy")
+- Reference specific student answers about campus vibe, social preferences, extracurriculars
+- Then mention academic and other factors secondarily
+- In "campusVibe", go deep: describe the social scene, sports culture, Greek life presence, weekend activities, nearby town/city amenities, and overall "feel" of being a student there
 
 TONE & PRONOUNS: ALWAYS address the student directly using "you" and "your" — NEVER use "he", "him", "she", "her", "they", "them", or "the student". If the student's first name is provided, combine it with "you/your" (e.g., "Erin, with your GPA and test scores, the best fit for you is..."). This applies to ALL text fields: whyFit, prosForStudent, consForStudent, challengesForStudent, howToGetIn, studentProfile summary, and comparisonInsight.
 
@@ -551,9 +595,9 @@ IMPORTANT: Use EXACT data values from the Scorecard data — do NOT fabricate st
 Return a JSON object with this exact structure:
 {
   "studentProfile": {
-    "summary": "2-3 sentence overview referencing their specific answers. Use the student's first name if provided.",
-    "topPriorities": ["Priority 1", "Priority 2", "Priority 3"],
-    "idealSchoolType": "Brief description based on ALL their answers"
+    "summary": "2-3 sentence overview focusing on the student's campus culture preferences and personality fit. Reference their vibe, social, and lifestyle answers first, then academics. Use the student's first name if provided.",
+    "topPriorities": ["Priority 1 (campus culture related)", "Priority 2", "Priority 3"],
+    "idealSchoolType": "Brief description emphasizing the campus culture and environment that fits them best"
   },
   "colleges": [
     {
@@ -574,19 +618,19 @@ Return a JSON object with this exact structure:
       "avgStartingSalary": "$XX,XXX",
       "fitScore": 95,
       "fitCategory": "Safety/Match/Reach",
-      "whyFit": "2-3 sentences referencing specific student answers",
-      "prosForStudent": ["Pro quoting student preference", "Pro 2 — include a sports/athletics pro if relevant (e.g. 'D1 athletics with 20+ varsity sports')", "Pro 3"],
+      "whyFit": "2-3 sentences — LEAD with campus culture match, then mention academics. Quote student's own words about vibe/social preferences.",
+      "prosForStudent": ["Pro 1: campus culture/vibe match", "Pro 2: sports/athletics/social life match", "Pro 3: academic program strength"],
       "consForStudent": ["Con referencing student preference", "Con 2"],
       "challengesForStudent": ["A specific reason this school may NOT be the best fit for them, referencing their answers (e.g. 'You mentioned wanting a small campus, but this school has 30,000+ students')", "Challenge 2"],
-      "howToGetIn": "5-7 detailed, actionable sentences providing a mini admissions strategy for THIS specific school tailored to THIS student. Include ALL of the following: (1) How their GPA and test scores compare to the school's averages and what to aim for if retaking (e.g. 'Your SAT of X is below their 25th percentile of Y — aim for at least Z on a retake'), (2) Specific extracurriculars, clubs, or leadership roles that would strengthen their application for their intended major at this school, (3) Essay topic suggestions that connect their interests to the school's unique programs or values (e.g. 'Write about how [school]'s [specific program/center/initiative] aligns with your passion for [their interest]'), (4) Whether to apply Early Decision/Early Action and why it matters for this school's acceptance rate, (5) Any supplemental materials, interviews, or demonstrated interest steps this school values. Be concrete — name specific programs, centers, or opportunities at the school.",
-      "campusVibe": "1-2 sentences about campus culture — ALWAYS mention the school's athletic division (D1/D2/D3/NAIA), major sports teams, and any notable sports traditions or rivalries (e.g. 'Big Ten school with a passionate football culture and March Madness basketball tradition')",
-      "notableFeature": "One unique relevant thing — if the school has notable athletics (conference, championship history, famous sports programs), highlight that here"
+      "howToGetIn": "5-7 detailed, actionable sentences providing a mini admissions strategy for THIS specific school tailored to THIS student. Include ALL of the following: (1) How their GPA and test scores compare to the school's averages and what to aim for if retaking, (2) Specific extracurriculars, clubs, or leadership roles that would strengthen their application, (3) Essay topic suggestions connecting their interests to the school's unique programs, (4) Whether to apply Early Decision/Early Action, (5) Any supplemental materials, interviews, or demonstrated interest steps this school values.",
+      "campusVibe": "3-4 sentences about campus culture — describe the social scene, sports culture (athletic division, major teams, traditions, rivalries), Greek life presence, weekend activities, nearby town/city amenities, and the overall 'feel' of being a student there. Be vivid and specific.",
+      "notableFeature": "One unique relevant thing — campus culture, traditions, athletics, or lifestyle feature that makes this school special for THIS student"
     }
   ],
-  "comparisonInsight": "A detailed 5-8 sentence analysis comparing all 5 recommendations. Address the student BY THEIR FIRST NAME if provided. Explain: (1) Why this specific mix of 2 Safety, 2 Match, and 1 Reach schools works for them, (2) How each school addresses their stated priorities differently, (3) What tradeoffs exist between their top picks (e.g. cost vs. prestige, size vs. program strength), (4) Which school might be the best overall fit and why. Reference their specific survey answers throughout."
+  "comparisonInsight": "A detailed 5-8 sentence analysis comparing all 5 recommendations. Address the student BY THEIR FIRST NAME if provided. LEAD with campus culture comparisons: (1) How each school's vibe and social environment differs, (2) Why this specific mix of 2 Safety, 2 Match, and 1 Reach schools works for their personality, (3) Campus culture tradeoffs between picks (e.g. big game-day energy vs. intimate community feel), (4) Which school might be the best overall culture fit and why. Reference their specific campus vibe and lifestyle answers throughout."
 }
 
-Provide exactly 5 colleges: 2 Safety, 2 Match, 1 Reach. Sort by fitScore descending. Use real data values only. The Reach school MUST be realistic for this student's academic profile.
+Provide exactly 5 colleges: 2 Safety, 2 Match, 1 Reach. Sort by fitScore descending. Use real data values only. The Reach school MUST be realistic for this student's academic profile. The fitScore MUST primarily reflect campus culture and personality fit.
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
