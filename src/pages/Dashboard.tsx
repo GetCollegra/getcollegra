@@ -28,6 +28,7 @@ import {
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import TravelFromHome from "@/components/TravelFromHome";
+import FeedbackSurveyModal from "@/components/FeedbackSurveyModal";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
