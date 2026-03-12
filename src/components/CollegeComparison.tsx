@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Target, DollarSign, GraduationCap, Users, MapPin, BookOpen,
-  Bookmark, StickyNote, Map, X, Plus, Trophy, TrendingUp, Building2
+  Bookmark, StickyNote, Map as MapIcon, X, Plus, Trophy, TrendingUp, Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
