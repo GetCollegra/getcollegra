@@ -121,27 +121,24 @@ export default function CollegeComparison({
   onSwitchToMap,
   matchedColleges = [],
 }: Props) {
-  // Build lookup of unmasked data from college_matches
-  const unmaskedLookup = useMemo(() => {
-    const map = new Map<string, College>();
-    matchedColleges.forEach(c => map.set(c.name, c));
-    return map;
-  }, [matchedColleges]);
+  // Build lookup of unmasked data from college_matches (which stores full data)
+  const unmaskedCompared = useMemo(() => {
+    const lookup = new Map<string, College>();
+    matchedColleges.forEach(c => lookup.set(c.name, c));
 
-  // Unmask a college's data using matched colleges
-  const unmask = (saved: SavedCollege): SavedCollege => {
-    const unmasked = unmaskedLookup.get(saved.college_name);
-    if (!unmasked) return saved;
-    const merged = { ...saved.college_data };
-    for (const key of Object.keys(merged) as (keyof College)[]) {
-      if ((merged as any)[key] === "Premium" && (unmasked as any)[key] !== undefined) {
-        (merged as any)[key] = (unmasked as any)[key];
+    return comparedColleges.map(saved => {
+      const unmasked = lookup.get(saved.college_name);
+      if (!unmasked) return saved;
+      // Merge: replace any "Premium" values with real data
+      const merged = { ...saved.college_data };
+      for (const key of Object.keys(merged) as (keyof College)[]) {
+        if ((merged as any)[key] === "Premium" && (unmasked as any)[key] !== undefined && (unmasked as any)[key] !== "Premium") {
+          (merged as any)[key] = (unmasked as any)[key];
+        }
       }
-    }
-    return { ...saved, college_data: merged as College };
-  };
-
-  const unmaskedCompared = useMemo(() => comparedColleges.map(unmask), [comparedColleges, unmaskedLookup]);
+      return { ...saved, college_data: merged as College };
+    });
+  }, [comparedColleges, matchedColleges]);
   // Find best values for highlighting
   const bestValues = useMemo(() => {
     const bests: Record<string, string> = {};
@@ -330,20 +327,21 @@ export default function CollegeComparison({
 
                   {/* Values */}
                   {unmaskedCompared.map(c => {
-                    const value = row.getValue(c.college_data);
-                    const isPremium = typeof value === "string" && value === "Premium";
+                    const rawValue = row.getValue(c.college_data);
+                    const isPremiumMasked = typeof rawValue === "string" && rawValue === "Premium";
+                    const value = isPremiumMasked ? "N/A" : rawValue;
                     const best = isBest(c.id);
-                    const showBar = row.format !== "text" && !isPremium;
+                    const showBar = row.format !== "text" && !isPremiumMasked;
 
                     return (
                       <div key={c.id} className="min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-sm font-semibold truncate ${
-                            isPremium ? "text-muted-foreground/50 italic" : best ? "text-primary" : "text-foreground"
+                            best ? "text-primary" : "text-foreground"
                           }`}>
-                            {isPremium ? "—" : value}
+                            {value}
                           </span>
-                          {best && !isPremium && (
+                          {best && !isPremiumMasked && (
                             <Badge className="bg-primary/10 text-primary border-0 text-[9px] px-1.5 py-0 shrink-0">
                               Best
                             </Badge>
