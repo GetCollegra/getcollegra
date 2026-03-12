@@ -347,8 +347,8 @@ export default function CollegeComparison({
           {/* Top Programs comparison */}
           <div className="mt-4 rounded-xl border border-border bg-card overflow-hidden">
             <div
-              className="grid items-start gap-4 px-4 py-4"
-              style={{ gridTemplateColumns: `180px repeat(${comparedColleges.length}, 1fr)` }}
+              className="grid items-start gap-2 px-3 py-4"
+              style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
             >
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-primary shrink-0" />
