@@ -290,7 +290,7 @@ export default function CollegeComparison({
                           className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-primary gap-0.5"
                           onClick={onSwitchToMap}
                         >
-                          <Map className="h-2.5 w-2.5" /> Map
+                          <MapIcon className="h-2.5 w-2.5" /> Map
                         </Button>
                         <Button
                           variant="ghost"
