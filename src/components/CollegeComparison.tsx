@@ -294,10 +294,10 @@ export default function CollegeComparison({
               return (
                 <div
                   key={row.key}
-                  className={`grid items-center gap-4 px-4 py-3.5 ${
+                  className={`grid items-center gap-2 px-3 py-3 ${
                     rowIdx % 2 === 0 ? "bg-card" : "bg-muted/20"
                   } ${rowIdx < COMPARISON_ROWS.length - 1 ? "border-b border-border/50" : ""}`}
-                  style={{ gridTemplateColumns: `180px repeat(${comparedColleges.length}, 1fr)` }}
+                  style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
                 >
                   {/* Row label */}
                   <div className="flex items-center gap-2">
