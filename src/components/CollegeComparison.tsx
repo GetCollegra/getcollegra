@@ -203,7 +203,7 @@ export default function CollegeComparison({
       {comparedColleges.length >= 2 && (
         <div className="space-y-0">
           {/* Column headers — college cards */}
-          <div className="grid gap-4" style={{ gridTemplateColumns: `180px repeat(${comparedColleges.length}, 1fr)` }}>
+          <div className="grid gap-2" style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}>
             {/* Empty top-left cell */}
             <div />
 
@@ -215,6 +215,7 @@ export default function CollegeComparison({
                 Safety: "text-emerald-600 bg-emerald-50",
               };
               const catColor = catColors[college.fitCategory] || catColors.Match;
+              const isCompact = comparedColleges.length >= 4;
 
               return (
                 <motion.div
@@ -227,12 +228,16 @@ export default function CollegeComparison({
                     <div className="h-1 bg-primary/20 w-full">
                       <div className="h-full bg-primary rounded-r-full" style={{ width: `${college.fitScore}%` }} />
                     </div>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
+                    <CardContent className={isCompact ? "p-2.5" : "p-4"}>
+                      <div className="flex items-start justify-between gap-1 mb-1.5">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-bold text-foreground text-sm leading-tight truncate">{c.college_name}</h3>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                            <MapPin className="h-3 w-3 shrink-0" />
+                          <h3 className={`font-bold text-foreground leading-tight ${isCompact ? "text-xs" : "text-sm"}`} title={c.college_name}>
+                            {isCompact && c.college_name.length > 20
+                              ? c.college_name.substring(0, 18) + "…"
+                              : c.college_name}
+                          </h3>
+                          <div className={`flex items-center gap-1 text-muted-foreground mt-0.5 ${isCompact ? "text-[10px]" : "text-xs"}`}>
+                            <MapPin className="h-2.5 w-2.5 shrink-0" />
                             <span className="truncate">{college.location}</span>
                           </div>
                         </div>
@@ -241,36 +246,36 @@ export default function CollegeComparison({
                         </Badge>
                       </div>
 
-                      <div className="flex items-center gap-1 mb-3">
-                        <span className="text-2xl font-bold text-primary">{college.fitScore}</span>
-                        <span className="text-xs text-muted-foreground">% fit</span>
+                      <div className="flex items-center gap-1 mb-2">
+                        <span className={`font-bold text-primary ${isCompact ? "text-lg" : "text-2xl"}`}>{college.fitScore}</span>
+                        <span className="text-[10px] text-muted-foreground">% fit</span>
                       </div>
 
                       {/* Action buttons */}
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 px-2 text-xs text-muted-foreground hover:text-primary gap-1"
+                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-primary gap-0.5"
                           onClick={() => onOpenNotes(c.id)}
                         >
-                          <StickyNote className="h-3 w-3" /> Notes
+                          <StickyNote className="h-2.5 w-2.5" /> Notes
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 px-2 text-xs text-muted-foreground hover:text-primary gap-1"
+                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-primary gap-0.5"
                           onClick={onSwitchToMap}
                         >
-                          <Map className="h-3 w-3" /> Map
+                          <Map className="h-2.5 w-2.5" /> Map
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 ml-auto text-muted-foreground hover:text-destructive"
+                          className="h-6 w-6 ml-auto text-muted-foreground hover:text-destructive"
                           onClick={() => onToggleCompare(c.id)}
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-2.5 w-2.5" />
                         </Button>
                       </div>
                     </CardContent>
@@ -289,10 +294,10 @@ export default function CollegeComparison({
               return (
                 <div
                   key={row.key}
-                  className={`grid items-center gap-4 px-4 py-3.5 ${
+                  className={`grid items-center gap-2 px-3 py-3 ${
                     rowIdx % 2 === 0 ? "bg-card" : "bg-muted/20"
                   } ${rowIdx < COMPARISON_ROWS.length - 1 ? "border-b border-border/50" : ""}`}
-                  style={{ gridTemplateColumns: `180px repeat(${comparedColleges.length}, 1fr)` }}
+                  style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
                 >
                   {/* Row label */}
                   <div className="flex items-center gap-2">
@@ -342,8 +347,8 @@ export default function CollegeComparison({
           {/* Top Programs comparison */}
           <div className="mt-4 rounded-xl border border-border bg-card overflow-hidden">
             <div
-              className="grid items-start gap-4 px-4 py-4"
-              style={{ gridTemplateColumns: `180px repeat(${comparedColleges.length}, 1fr)` }}
+              className="grid items-start gap-2 px-3 py-4"
+              style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
             >
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-primary shrink-0" />
