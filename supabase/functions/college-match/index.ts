@@ -373,13 +373,71 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
 // ─── Fallback Results (when AI is unavailable) ──────────────────────────────
 
 function generateFallbackResults(rawResults: any[], prefs: Record<string, any>): any {
-  const colleges = rawResults.slice(0, 5).map((r: any, i: number) => {
+  // Sort by admission rate to assign fit categories properly
+  const sorted = [...rawResults].sort((a, b) => {
+    const rateA = a["latest.admissions.admission_rate.overall"] ?? 1;
+    const rateB = b["latest.admissions.admission_rate.overall"] ?? 1;
+    return rateB - rateA; // highest acceptance first (safest first)
+  });
+
+  // Parse student GPA to determine realistic reach threshold
+  const gpa = parseFloat(prefs.gpa || "3.0");
+  let reachMaxAcceptance = 0.5;
+  if (gpa >= 3.9) reachMaxAcceptance = 0.15;
+  else if (gpa >= 3.8) reachMaxAcceptance = 0.25;
+  else if (gpa >= 3.5) reachMaxAcceptance = 0.30;
+  else if (gpa >= 3.0) reachMaxAcceptance = 0.40;
+  else reachMaxAcceptance = 0.50;
+
+  // Categorize schools
+  const safetyPool = sorted.filter(r => (r["latest.admissions.admission_rate.overall"] ?? 1) > 0.6);
+  const matchPool = sorted.filter(r => {
+    const rate = r["latest.admissions.admission_rate.overall"] ?? 1;
+    return rate > 0.3 && rate <= 0.6;
+  });
+  const reachPool = sorted.filter(r => {
+    const rate = r["latest.admissions.admission_rate.overall"] ?? 1;
+    return rate <= reachMaxAcceptance && rate > 0.05;
+  });
+
+  // Pick 2 safety, 2 match, 1 reach (fall back to whatever is available)
+  const picked: any[] = [];
+  const addFromPool = (pool: any[], count: number) => {
+    for (const r of pool) {
+      if (picked.length >= 5) break;
+      if (picked.find(p => p["school.name"] === r["school.name"])) continue;
+      if (picked.filter(() => true).length - picked.length >= count) break;
+      picked.push(r);
+      count--;
+      if (count <= 0) break;
+    }
+  };
+
+  // Fill in order: safety, match, reach, then pad from sorted
+  addFromPool(safetyPool, 2);
+  addFromPool(matchPool, 2);
+  addFromPool(reachPool, 1);
+  // Pad to 5 if needed
+  for (const r of sorted) {
+    if (picked.length >= 5) break;
+    if (!picked.find(p => p["school.name"] === r["school.name"])) picked.push(r);
+  }
+
+  const colleges = picked.slice(0, 5).map((r: any, i: number) => {
     const admRate = r["latest.admissions.admission_rate.overall"];
     const locale = r["school.locale"];
     const setting = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
     const gradRate = r["latest.completion.rate_suppressed.overall"];
     const earnings = r["latest.earnings.10_yrs_after_entry.median"];
     const size = r["latest.student.size"];
+
+    // Assign fit category based on acceptance rate relative to student profile
+    let fitCategory = "Match";
+    if (admRate != null) {
+      if (admRate > 0.6) fitCategory = "Safety";
+      else if (admRate <= reachMaxAcceptance && admRate <= 0.3) fitCategory = "Reach";
+      else fitCategory = "Match";
+    }
 
     return {
       name: r["school.name"] || "Unknown",
@@ -398,7 +456,7 @@ function generateFallbackResults(rawResults: any[], prefs: Record<string, any>):
       graduationRate: gradRate != null ? `${(gradRate * 100).toFixed(0)}%` : "N/A",
       avgStartingSalary: earnings ? `$${Number(earnings).toLocaleString()}` : "N/A",
       fitScore: Math.max(50, 80 - i * 5),
-      fitCategory: admRate != null ? (admRate < 0.25 ? "Reach" : admRate < 0.5 ? "Match" : "Safety") : "Match",
+      fitCategory,
       whyFit: "This school matches your search criteria based on Department of Education data.",
       prosForStudent: ["Meets your stated preferences", "Strong graduation and outcomes data"],
       consForStudent: ["Personalized analysis temporarily unavailable"],
@@ -420,7 +478,7 @@ function generateFallbackResults(rawResults: any[], prefs: Record<string, any>):
       idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
     },
     colleges,
-    comparisonInsight: `These ${colleges.length} schools were selected from U.S. Department of Education data based on your preferences. For a fully personalized AI analysis with detailed fit scores and admissions strategies, please refresh the page or retake the quiz.`,
+    comparisonInsight: `These ${colleges.length} schools were selected from U.S. Department of Education data based on your preferences, with 2 Safety, 2 Match, and 1 Reach school. For a fully personalized AI analysis with detailed fit scores and admissions strategies, please refresh the page or retake the quiz.`,
   };
 }
 
