@@ -109,6 +109,7 @@ type Props = {
   onToggleCompare: (id: string) => void;
   onOpenNotes: (id: string) => void;
   onSwitchToMap: () => void;
+  matchedColleges?: College[];
 };
 
 export default function CollegeComparison({
@@ -118,7 +119,29 @@ export default function CollegeComparison({
   onToggleCompare,
   onOpenNotes,
   onSwitchToMap,
+  matchedColleges = [],
 }: Props) {
+  // Build lookup of unmasked data from college_matches
+  const unmaskedLookup = useMemo(() => {
+    const map = new Map<string, College>();
+    matchedColleges.forEach(c => map.set(c.name, c));
+    return map;
+  }, [matchedColleges]);
+
+  // Unmask a college's data using matched colleges
+  const unmask = (saved: SavedCollege): SavedCollege => {
+    const unmasked = unmaskedLookup.get(saved.college_name);
+    if (!unmasked) return saved;
+    const merged = { ...saved.college_data };
+    for (const key of Object.keys(merged) as (keyof College)[]) {
+      if ((merged as any)[key] === "Premium" && (unmasked as any)[key] !== undefined) {
+        (merged as any)[key] = (unmasked as any)[key];
+      }
+    }
+    return { ...saved, college_data: merged as College };
+  };
+
+  const unmaskedCompared = useMemo(() => comparedColleges.map(unmask), [comparedColleges, unmaskedLookup]);
   // Find best values for highlighting
   const bestValues = useMemo(() => {
     const bests: Record<string, string> = {};
