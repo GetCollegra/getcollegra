@@ -313,6 +313,7 @@ const QuizResults = () => {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [dbSurveyContext, setDbSurveyContext] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const { isSubscribed } = useAuth();
 
   // Read results passed via router state from Survey page
   const routerState = location.state as { recommendations?: Recommendations; surveyContext?: Record<string, string> } | null;
