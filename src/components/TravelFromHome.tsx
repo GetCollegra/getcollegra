@@ -107,7 +107,9 @@ export default function TravelFromHome({ college, homeAddress }: Props) {
           icon: Plane,
           label: "Fly",
           data: travel.flight,
-          primary: travel.flight.totalTravelTime,
+          primary: travel.flight.totalTravelTime
+            ? `${travel.flight.totalTravelTime} (door-to-door)`
+            : undefined,
           secondary: travel.flight.estimatedFlightTime
             ? `${travel.flight.estimatedFlightTime} flight`
             : undefined,
