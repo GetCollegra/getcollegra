@@ -14,7 +14,7 @@ const sampleColleges = [
 
 const freeVsPremium = [
   { feature: "AI college matches", free: true, premium: true },
-  { feature: "Top 3 match previews", free: true, premium: true },
+  { feature: "Top 5 match previews", free: true, premium: true },
   { feature: "Full match list with fit scores", free: false, premium: true },
   { feature: "Side-by-side comparison tool", free: false, premium: true },
   { feature: "College organizer & notes", free: false, premium: true },
