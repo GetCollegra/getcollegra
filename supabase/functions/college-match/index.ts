@@ -404,8 +404,8 @@ function generateFallbackResults(rawResults: any[], prefs: Record<string, any>):
       consForStudent: ["Personalized analysis temporarily unavailable"],
       challengesForStudent: [],
       howToGetIn: "Visit the school's admissions website for detailed application requirements and deadlines.",
-      campusVibe: setting === "Urban" ? "City campus environment" : setting === "Suburban" ? "Suburban campus setting" : "Close-knit campus community",
-      notableFeature: gradRate != null && gradRate > 0.8 ? `High graduation rate (${(gradRate * 100).toFixed(0)}%)` : "Accredited institution",
+      campusVibe: setting === "Urban" ? "City campus environment with urban sports culture" : setting === "Suburban" ? "Suburban campus with strong athletics traditions" : "Close-knit campus community with spirited athletics",
+      notableFeature: gradRate != null && gradRate > 0.8 ? `High graduation rate (${(gradRate * 100).toFixed(0)}%) with competitive athletics` : "Accredited institution with varsity sports programs",
     };
   });
 
