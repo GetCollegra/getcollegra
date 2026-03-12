@@ -121,18 +121,42 @@ export default function CollegeComparison({
   onSwitchToMap,
   matchedColleges = [],
 }: Props) {
-  // Build lookup of unmasked data from college_matches (which stores full data)
+  // Build unmasked compare data from matched colleges using robust name matching
   const unmaskedCompared = useMemo(() => {
-    const lookup = new Map<string, College>();
-    matchedColleges.forEach(c => lookup.set(c.name, c));
+    const normalizeCollegeName = (name: string) =>
+      name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-    return comparedColleges.map(saved => {
-      const unmasked = lookup.get(saved.college_name);
+    const lookup = new Map<string, College>();
+    matchedColleges.forEach((c) => {
+      lookup.set(c.name, c);
+      lookup.set(normalizeCollegeName(c.name), c);
+    });
+
+    const findUnmaskedCollege = (saved: SavedCollege): College | undefined => {
+      const exact = lookup.get(saved.college_name);
+      if (exact) return exact;
+
+      const normalized = lookup.get(normalizeCollegeName(saved.college_name));
+      if (normalized) return normalized;
+
+      const savedNorm = normalizeCollegeName(saved.college_name);
+      return matchedColleges.find((c) => {
+        const nameNorm = normalizeCollegeName(c.name);
+        return nameNorm.includes(savedNorm) || savedNorm.includes(nameNorm);
+      });
+    };
+
+    return comparedColleges.map((saved) => {
+      const unmasked = findUnmaskedCollege(saved);
       if (!unmasked) return saved;
-      // Merge: replace any "Premium" values with real data
+
       const merged = { ...saved.college_data };
       for (const key of Object.keys(merged) as (keyof College)[]) {
-        if ((merged as any)[key] === "Premium" && (unmasked as any)[key] !== undefined && (unmasked as any)[key] !== "Premium") {
+        if (
+          (merged as any)[key] === "Premium" &&
+          (unmasked as any)[key] !== undefined &&
+          (unmasked as any)[key] !== "Premium"
+        ) {
           (merged as any)[key] = (unmasked as any)[key];
         }
       }
