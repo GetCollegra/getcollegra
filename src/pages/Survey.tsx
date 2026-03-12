@@ -14,7 +14,7 @@ const loadingMessages = [
 ];
 
 const Survey = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isSubscribed } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,6 +22,22 @@ const Survey = () => {
       navigate("/login", { state: { from: "/survey" } });
     }
   }, [user, authLoading, navigate]);
+
+  // Free users can only take the quiz once — redirect if they already have results
+  useEffect(() => {
+    if (authLoading || !user || isSubscribed) return;
+    const checkExisting = async () => {
+      const { data } = await supabase
+        .from("college_matches")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+      if (data && data.length > 0) {
+        navigate("/quiz-results", { replace: true });
+      }
+    };
+    checkExisting();
+  }, [user, authLoading, isSubscribed, navigate]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const isProcessingSubmissionRef = useRef(false);
