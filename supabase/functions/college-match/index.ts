@@ -373,13 +373,71 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
 // ─── Fallback Results (when AI is unavailable) ──────────────────────────────
 
 function generateFallbackResults(rawResults: any[], prefs: Record<string, any>): any {
-  const colleges = rawResults.slice(0, 5).map((r: any, i: number) => {
+  // Sort by admission rate to assign fit categories properly
+  const sorted = [...rawResults].sort((a, b) => {
+    const rateA = a["latest.admissions.admission_rate.overall"] ?? 1;
+    const rateB = b["latest.admissions.admission_rate.overall"] ?? 1;
+    return rateB - rateA; // highest acceptance first (safest first)
+  });
+
+  // Parse student GPA to determine realistic reach threshold
+  const gpa = parseFloat(prefs.gpa || "3.0");
+  let reachMaxAcceptance = 0.5;
+  if (gpa >= 3.9) reachMaxAcceptance = 0.15;
+  else if (gpa >= 3.8) reachMaxAcceptance = 0.25;
+  else if (gpa >= 3.5) reachMaxAcceptance = 0.30;
+  else if (gpa >= 3.0) reachMaxAcceptance = 0.40;
+  else reachMaxAcceptance = 0.50;
+
+  // Categorize schools
+  const safetyPool = sorted.filter(r => (r["latest.admissions.admission_rate.overall"] ?? 1) > 0.6);
+  const matchPool = sorted.filter(r => {
+    const rate = r["latest.admissions.admission_rate.overall"] ?? 1;
+    return rate > 0.3 && rate <= 0.6;
+  });
+  const reachPool = sorted.filter(r => {
+    const rate = r["latest.admissions.admission_rate.overall"] ?? 1;
+    return rate <= reachMaxAcceptance && rate > 0.05;
+  });
+
+  // Pick 2 safety, 2 match, 1 reach (fall back to whatever is available)
+  const picked: any[] = [];
+  const addFromPool = (pool: any[], count: number) => {
+    for (const r of pool) {
+      if (picked.length >= 5) break;
+      if (picked.find(p => p["school.name"] === r["school.name"])) continue;
+      if (picked.filter(() => true).length - picked.length >= count) break;
+      picked.push(r);
+      count--;
+      if (count <= 0) break;
+    }
+  };
+
+  // Fill in order: safety, match, reach, then pad from sorted
+  addFromPool(safetyPool, 2);
+  addFromPool(matchPool, 2);
+  addFromPool(reachPool, 1);
+  // Pad to 5 if needed
+  for (const r of sorted) {
+    if (picked.length >= 5) break;
+    if (!picked.find(p => p["school.name"] === r["school.name"])) picked.push(r);
+  }
+
+  const colleges = picked.slice(0, 5).map((r: any, i: number) => {
     const admRate = r["latest.admissions.admission_rate.overall"];
     const locale = r["school.locale"];
     const setting = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
     const gradRate = r["latest.completion.rate_suppressed.overall"];
     const earnings = r["latest.earnings.10_yrs_after_entry.median"];
     const size = r["latest.student.size"];
+
+    // Assign fit category based on acceptance rate relative to student profile
+    let fitCategory = "Match";
+    if (admRate != null) {
+      if (admRate > 0.6) fitCategory = "Safety";
+      else if (admRate <= reachMaxAcceptance && admRate <= 0.3) fitCategory = "Reach";
+      else fitCategory = "Match";
+    }
 
     return {
       name: r["school.name"] || "Unknown",
@@ -398,7 +456,7 @@ function generateFallbackResults(rawResults: any[], prefs: Record<string, any>):
       graduationRate: gradRate != null ? `${(gradRate * 100).toFixed(0)}%` : "N/A",
       avgStartingSalary: earnings ? `$${Number(earnings).toLocaleString()}` : "N/A",
       fitScore: Math.max(50, 80 - i * 5),
-      fitCategory: admRate != null ? (admRate < 0.25 ? "Reach" : admRate < 0.5 ? "Match" : "Safety") : "Match",
+      fitCategory,
       whyFit: "This school matches your search criteria based on Department of Education data.",
       prosForStudent: ["Meets your stated preferences", "Strong graduation and outcomes data"],
       consForStudent: ["Personalized analysis temporarily unavailable"],
@@ -420,7 +478,7 @@ function generateFallbackResults(rawResults: any[], prefs: Record<string, any>):
       idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
     },
     colleges,
-    comparisonInsight: `These ${colleges.length} schools were selected from U.S. Department of Education data based on your preferences. For a fully personalized AI analysis with detailed fit scores and admissions strategies, please refresh the page or retake the quiz.`,
+    comparisonInsight: `These ${colleges.length} schools were selected from U.S. Department of Education data based on your preferences, with 2 Safety, 2 Match, and 1 Reach school. For a fully personalized AI analysis with detailed fit scores and admissions strategies, please refresh the page or retake the quiz.`,
   };
 }
 
@@ -435,6 +493,25 @@ const SYSTEM_PROMPT = `You are a college admissions expert. You have been given 
 Your job is to select the 5 best-fit colleges for this student from the real data provided, and personalize the recommendations.
 
 CRITICAL: Each student is UNIQUE. Their answers MUST directly determine which colleges you pick. Two students with different answers should get COMPLETELY DIFFERENT lists.
+
+═══ REQUIRED FIT CATEGORY DISTRIBUTION ═══
+
+You MUST return EXACTLY this distribution:
+- 2 Safety schools (fitCategory: "Safety")
+- 2 Match schools (fitCategory: "Match")  
+- 1 Reach school (fitCategory: "Reach")
+
+═══ REALISTIC REACH SCHOOL RULES ═══
+
+The Reach school must be ASPIRATIONAL BUT REALISTIC — NOT a fantasy pick. Follow these rules strictly:
+
+- GPA below 3.0 → Reach school acceptance rate must be 30-50%. Do NOT suggest schools with <20% acceptance rates. Schools like Harvard, MIT, Stanford, Notre Dame, Duke, etc. are OFF LIMITS.
+- GPA 3.0-3.4 → Reach school acceptance rate must be 20-40%. No schools under 15% acceptance rate.
+- GPA 3.5-3.7 → Reach school acceptance rate can be 15-30%.
+- GPA 3.8+ with strong test scores → Reach school acceptance rate can be 10-25%.
+- GPA 3.9+ with SAT 1500+ or ACT 34+ → Reach school can go as low as 5-15% acceptance rate.
+
+The Reach school should be a school where the student has a REAL CHANCE of admission if they put together a strong application — not a school where they'd need a miracle.
 
 ═══ PRIORITY WEIGHTING SYSTEM ═══
 
@@ -463,6 +540,7 @@ SELECTION PROCESS:
 1. First, filter and rank by HIGH PRIORITY factors — these determine which schools make the list.
 2. Then, refine using MEDIUM PRIORITY factors to narrow from candidates to final 5.
 3. Finally, use LOW PRIORITY factors only if multiple schools are still tied after steps 1-2.
+4. VERIFY the final list has exactly 2 Safety, 2 Match, 1 Reach before responding.
 
 TONE & PRONOUNS: ALWAYS address the student directly using "you" and "your" — NEVER use "he", "him", "she", "her", "they", "them", or "the student". If the student's first name is provided, combine it with "you/your" (e.g., "Erin, with your GPA and test scores, the best fit for you is..."). This applies to ALL text fields: whyFit, prosForStudent, consForStudent, challengesForStudent, howToGetIn, studentProfile summary, and comparisonInsight.
 
@@ -505,10 +583,10 @@ Return a JSON object with this exact structure:
       "notableFeature": "One unique relevant thing — if the school has notable athletics (conference, championship history, famous sports programs), highlight that here"
     }
   ],
-  "comparisonInsight": "A detailed 5-8 sentence analysis comparing all 5 recommendations. Address the student BY THEIR FIRST NAME if provided. Explain: (1) Why this specific mix of Safety/Match/Reach schools works for them, (2) How each school addresses their stated priorities differently, (3) What tradeoffs exist between their top picks (e.g. cost vs. prestige, size vs. program strength), (4) Which school might be the best overall fit and why. Reference their specific survey answers throughout."
+  "comparisonInsight": "A detailed 5-8 sentence analysis comparing all 5 recommendations. Address the student BY THEIR FIRST NAME if provided. Explain: (1) Why this specific mix of 2 Safety, 2 Match, and 1 Reach schools works for them, (2) How each school addresses their stated priorities differently, (3) What tradeoffs exist between their top picks (e.g. cost vs. prestige, size vs. program strength), (4) Which school might be the best overall fit and why. Reference their specific survey answers throughout."
 }
 
-Provide exactly 5 colleges sorted by fitScore descending. Include at least one Safety and one Reach. Use real data values only.
+Provide exactly 5 colleges: 2 Safety, 2 Match, 1 Reach. Sort by fitScore descending. Use real data values only. The Reach school MUST be realistic for this student's academic profile.
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
