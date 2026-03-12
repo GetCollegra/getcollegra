@@ -3,7 +3,8 @@ import Hero from "@/components/Hero";
 import ExplainerVideo from "@/components/ExplainerVideo";
 import Problem from "@/components/Problem";
 import Solution from "@/components/Solution";
-
+import Value from "@/components/Value";
+import PremiumPreview from "@/components/PremiumPreview";
 import Pricing from "@/components/Pricing";
 import HowItWorks from "@/components/HowItWorks";
 import FinalCTA from "@/components/FinalCTA";
@@ -34,7 +35,9 @@ const Index = () => {
         </section>
 
         <HowItWorks />
+        <PremiumPreview />
         <ExplainerVideo />
+        <Value />
         <Problem />
         <Solution />
         
