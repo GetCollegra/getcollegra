@@ -215,7 +215,7 @@ export default function CollegeComparison({
         })}
       </div>
 
-      {comparedColleges.length < 2 && (
+      {unmaskedCompared.length < 2 && (
         <Card className="bg-card border-border">
           <CardContent className="p-8 text-center">
             <p className="text-muted-foreground">Select at least 2 colleges above to start comparing.</p>
@@ -223,14 +223,14 @@ export default function CollegeComparison({
         </Card>
       )}
 
-      {comparedColleges.length >= 2 && (
+      {unmaskedCompared.length >= 2 && (
         <div className="space-y-0">
           {/* Column headers — college cards */}
-          <div className="grid gap-2" style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}>
+          <div className="grid gap-2" style={{ gridTemplateColumns: `140px repeat(${unmaskedCompared.length}, minmax(0, 1fr))` }}>
             {/* Empty top-left cell */}
             <div />
 
-            {comparedColleges.map((c, i) => {
+            {unmaskedCompared.map((c, i) => {
               const college = c.college_data;
               const catColors: Record<string, string> = {
                 Reach: "text-orange-600 bg-orange-50",
@@ -238,7 +238,7 @@ export default function CollegeComparison({
                 Safety: "text-emerald-600 bg-emerald-50",
               };
               const catColor = catColors[college.fitCategory] || catColors.Match;
-              const isCompact = comparedColleges.length >= 4;
+              const isCompact = unmaskedCompared.length >= 4;
 
               return (
                 <motion.div
@@ -320,7 +320,7 @@ export default function CollegeComparison({
                   className={`grid items-center gap-2 px-3 py-3 ${
                     rowIdx % 2 === 0 ? "bg-card" : "bg-muted/20"
                   } ${rowIdx < COMPARISON_ROWS.length - 1 ? "border-b border-border/50" : ""}`}
-                  style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
+                  style={{ gridTemplateColumns: `140px repeat(${unmaskedCompared.length}, minmax(0, 1fr))` }}
                 >
                   {/* Row label */}
                   <div className="flex items-center gap-2">
@@ -329,7 +329,7 @@ export default function CollegeComparison({
                   </div>
 
                   {/* Values */}
-                  {comparedColleges.map(c => {
+                  {unmaskedCompared.map(c => {
                     const value = row.getValue(c.college_data);
                     const isPremium = typeof value === "string" && value === "Premium";
                     const best = isBest(c.id);
@@ -341,7 +341,7 @@ export default function CollegeComparison({
                           <span className={`text-sm font-semibold truncate ${
                             isPremium ? "text-muted-foreground/50 italic" : best ? "text-primary" : "text-foreground"
                           }`}>
-                            {isPremium ? "🔒 Premium" : value}
+                            {isPremium ? "—" : value}
                           </span>
                           {best && !isPremium && (
                             <Badge className="bg-primary/10 text-primary border-0 text-[9px] px-1.5 py-0 shrink-0">
@@ -371,13 +371,13 @@ export default function CollegeComparison({
           <div className="mt-4 rounded-xl border border-border bg-card overflow-hidden">
             <div
               className="grid items-start gap-2 px-3 py-4"
-              style={{ gridTemplateColumns: `140px repeat(${comparedColleges.length}, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: `140px repeat(${unmaskedCompared.length}, minmax(0, 1fr))` }}
             >
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-sm font-medium text-foreground">Top Programs</span>
               </div>
-              {comparedColleges.map(c => (
+              {unmaskedCompared.map(c => (
                 <div key={c.id} className="flex flex-wrap gap-1">
                   {c.college_data.topPrograms.slice(0, 4).map((prog, i) => (
                     <Badge key={i} variant="secondary" className="text-[10px] px-2 py-0.5">
