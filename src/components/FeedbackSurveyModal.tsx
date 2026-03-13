@@ -24,7 +24,7 @@ const FeedbackSurveyModal = () => {
         .select("feedback_completed")
         .eq("id", user.id)
         .single();
-      const completed = (data as any)?.feedback_completed ?? false;
+      const completed = data?.feedback_completed ?? false;
       setFeedbackCompleted(completed);
     })();
   }, [user]);
