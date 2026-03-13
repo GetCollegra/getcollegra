@@ -828,7 +828,7 @@ serve(async (req) => {
       return /^\{.*\}$/.test(t) ? "" : t.substring(0, 500);
     };
 
-    const prefs: Record<string, any> = {};
+    const sanitizedPrefs: Record<string, any> = {};
     for (const [key, val] of Object.entries(raw)) {
       if (key === "allResponses" && typeof val === "object" && val !== null) {
         const cleaned: Record<string, string> = {};
@@ -836,12 +836,14 @@ serve(async (req) => {
           const s = sanitize(v);
           if (s) cleaned[k] = s;
         }
-        prefs[key] = cleaned;
+        sanitizedPrefs[key] = cleaned;
       } else {
         const s = sanitize(val);
-        prefs[key] = s || raw[key];
+        sanitizedPrefs[key] = s || raw[key];
       }
     }
+
+    const prefs = normalizePreferenceKeys(sanitizedPrefs);
     console.log("[college-match] Processing:", prefs.areaOfStudy, "campusSize:", prefs.campusSize);
 
     const excludeColleges: string[] = Array.isArray(body?.excludeColleges)
