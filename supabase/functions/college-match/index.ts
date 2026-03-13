@@ -695,6 +695,40 @@ function maskPremiumFields(recommendations: any): any {
   return recommendations;
 }
 
+const preferenceKeyMap: Record<string, string> = {
+  first_name: "firstName",
+  city_state: "cityState",
+  test_score: "testScore",
+  sat_score: "satScore",
+  act_score: "actScore",
+  campus_size: "campusSize",
+  campus_vibe: "campusVibe",
+  location_type: "locationType",
+  max_cost: "maxCost",
+  acceptance_rate_pref: "acceptanceRatePref",
+  financial_aid: "financialAid",
+  campus_life: "campusLife",
+  academic_importance: "academicImportance",
+  distance_from_home: "distanceFromHome",
+  weather_region: "weatherRegion",
+  area_of_study: "areaOfStudy",
+};
+
+function normalizePreferenceKeys(input: Record<string, any>): Record<string, any> {
+  const normalized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(input)) {
+    const mappedKey = preferenceKeyMap[key] || key;
+    if (
+      normalized[mappedKey] === undefined ||
+      normalized[mappedKey] === null ||
+      normalized[mappedKey] === ""
+    ) {
+      normalized[mappedKey] = value;
+    }
+  }
+  return normalized;
+}
+
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
 serve(async (req) => {
