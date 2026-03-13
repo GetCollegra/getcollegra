@@ -382,6 +382,7 @@ const QuizResults = () => {
   const [error, setError] = useState<string | null>(null);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [dbSurveyContext, setDbSurveyContext] = useState<Record<string, string>>({});
+  const [aiEnhancing, setAiEnhancing] = useState(false);
   const { toast } = useToast();
   const { isSubscribed } = useAuth();
 
@@ -494,6 +495,7 @@ const QuizResults = () => {
       if (!retryPrefs || !recs.colleges || recs.colleges.length < 3) return;
 
       console.log("[QuizResults] Triggering AI enhancement for match:", mId);
+      setAiEnhancing(true);
       const { data, error: fnErr } = await supabase.functions.invoke("enhance-college-explanations", {
         body: { matchId: mId, preferences: retryPrefs, colleges: recs.colleges },
       });
@@ -512,6 +514,8 @@ const QuizResults = () => {
       });
     } catch (err) {
       console.warn("[QuizResults] AI enhancement error:", err);
+    } finally {
+      setAiEnhancing(false);
     }
   };
 
@@ -919,6 +923,32 @@ const QuizResults = () => {
                     Each school is scored based on how well it aligns with your unique goals, budget, and preferences.
                   </p>
                 </motion.div>
+
+                {/* AI Enhancement Banner */}
+                <AnimatePresence>
+                  {aiEnhancing && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3 }}
+                      className="max-w-5xl mx-auto mb-6"
+                    >
+                      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl bg-primary/5 border border-primary/15">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                        </motion.div>
+                        <p className="text-foreground text-xs sm:text-sm font-medium">
+                          Personalizing your insights with AI…
+                          <span className="text-muted-foreground font-normal ml-1">Explanations will update momentarily.</span>
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
                   {recommendations.colleges.map((college, i) => (
