@@ -494,6 +494,7 @@ const QuizResults = () => {
     if (matchId) {
       let cancelled = false;
       let pollCount = 0;
+      let recoveryTriggered = false;
       const MAX_POLLS = 20; // 20 × 3s = 60s max
 
       const loadMatch = async () => {
@@ -535,6 +536,28 @@ const QuizResults = () => {
             }
             setLoading(false);
             return;
+          }
+
+          // Recover rare stuck pending rows (e.g. interrupted initial invocation)
+          if (status === "pending" && !recoveryTriggered) {
+            const createdAt = Date.parse(String((match as any).created_at || ""));
+            const ageMs = Number.isFinite(createdAt) ? Date.now() - createdAt : 0;
+
+            if (ageMs > 8000) {
+              const retryPreferences = buildRetryPreferences((match as any).raw_preferences);
+              if (retryPreferences) {
+                recoveryTriggered = true;
+                supabase.functions.invoke("college-match", {
+                  body: { preferences: retryPreferences, matchId },
+                }).then(({ error: retryError }) => {
+                  if (retryError) {
+                    console.error("[QuizResults] Recovery invoke failed:", retryError);
+                  }
+                }).catch((retryErr) => {
+                  console.error("[QuizResults] Recovery invoke crashed:", retryErr);
+                });
+              }
+            }
           }
 
           // Still pending/processing — poll
