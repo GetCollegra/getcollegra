@@ -41,6 +41,76 @@ const fadeInUp = {
   }),
 };
 
+const retryPreferenceAliases: Record<string, string[]> = {
+  firstName: ["firstName", "first_name"],
+  email: ["email"],
+  cityState: ["cityState", "city_state"],
+  gpa: ["gpa"],
+  testScore: ["testScore", "test_score"],
+  satScore: ["satScore", "sat_score"],
+  actScore: ["actScore", "act_score"],
+  campusSize: ["campusSize", "campus_size"],
+  campusVibe: ["campusVibe", "campus_vibe"],
+  locationType: ["locationType", "location_type"],
+  maxCost: ["maxCost", "max_cost"],
+  acceptanceRatePref: ["acceptanceRatePref", "acceptance_rate_pref"],
+  financialAid: ["financialAid", "financial_aid"],
+  campusLife: ["campusLife", "campus_life"],
+  academicImportance: ["academicImportance", "academic_importance"],
+  distanceFromHome: ["distanceFromHome", "distance_from_home"],
+  weatherRegion: ["weatherRegion", "weather_region"],
+  areaOfStudy: ["areaOfStudy", "area_of_study"],
+};
+
+const cleanPreference = (value: unknown, fallback: string) => {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  if (!trimmed || /^\{.*\}$/.test(trimmed)) return fallback;
+  return trimmed;
+};
+
+const buildRetryPreferences = (rawPrefs: unknown): Record<string, unknown> | null => {
+  if (!rawPrefs || typeof rawPrefs !== "object" || Array.isArray(rawPrefs)) return null;
+  const source = rawPrefs as Record<string, unknown>;
+
+  const pick = (keys: string[]) => {
+    for (const key of keys) {
+      const value = source[key];
+      if (typeof value === "string" && value.trim()) return value;
+    }
+    return "";
+  };
+
+  const allResponses: Record<string, string> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (typeof value !== "string") continue;
+    const cleaned = cleanPreference(value, "");
+    if (cleaned) allResponses[key] = cleaned;
+  }
+
+  return {
+    firstName: cleanPreference(pick(retryPreferenceAliases.firstName), ""),
+    email: cleanPreference(pick(retryPreferenceAliases.email), ""),
+    cityState: cleanPreference(pick(retryPreferenceAliases.cityState), "No preference"),
+    gpa: cleanPreference(pick(retryPreferenceAliases.gpa), ""),
+    testScore: cleanPreference(pick(retryPreferenceAliases.testScore), "None"),
+    satScore: cleanPreference(pick(retryPreferenceAliases.satScore), ""),
+    actScore: cleanPreference(pick(retryPreferenceAliases.actScore), ""),
+    campusSize: cleanPreference(pick(retryPreferenceAliases.campusSize), "No preference"),
+    campusVibe: cleanPreference(pick(retryPreferenceAliases.campusVibe), "No preference"),
+    locationType: cleanPreference(pick(retryPreferenceAliases.locationType), "No preference"),
+    maxCost: cleanPreference(pick(retryPreferenceAliases.maxCost), "No preference"),
+    acceptanceRatePref: cleanPreference(pick(retryPreferenceAliases.acceptanceRatePref), "No preference"),
+    financialAid: cleanPreference(pick(retryPreferenceAliases.financialAid), "Important"),
+    campusLife: cleanPreference(pick(retryPreferenceAliases.campusLife), "No preference"),
+    academicImportance: cleanPreference(pick(retryPreferenceAliases.academicImportance), "No preference"),
+    distanceFromHome: cleanPreference(pick(retryPreferenceAliases.distanceFromHome), "No preference"),
+    weatherRegion: cleanPreference(pick(retryPreferenceAliases.weatherRegion), "No preference"),
+    areaOfStudy: cleanPreference(pick(retryPreferenceAliases.areaOfStudy), "Undecided"),
+    allResponses,
+  };
+};
+
 const CollegeCard = ({ college, index }: { college: College; index: number }) => {
   const [expanded, setExpanded] = useState(false);
   const [challengesExpanded, setChallengesExpanded] = useState(false);
