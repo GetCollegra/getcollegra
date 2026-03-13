@@ -75,13 +75,31 @@ const FeedbackSurveyModal = () => {
   const saveFeedbackAndComplete = async (payload: Record<string, unknown>) => {
     if (!user) return;
 
-    // Save feedback response (upsert to prevent duplicates)
+    // Extract structured fields from Tally payload for easier analysis
+    const fields = (payload as any)?.data?.fields;
+    const structured: Record<string, unknown> = {};
+    if (Array.isArray(fields)) {
+      for (const field of fields) {
+        const label = field?.label || field?.key || `field_${field?.id}`;
+        structured[label] = field?.value ?? field?.answer ?? null;
+      }
+    }
+
+    const responseData = {
+      raw_payload: payload,
+      structured_answers: structured,
+      submitted_at: new Date().toISOString(),
+      form_id: (payload as any)?.data?.formId ?? null,
+      response_id: (payload as any)?.data?.responseId ?? null,
+    };
+
+    // Upsert to prevent duplicates (unique on user_id)
     const { error } = await supabase
       .from("feedback_responses")
       .upsert(
         {
           user_id: user.id,
-          response_data: payload as unknown as import("@/integrations/supabase/types").Json,
+          response_data: responseData as unknown as import("@/integrations/supabase/types").Json,
         },
         { onConflict: "user_id" }
       );
