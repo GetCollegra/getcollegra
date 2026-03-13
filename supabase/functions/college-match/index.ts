@@ -582,9 +582,19 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   });
 }
 
-// ─── (AI explanation layer moved to enhance-college-explanations function) ──
+    // ── Step 3: Build student profile (rule-based) ──
+    const studentProfile = {
+      summary: `Based on your preferences, we found ${matchedColleges.length} schools that match your criteria using U.S. Department of Education data.`,
+      topPriorities: [
+        prefs.areaOfStudy && prefs.areaOfStudy !== "Undecided" ? prefs.areaOfStudy : "Academic quality",
+        prefs.campusSize && prefs.campusSize !== "No preference" ? `${prefs.campusSize} campus` : "Campus fit",
+        prefs.financialAid === "Essential" ? "Financial aid" : "Affordability",
+      ],
+      idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
+    };
+    const comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Safety, Match, and Reach schools.`;
 
-    // ── Step 4: Build final result and save ──
+    // ── Step 4: Build final result and save as completed (version 1 = rule-based) ──
     const recommendations = {
       studentProfile,
       colleges: matchedColleges,
@@ -599,7 +609,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
         ai_status: "completed",
         ai_error: null,
         results_generated_at: new Date().toISOString(),
-        results_version: aiEnhanced ? 2 : 1,
+        results_version: 1,
       });
     }
 
