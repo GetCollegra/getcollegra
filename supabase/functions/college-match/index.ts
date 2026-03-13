@@ -102,22 +102,12 @@ function getNearbyStates(fips: string, distance: string): string[] {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // PROVIDER: College Scorecard  (Primary)
-// Docs: https://collegescorecard.ed.gov/data/documentation/
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-/**
- * All Scorecard fields we request.  Grouped logically so it's easy to see
- * what data the quiz results page depends on.
- */
 const SCORECARD_FIELDS = [
-  // Identity
   "id", "school.name", "school.city", "school.state", "school.school_url",
   "school.ownership", "school.locale",
-
-  // Enrollment
   "latest.student.size",
-
-  // Admissions — overall + SAT/ACT ranges for fit category
   "latest.admissions.admission_rate.overall",
   "latest.admissions.sat_scores.average.overall",
   "latest.admissions.sat_scores.midpoint.critical_reading",
@@ -131,19 +121,13 @@ const SCORECARD_FIELDS = [
   "latest.admissions.sat_scores.75th_percentile.critical_reading",
   "latest.admissions.sat_scores.25th_percentile.math",
   "latest.admissions.sat_scores.75th_percentile.math",
-
-  // Cost
   "latest.cost.tuition.in_state",
   "latest.cost.tuition.out_of_state",
   "latest.cost.avg_net_price.overall",
-
-  // Aid & Outcomes
   "latest.aid.median_debt.completers.overall",
   "latest.aid.pell_grant_rate",
   "latest.completion.rate_suppressed.overall",
   "latest.earnings.10_yrs_after_entry.median",
-
-  // Programs (% of students in each major family)
   "latest.academics.program_percentage.computer",
   "latest.academics.program_percentage.engineering",
   "latest.academics.program_percentage.business_marketing",
@@ -160,30 +144,26 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
   const p = new URLSearchParams();
   p.set("api_key", Deno.env.get("COLLEGE_SCORECARD_API_KEY") || "");
   p.set("fields", SCORECARD_FIELDS.join(","));
-  p.set("school.degrees_awarded.predominant", "3"); // bachelor's
+  p.set("school.degrees_awarded.predominant", "3");
   p.set("latest.admissions.admission_rate.overall__range", "0..1");
 
-  // Campus size filter
   const size = (prefs.campusSize || "").toLowerCase();
   if (size.includes("small")) p.set("latest.student.size__range", "..5000");
   else if (size.includes("medium")) p.set("latest.student.size__range", "5000..15000");
   else if (size.includes("very large") || size.includes("30,000")) p.set("latest.student.size__range", "30000..");
   else if (size.includes("large")) p.set("latest.student.size__range", "15000..30000");
 
-  // Location type
   const loc = (prefs.locationType || "").toLowerCase();
   if (loc.includes("urban") || loc.includes("city")) p.set("school.locale__range", "11..13");
   else if (loc.includes("suburban")) p.set("school.locale__range", "21..23");
   else if (loc.includes("rural") || loc.includes("small town")) p.set("school.locale__range", "31..43");
 
-  // Max cost
   const cost = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
   if (cost.includes("under 10") || cost.includes("less than 10")) p.set("latest.cost.avg_net_price.overall__range", "..10000");
   else if (cost.includes("10") && cost.includes("20")) p.set("latest.cost.avg_net_price.overall__range", "..20000");
   else if (cost.includes("20") && cost.includes("30")) p.set("latest.cost.avg_net_price.overall__range", "..30000");
   else if (cost.includes("30") && cost.includes("45")) p.set("latest.cost.avg_net_price.overall__range", "..45000");
 
-  // Acceptance rate
   const acc = (prefs.acceptanceRatePref || "").toLowerCase();
   if (acc.includes("very selective") || acc.includes("under 10"))
     p.set("latest.admissions.admission_rate.overall__range", "0..0.10");
@@ -196,7 +176,6 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
   else if (acc.includes("less selective") || acc.includes("open"))
     p.set("latest.admissions.admission_rate.overall__range", "0.50..1");
 
-  // Geographic filter
   const cityState = (prefs.cityState || "").toLowerCase();
   if (cityState && cityState !== "no preference" && cityState !== "not specified") {
     const fips = getStateFips(cityState);
@@ -211,8 +190,59 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
   return p.toString();
 }
 
-/** Turn raw Scorecard JSON rows into a human-readable string the AI can parse */
-function formatScorecardResults(results: any[]): string {
+const MIN_RESULTS = 15;
+
+async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: string; count: number; raw: any[] }> {
+  const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
+  if (!apiKey || apiKey.trim().length < 10) {
+    console.error("COLLEGE_SCORECARD_API_KEY missing or too short");
+    return { data: "", count: 0, raw: [] };
+  }
+
+  const baseQuery = buildScorecardQuery(prefs);
+  const baseUrl = "https://api.data.gov/ed/collegescorecard/v1/schools";
+  console.log("Scorecard query params:", baseQuery.replace(/api_key=[^&]+/, 'api_key=REDACTED'));
+
+  const runQuery = async (q: string): Promise<any[]> => {
+    const resp = await fetch(`${baseUrl}?${q}`);
+    if (!resp.ok) {
+      console.error("Scorecard API error:", resp.status, await resp.text());
+      return [];
+    }
+    const json = await resp.json();
+    return json.results || [];
+  };
+
+  const broadeningSteps: Array<{ label: string; transform: (q: string) => string }> = [
+    { label: "drop state filter", transform: (q) => q.replace(/&school\.state_fips=[^&]*/g, "") },
+    { label: "drop locale filter", transform: (q) => q.replace(/&school\.locale__range=[^&]*/g, "") },
+    { label: "drop size filter", transform: (q) => q.replace(/&latest\.student\.size__range=[^&]*/g, "") },
+    { label: "widen acceptance rate to 0-50%", transform: (q) => q.replace(/latest\.admissions\.admission_rate\.overall__range=[^&]*/g, "latest.admissions.admission_rate.overall__range=0..0.50") },
+    { label: "widen acceptance rate to full range", transform: (q) => q.replace(/latest\.admissions\.admission_rate\.overall__range=[^&]*/g, "latest.admissions.admission_rate.overall__range=0..1") },
+    { label: "drop cost filter", transform: (q) => q.replace(/&latest\.cost\.avg_net_price\.overall__range=[^&]*/g, "") },
+  ];
+
+  let results = await runQuery(baseQuery);
+  let currentQuery = baseQuery;
+  console.log(`Initial query got ${results.length} colleges`);
+
+  for (const step of broadeningSteps) {
+    if (results.length >= MIN_RESULTS) break;
+    const broader = step.transform(currentQuery);
+    if (broader === currentQuery) continue;
+    console.log(`Too few results (${results.length}), broadening: ${step.label}`);
+    const broaderResults = await runQuery(broader);
+    if (broaderResults.length > results.length) {
+      results = broaderResults;
+      currentQuery = broader;
+      console.log(`After broadening got ${results.length} results`);
+    }
+  }
+
+  return { data: results.length > 0 ? formatScorecardForAI(results) : "", count: results.length, raw: results };
+}
+
+function formatScorecardForAI(results: any[]): string {
   return results.map((r: any, i: number) => {
     const name = r["school.name"] || "Unknown";
     const city = r["school.city"] || "";
@@ -228,7 +258,6 @@ function formatScorecardResults(results: any[]): string {
     const locale = r["school.locale"];
     const localeDesc = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
 
-    // SAT
     const satAvg = r["latest.admissions.sat_scores.average.overall"];
     const satR25 = r["latest.admissions.sat_scores.25th_percentile.critical_reading"];
     const satR75 = r["latest.admissions.sat_scores.75th_percentile.critical_reading"];
@@ -242,7 +271,6 @@ function formatScorecardResults(results: any[]): string {
       }
     }
 
-    // ACT
     const actMid = r["latest.admissions.act_scores.midpoint.cumulative"];
     const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
     const act75 = r["latest.admissions.act_scores.75th_percentile.cumulative"];
@@ -252,7 +280,6 @@ function formatScorecardResults(results: any[]): string {
       if (act25 && act75) actDisplay += ` (25th-75th: ${act25}-${act75})`;
     }
 
-    // Programs
     const progLabels: Record<string, string> = {
       "Computer Science": r["latest.academics.program_percentage.computer"],
       Engineering: r["latest.academics.program_percentage.engineering"],
@@ -284,160 +311,244 @@ function formatScorecardResults(results: any[]): string {
   }).join("\n\n");
 }
 
-/**
- * Fetch colleges from Scorecard.  Progressively relaxes filters until we
- * have at least MIN_RESULTS schools for the AI to pick from.
- */
-const MIN_RESULTS = 15;
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// RULE-BASED MATCHING ENGINE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: string; count: number; raw: any[] }> {
-  const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
-  if (!apiKey || apiKey.trim().length < 10) {
-    console.error("COLLEGE_SCORECARD_API_KEY missing or too short");
-    return { data: "", count: 0, raw: [] };
-  }
-  console.log("COLLEGE_SCORECARD_API_KEY present:", true);
-
-  const baseQuery = buildScorecardQuery(prefs);
-  const baseUrl = "https://api.data.gov/ed/collegescorecard/v1/schools";
-  console.log("Scorecard query params:", baseQuery.replace(/api_key=[^&]+/, 'api_key=REDACTED'));
-
-  // Helper to run a query and return results
-  const runQuery = async (q: string): Promise<any[]> => {
-    const resp = await fetch(`${baseUrl}?${q}`);
-    if (!resp.ok) {
-      console.error("Scorecard API error:", resp.status, await resp.text());
-      return [];
-    }
-    const json = await resp.json();
-    return json.results || [];
-  };
-
-  // Progressive broadening strategy — each step relaxes one more filter
-  const broadeningSteps: Array<{ label: string; transform: (q: string) => string }> = [
-    {
-      label: "drop state filter",
-      transform: (q) => q.replace(/&school\.state_fips=[^&]*/g, ""),
-    },
-    {
-      label: "drop locale filter",
-      transform: (q) => q.replace(/&school\.locale__range=[^&]*/g, ""),
-    },
-    {
-      label: "drop size filter",
-      transform: (q) => q.replace(/&latest\.student\.size__range=[^&]*/g, ""),
-    },
-    {
-      label: "widen acceptance rate to 0-50%",
-      transform: (q) => q.replace(
-        /latest\.admissions\.admission_rate\.overall__range=[^&]*/g,
-        "latest.admissions.admission_rate.overall__range=0..0.50"
-      ),
-    },
-    {
-      label: "widen acceptance rate to full range",
-      transform: (q) => q.replace(
-        /latest\.admissions\.admission_rate\.overall__range=[^&]*/g,
-        "latest.admissions.admission_rate.overall__range=0..1"
-      ),
-    },
-    {
-      label: "drop cost filter",
-      transform: (q) => q.replace(/&latest\.cost\.avg_net_price\.overall__range=[^&]*/g, ""),
-    },
-  ];
-
-  // Try original query first
-  let results = await runQuery(baseQuery);
-  let currentQuery = baseQuery;
-  console.log(`Initial query got ${results.length} colleges`);
-
-  // Progressively broaden until we have enough
-  for (const step of broadeningSteps) {
-    if (results.length >= MIN_RESULTS) break;
-    const broader = step.transform(currentQuery);
-    if (broader === currentQuery) continue; // filter wasn't present
-    console.log(`Too few results (${results.length}), broadening: ${step.label}`);
-    const broaderResults = await runQuery(broader);
-    if (broaderResults.length > results.length) {
-      results = broaderResults;
-      currentQuery = broader;
-      console.log(`After broadening got ${results.length} results`);
-    }
-  }
-
-  const data = results.length > 0 ? formatScorecardResults(results) : "";
-  return { data, count: results.length, raw: results };
+function parseStudentSAT(prefs: Record<string, any>): number | null {
+  const sat = prefs.satScore || prefs.sat_score || "";
+  const parsed = parseInt(sat, 10);
+  return parsed >= 400 && parsed <= 1600 ? parsed : null;
 }
 
-// ─── Fallback Results (when AI is unavailable) ──────────────────────────────
+function parseStudentACT(prefs: Record<string, any>): number | null {
+  const act = prefs.actScore || prefs.act_score || "";
+  const parsed = parseInt(act, 10);
+  return parsed >= 1 && parsed <= 36 ? parsed : null;
+}
 
-function generateFallbackResults(rawResults: any[], prefs: Record<string, any>): any {
-  // Sort by admission rate to assign fit categories properly
-  const sorted = [...rawResults].sort((a, b) => {
-    const rateA = a["latest.admissions.admission_rate.overall"] ?? 1;
-    const rateB = b["latest.admissions.admission_rate.overall"] ?? 1;
-    return rateB - rateA; // highest acceptance first (safest first)
-  });
-
-  // Parse student GPA to determine realistic reach threshold
+function parseStudentGPA(prefs: Record<string, any>): number {
   const gpa = parseFloat(prefs.gpa || "3.0");
+  return isNaN(gpa) ? 3.0 : Math.min(5.0, Math.max(0, gpa));
+}
+
+function determineFitCategory(r: any, gpa: number, studentSAT: number | null, studentACT: number | null): "Safety" | "Match" | "Reach" {
+  const admRate = r["latest.admissions.admission_rate.overall"];
+
+  // Test score comparison
+  let scorePosition: "above" | "within" | "below" = "within";
+
+  if (studentSAT) {
+    const sat25 = r["latest.admissions.sat_scores.25th_percentile.critical_reading"] && r["latest.admissions.sat_scores.25th_percentile.math"]
+      ? Number(r["latest.admissions.sat_scores.25th_percentile.critical_reading"]) + Number(r["latest.admissions.sat_scores.25th_percentile.math"])
+      : null;
+    const sat75 = r["latest.admissions.sat_scores.75th_percentile.critical_reading"] && r["latest.admissions.sat_scores.75th_percentile.math"]
+      ? Number(r["latest.admissions.sat_scores.75th_percentile.critical_reading"]) + Number(r["latest.admissions.sat_scores.75th_percentile.math"])
+      : null;
+    if (sat75 && studentSAT > sat75) scorePosition = "above";
+    else if (sat25 && studentSAT < sat25) scorePosition = "below";
+  } else if (studentACT) {
+    const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
+    const act75 = r["latest.admissions.act_scores.75th_percentile.cumulative"];
+    if (act75 && studentACT > Number(act75)) scorePosition = "above";
+    else if (act25 && studentACT < Number(act25)) scorePosition = "below";
+  }
+
+  // GPA-based acceptance rate thresholds
   let reachMaxAcceptance = 0.5;
   if (gpa >= 3.9) reachMaxAcceptance = 0.15;
   else if (gpa >= 3.8) reachMaxAcceptance = 0.25;
   else if (gpa >= 3.5) reachMaxAcceptance = 0.30;
   else if (gpa >= 3.0) reachMaxAcceptance = 0.40;
-  else reachMaxAcceptance = 0.50;
 
-  // Categorize schools
-  const safetyPool = sorted.filter(r => (r["latest.admissions.admission_rate.overall"] ?? 1) > 0.6);
-  const matchPool = sorted.filter(r => {
-    const rate = r["latest.admissions.admission_rate.overall"] ?? 1;
-    return rate > 0.3 && rate <= 0.6;
-  });
-  const reachPool = sorted.filter(r => {
-    const rate = r["latest.admissions.admission_rate.overall"] ?? 1;
-    return rate <= reachMaxAcceptance && rate > 0.05;
-  });
+  if (scorePosition === "above" && admRate != null && admRate > 0.5) return "Safety";
+  if (scorePosition === "above" && admRate != null && admRate > 0.3) return "Safety";
+  if (scorePosition === "below" || (admRate != null && admRate <= reachMaxAcceptance && admRate <= 0.3)) return "Reach";
+  if (admRate != null && admRate > 0.6) return "Safety";
+  return "Match";
+}
 
-  // Pick 2 safety, 2 match, 1 reach (fall back to whatever is available)
-  const picked: any[] = [];
-  const addFromPool = (pool: any[], count: number) => {
-    for (const r of pool) {
+/**
+ * Compute fitScore (0–100) using weighted factors:
+ * - Campus Culture & Personality (35%)
+ * - Academic Major Fit (25%)
+ * - Distance From Home (15%)
+ * - School Size (10%)
+ * - Cost & Affordability (10%)
+ * - Admission Chances (5%)
+ */
+function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string): number {
+  let score = 0;
+
+  // 1. Campus Culture (35 pts max)
+  const locale = r["school.locale"];
+  const localeDesc = locale <= 13 ? "urban" : locale <= 23 ? "suburban" : locale <= 33 ? "town" : "rural";
+  const prefLoc = (prefs.locationType || "").toLowerCase();
+  let cultureScore = 15; // baseline
+  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 30;
+  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 30;
+  else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 22;
+
+  // Vibe bonus
+  const vibe = (prefs.campusVibe || "").toLowerCase();
+  const size = r["latest.student.size"] || 0;
+  if (vibe.includes("spirited") && size > 15000) cultureScore = Math.min(35, cultureScore + 5);
+  else if (vibe.includes("tight") && size < 5000) cultureScore = Math.min(35, cultureScore + 5);
+  else if (vibe.includes("chill")) cultureScore = Math.min(35, cultureScore + 3);
+  score += Math.min(35, cultureScore);
+
+  // 2. Academic Major Fit (25 pts max)
+  const study = (prefs.areaOfStudy || "").toLowerCase();
+  let academicScore = 12; // default
+  if (study && study !== "undecided") {
+    let bestProgramPct = 0;
+    for (const [keyword, field] of Object.entries(studyProgramMap)) {
+      if (study.includes(keyword)) {
+        const pct = Number(r[field] || 0);
+        if (pct > bestProgramPct) bestProgramPct = pct;
+      }
+    }
+    if (bestProgramPct > 0.10) academicScore = 25;
+    else if (bestProgramPct > 0.05) academicScore = 18;
+    else if (bestProgramPct > 0) academicScore = 10;
+    else academicScore = 5;
+  }
+  score += academicScore;
+
+  // 3. Distance From Home (15 pts max)
+  const distPref = (prefs.distanceFromHome || "").toLowerCase();
+  const cityState = (prefs.cityState || "").toLowerCase();
+  const schoolState = (r["school.state"] || "").toLowerCase();
+  let distScore = 8; // default
+  if (distPref.includes("anywhere") || distPref.includes("no preference")) {
+    distScore = 12;
+  } else if (distPref.includes("close") || distPref.includes("1 hour") || distPref.includes("under 2")) {
+    // Check if same state
+    if (cityState.includes(schoolState) || schoolState.length === 2 && cityState.includes(schoolState)) distScore = 15;
+    else distScore = 3;
+  } else if (distPref.includes("2-4") || distPref.includes("few hours")) {
+    const fips = getStateFips(cityState);
+    const schoolFips = getStateFips(r["school.city"] + ", " + r["school.state"]);
+    if (fips.length > 0 && schoolFips.length > 0) {
+      const nearby = getNearbyStates(fips[0], distPref);
+      distScore = nearby.includes(schoolFips[0]) ? 13 : 5;
+    }
+  }
+  score += distScore;
+
+  // 4. School Size (10 pts max)
+  const sizePref = (prefs.campusSize || "").toLowerCase();
+  const studentSize = Number(r["latest.student.size"] || 0);
+  let sizeScore = 5;
+  if (!sizePref || sizePref.includes("no preference")) sizeScore = 7;
+  else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 10;
+  else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 10;
+  else if (sizePref.includes("large") && studentSize > 15000) sizeScore = 10;
+  else sizeScore = 3;
+  score += sizeScore;
+
+  // 5. Cost & Affordability (10 pts max)
+  const costPref = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
+  const netPrice = r["latest.cost.avg_net_price.overall"];
+  let costScore = 5;
+  if (netPrice != null) {
+    let maxBudget = 50000;
+    if (costPref.includes("under 10") || costPref.includes("less than 10")) maxBudget = 10000;
+    else if (costPref.includes("10") && costPref.includes("20")) maxBudget = 20000;
+    else if (costPref.includes("20") && costPref.includes("30")) maxBudget = 30000;
+    else if (costPref.includes("30") && costPref.includes("45")) maxBudget = 45000;
+
+    if (netPrice <= maxBudget) costScore = 10;
+    else if (netPrice <= maxBudget * 1.2) costScore = 6;
+    else costScore = 2;
+  }
+  score += costScore;
+
+  // 6. Admission Chances (5 pts max)
+  if (fitCategory === "Safety") score += 5;
+  else if (fitCategory === "Match") score += 3;
+  else score += 1;
+
+  return Math.min(100, Math.max(0, score));
+}
+
+function getTopPrograms(r: any): string[] {
+  const progLabels: Record<string, any> = {
+    "Computer Science": r["latest.academics.program_percentage.computer"],
+    Engineering: r["latest.academics.program_percentage.engineering"],
+    Business: r["latest.academics.program_percentage.business_marketing"],
+    Health: r["latest.academics.program_percentage.health"],
+    Biology: r["latest.academics.program_percentage.biological"],
+    "Social Science": r["latest.academics.program_percentage.social_science"],
+    Psychology: r["latest.academics.program_percentage.psychology"],
+    Education: r["latest.academics.program_percentage.education"],
+    Arts: r["latest.academics.program_percentage.visual_performing"],
+    Communications: r["latest.academics.program_percentage.communication"],
+  };
+  return Object.entries(progLabels)
+    .filter(([, pct]) => pct && Number(pct) > 0.05)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .slice(0, 3)
+    .map(([label]) => label);
+}
+
+/**
+ * Rule-based engine: score all colleges, pick 2 Safety / 2 Match / 1 Reach.
+ * Returns structured college objects WITH placeholder text for AI-generated fields.
+ */
+function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = []): any[] {
+  const gpa = parseStudentGPA(prefs);
+  const studentSAT = parseStudentSAT(prefs);
+  const studentACT = parseStudentACT(prefs);
+  const excludeSet = new Set(excludeColleges.map(n => n.toLowerCase()));
+
+  // Score and categorize all colleges
+  const scored = rawResults
+    .filter(r => !excludeSet.has((r["school.name"] || "").toLowerCase()))
+    .map(r => {
+      const fitCategory = determineFitCategory(r, gpa, studentSAT, studentACT);
+      const fitScore = computeFitScore(r, prefs, fitCategory);
+      return { raw: r, fitCategory, fitScore };
+    })
+    .sort((a, b) => b.fitScore - a.fitScore);
+
+  const safetyPool = scored.filter(s => s.fitCategory === "Safety");
+  const matchPool = scored.filter(s => s.fitCategory === "Match");
+  const reachPool = scored.filter(s => s.fitCategory === "Reach");
+
+  // Pick 2 Safety, 2 Match, 1 Reach
+  const picked: typeof scored = [];
+  const addFrom = (pool: typeof scored, count: number) => {
+    for (const s of pool) {
       if (picked.length >= 5) break;
-      if (picked.find(p => p["school.name"] === r["school.name"])) continue;
-      if (picked.filter(() => true).length - picked.length >= count) break;
-      picked.push(r);
-      count--;
       if (count <= 0) break;
+      if (picked.find(p => p.raw["school.name"] === s.raw["school.name"])) continue;
+      picked.push(s);
+      count--;
     }
   };
 
-  // Fill in order: safety, match, reach, then pad from sorted
-  addFromPool(safetyPool, 2);
-  addFromPool(matchPool, 2);
-  addFromPool(reachPool, 1);
-  // Pad to 5 if needed
-  for (const r of sorted) {
+  addFrom(safetyPool, 2);
+  addFrom(matchPool, 2);
+  addFrom(reachPool, 1);
+
+  // Pad if needed
+  for (const s of scored) {
     if (picked.length >= 5) break;
-    if (!picked.find(p => p["school.name"] === r["school.name"])) picked.push(r);
+    if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
   }
 
-  const colleges = picked.slice(0, 5).map((r: any, i: number) => {
+  // Sort by fitScore descending
+  picked.sort((a, b) => b.fitScore - a.fitScore);
+
+  return picked.slice(0, 5).map(({ raw: r, fitCategory, fitScore }) => {
     const admRate = r["latest.admissions.admission_rate.overall"];
     const locale = r["school.locale"];
     const setting = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
     const gradRate = r["latest.completion.rate_suppressed.overall"];
     const earnings = r["latest.earnings.10_yrs_after_entry.median"];
     const size = r["latest.student.size"];
-
-    // Assign fit category based on acceptance rate relative to student profile
-    let fitCategory = "Match";
-    if (admRate != null) {
-      if (admRate > 0.6) fitCategory = "Safety";
-      else if (admRate <= reachMaxAcceptance && admRate <= 0.3) fitCategory = "Reach";
-      else fitCategory = "Match";
-    }
+    const topPrograms = getTopPrograms(r);
 
     return {
       name: r["school.name"] || "Unknown",
@@ -446,195 +557,70 @@ function generateFallbackResults(rawResults: any[], prefs: Record<string, any>):
       ranking: "Based on U.S. Dept. of Education data",
       tuitionInState: r["latest.cost.tuition.in_state"] ? `$${Number(r["latest.cost.tuition.in_state"]).toLocaleString()}` : "N/A",
       tuitionOutOfState: r["latest.cost.tuition.out_of_state"] ? `$${Number(r["latest.cost.tuition.out_of_state"]).toLocaleString()}` : "N/A",
-      avgFinancialAid: "See school website",
+      avgFinancialAid: r["latest.cost.avg_net_price.overall"] && r["latest.cost.tuition.out_of_state"]
+        ? `~$${Math.max(0, Number(r["latest.cost.tuition.out_of_state"]) - Number(r["latest.cost.avg_net_price.overall"])).toLocaleString()}`
+        : "See school website",
       netPrice: r["latest.cost.avg_net_price.overall"] ? `$${Number(r["latest.cost.avg_net_price.overall"]).toLocaleString()}` : "N/A",
-      topPrograms: ["See school website for program details"],
+      topPrograms: topPrograms.length > 0 ? topPrograms : ["General Studies"],
       campusSize: size ? `${Number(size).toLocaleString()} students` : "N/A",
       studentBody: size ? `${Number(size).toLocaleString()} students` : "N/A",
       studentFacultyRatio: "See school website",
       setting,
       graduationRate: gradRate != null ? `${(gradRate * 100).toFixed(0)}%` : "N/A",
       avgStartingSalary: earnings ? `$${Number(earnings).toLocaleString()}` : "N/A",
-      fitScore: Math.max(50, 80 - i * 5),
+      fitScore,
       fitCategory,
-      whyFit: "This school matches your search criteria based on Department of Education data.",
+      // These will be overwritten by AI for top 3
+      whyFit: `This school matches your search criteria based on Department of Education data. Fit score: ${fitScore}/100.`,
       prosForStudent: ["Meets your stated preferences", "Strong graduation and outcomes data"],
-      consForStudent: ["Personalized analysis temporarily unavailable"],
+      consForStudent: ["See detailed analysis for more context"],
       challengesForStudent: [],
       howToGetIn: "Visit the school's admissions website for detailed application requirements and deadlines.",
-      campusVibe: setting === "Urban" ? "City campus environment with urban sports culture" : setting === "Suburban" ? "Suburban campus with strong athletics traditions" : "Close-knit campus community with spirited athletics",
-      notableFeature: gradRate != null && gradRate > 0.8 ? `High graduation rate (${(gradRate * 100).toFixed(0)}%) with competitive athletics` : "Accredited institution with varsity sports programs",
+      campusVibe: setting === "Urban" ? "City campus environment" : setting === "Suburban" ? "Suburban campus setting" : "Close-knit campus community",
+      notableFeature: gradRate != null && gradRate > 0.8 ? `High graduation rate (${(gradRate * 100).toFixed(0)}%)` : "Accredited institution with diverse programs",
     };
   });
-
-  return {
-    studentProfile: {
-      summary: `Based on your survey responses, we found ${colleges.length} schools that match your criteria. Note: Our AI advisor was temporarily unavailable, so these results are based on statistical data from the U.S. Department of Education.`,
-      topPriorities: [
-        prefs.areaOfStudy && prefs.areaOfStudy !== "Undecided" ? prefs.areaOfStudy : "Academic quality",
-        prefs.campusSize && prefs.campusSize !== "No preference" ? `${prefs.campusSize} campus` : "Campus fit",
-        prefs.financialAid === "Essential" ? "Financial aid" : "Affordability",
-      ],
-      idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
-    },
-    colleges,
-    comparisonInsight: `These ${colleges.length} schools were selected from U.S. Department of Education data based on your preferences, with 2 Safety, 2 Match, and 1 Reach school. For a fully personalized AI analysis with detailed fit scores and admissions strategies, please refresh the page or retake the quiz.`,
-  };
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// PROVIDER PLACEHOLDER: Backup Source (IPEDS, Niche, Peterson's, etc.)
+// AI EXPLANATION LAYER — personalizes top 3 colleges
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// ─── AI Prompt ───────────────────────────────────────────────────────────────
+const AI_EXPLANATION_SYSTEM = `You are a college admissions expert writing personalized advice for a student. You will be given the student's preferences and 3 matched colleges with their data.
 
-const SYSTEM_PROMPT = `You are a college admissions expert. You have been given REAL, VERIFIED data from the US Department of Education's College Scorecard database.
+Your job is to write compelling, personalized explanations for EACH of the 3 colleges plus an overall student profile and comparison.
 
-Your job is to select the 5 best-fit colleges for this student from the real data provided, and personalize the recommendations.
+TONE: Address the student directly as "you" / "your". If their first name is provided, use it naturally. NEVER use "he/she/they/the student".
 
-CRITICAL: Each student is UNIQUE. Their answers MUST directly determine which colleges you pick. Two students with different answers should get COMPLETELY DIFFERENT lists.
+Quote the student's own words from their preferences when relevant (e.g., "You said you want a 'spirited' campus…").
 
-═══ REQUIRED FIT CATEGORY DISTRIBUTION ═══
-
-You MUST return EXACTLY this distribution:
-- 2 Safety schools (fitCategory: "Safety")
-- 2 Match schools (fitCategory: "Match")  
-- 1 Reach school (fitCategory: "Reach")
-
-═══ REALISTIC REACH SCHOOL RULES ═══
-
-The Reach school must be ASPIRATIONAL BUT REALISTIC — NOT a fantasy pick. Follow these rules strictly:
-
-- GPA below 3.0 → Reach school acceptance rate must be 30-50%. Do NOT suggest schools with <20% acceptance rates. Schools like Harvard, MIT, Stanford, Notre Dame, Duke, etc. are OFF LIMITS.
-- GPA 3.0-3.4 → Reach school acceptance rate must be 20-40%. No schools under 15% acceptance rate.
-- GPA 3.5-3.7 → Reach school acceptance rate can be 15-30%.
-- GPA 3.8+ with strong test scores → Reach school acceptance rate can be 10-25%.
-- GPA 3.9+ with SAT 1500+ or ACT 34+ → Reach school can go as low as 5-15% acceptance rate.
-
-The Reach school should be a school where the student has a REAL CHANCE of admission if they put together a strong application — not a school where they'd need a miracle.
-
-═══ FIT SCORE WEIGHTING SYSTEM ═══
-
-Calculate each college's fitScore (0-100) using these EXACT weights:
-
-1. **Campus Culture & Personality Fit (35%)** — THIS IS THE MOST IMPORTANT FACTOR
-   - Does the school's social environment match what the student wants? (e.g., "spirited" → strong athletics/Greek life, "chill" → laid-back artsy vibe, "tight-knit" → small classes and community)
-   - Sports culture: Does the school's athletic division, sports traditions, and game-day culture match their preferences?
-   - Campus setting: Urban/Suburban/Rural match with student's preference
-   - Student life & nearby amenities: nightlife, outdoor activities, college-town feel, city access
-   - School size feel: Does the campus size create the social dynamic they want?
-   - If the student's campus vibe/life preferences strongly match → award 30-35 points
-   - Partial match → 15-25 points
-   - Poor match → 0-10 points
-
-2. **Academic Major Fit (25%)**
-   - Does the school have strong programs in the student's intended area of study?
-   - Use program_percentage data: >10% in their field = strong, 5-10% = moderate, <5% = weak
-   - Strong program match → 20-25 points
-   - Moderate → 10-18 points
-   - Weak/missing → 0-8 points
-
-3. **Distance From Home (15%)**
-   - Does the school's location match their distance preference?
-   - Perfect match (e.g., "close to home" and school is in-state) → 12-15 points
-   - Acceptable → 6-10 points
-   - Mismatch → 0-5 points
-
-4. **School Size (10%)**
-   - Does enrollment match their campus size preference?
-   - Exact match → 8-10 points
-   - Close → 4-7 points
-   - Mismatch → 0-3 points
-
-5. **Cost & Affordability (10%)**
-   - Is the net price within their budget?
-   - Within budget → 8-10 points
-   - Slightly over → 4-7 points
-   - Way over → 0-3 points
-
-6. **Admission Chances (5%)** — lowest weight, used only as a tiebreaker
-   - Is the student likely to be admitted based on GPA/test scores vs. school's ranges?
-   - Good chance → 4-5 points
-   - Possible → 2-3 points
-   - Unlikely → 0-1 points
-
-IMPORTANT: The fitScore should primarily reflect how well the school's CAMPUS CULTURE AND ENVIRONMENT matches the student's personality and lifestyle preferences. A school with perfect academics but terrible culture fit should score LOWER than a school with good academics and great culture fit.
-
-═══ FIT CATEGORY ASSIGNMENT ═══
-
-fitCategory is still determined by admission chances (GPA/test scores vs. school ranges):
-- Student score ABOVE school's 75th percentile → Safety
-- Student score WITHIN school's 25th-75th range → Match  
-- Student score BELOW school's 25th percentile → Reach
-- GPA 3.8+ with high scores → can include <15% acceptance schools as Match
-- GPA 3.0-3.7 → 25-60% acceptance as Match
-- GPA <3.0 → 50%+ acceptance as Match
-
-═══ SELECTION PROCESS ═══
-
-1. From the provided college data, first FILTER by academic major — remove schools without the student's intended program.
-2. Then RANK remaining schools by campus culture fit (35% weight) — prioritize schools whose vibe, size, setting, sports culture, and social environment match the student's stated preferences.
-3. Refine by distance, size, and cost factors.
-4. Use admission chances only as a final tiebreaker (5% weight).
-5. VERIFY the final list has exactly 2 Safety, 2 Match, 1 Reach before responding.
-
-═══ EXPLANATION REQUIREMENTS ═══
-
-In "whyFit", "prosForStudent", and "campusVibe" fields, LEAD WITH CAMPUS CULTURE REASONS:
-- Start with WHY the school's campus culture matches their personality (e.g., "You said you want a 'spirited' campus — this school's Division I program and 30,000+ game-day crowds deliver exactly that energy")
-- Reference specific student answers about campus vibe, social preferences, extracurriculars
-- Then mention academic and other factors secondarily
-- In "campusVibe", go deep: describe the social scene, sports culture, Greek life presence, weekend activities, nearby town/city amenities, and overall "feel" of being a student there
-
-TONE & PRONOUNS: ALWAYS address the student directly using "you" and "your" — NEVER use "he", "him", "she", "her", "they", "them", or "the student". If the student's first name is provided, combine it with "you/your" (e.g., "Erin, with your GPA and test scores, the best fit for you is..."). This applies to ALL text fields: whyFit, prosForStudent, consForStudent, challengesForStudent, howToGetIn, studentProfile summary, and comparisonInsight.
-
-In "whyFit" and "prosForStudent", EXPLICITLY quote the student's own words (e.g., "You said you want a 'spirited' campus — this school's Division I program delivers that").
-
-IMPORTANT: Use EXACT data values from the Scorecard data — do NOT fabricate statistics. You may add context about campus culture and fit reasoning.
+Use EXACT data values — do not fabricate statistics.
 
 Return a JSON object with this exact structure:
 {
   "studentProfile": {
-    "summary": "2-3 sentence overview focusing on the student's campus culture preferences and personality fit. Reference their vibe, social, and lifestyle answers first, then academics. Use the student's first name if provided.",
-    "topPriorities": ["Priority 1 (campus culture related)", "Priority 2", "Priority 3"],
-    "idealSchoolType": "Brief description emphasizing the campus culture and environment that fits them best"
+    "summary": "2-3 sentences about the student's preferences and what drives their ideal school choice. Lead with campus culture.",
+    "topPriorities": ["Priority 1", "Priority 2", "Priority 3"],
+    "idealSchoolType": "Brief description of their ideal school environment"
   },
   "colleges": [
     {
-      "name": "Full College Name (exactly as in data)",
-      "location": "City, State",
-      "acceptanceRate": "XX%",
-      "ranking": "Category description",
-      "tuitionInState": "$XX,XXX",
-      "tuitionOutOfState": "$XX,XXX",
-      "avgFinancialAid": "Estimated from net price data",
-      "netPrice": "$XX,XXX",
-      "topPrograms": ["Program 1", "Program 2", "Program 3"],
-      "campusSize": "Description",
-      "studentBody": "XX,XXX students",
-      "studentFacultyRatio": "XX:1",
-      "setting": "Urban/Suburban/Rural",
-      "graduationRate": "XX%",
-      "avgStartingSalary": "$XX,XXX",
-      "fitScore": 95,
-      "fitCategory": "Safety/Match/Reach",
-      "whyFit": "2-3 sentences — LEAD with campus culture match, then mention academics. Quote student's own words about vibe/social preferences.",
-      "prosForStudent": ["Pro 1: campus culture/vibe match", "Pro 2: sports/athletics/social life match", "Pro 3: academic program strength"],
-      "consForStudent": ["Con referencing student preference", "Con 2"],
-      "challengesForStudent": ["A specific reason this school may NOT be the best fit for them, referencing their answers (e.g. 'You mentioned wanting a small campus, but this school has 30,000+ students')", "Challenge 2"],
-      "howToGetIn": "5-7 detailed, actionable sentences providing a mini admissions strategy for THIS specific school tailored to THIS student. Include ALL of the following: (1) How their GPA and test scores compare to the school's averages and what to aim for if retaking, (2) Specific extracurriculars, clubs, or leadership roles that would strengthen their application, (3) Essay topic suggestions connecting their interests to the school's unique programs, (4) Whether to apply Early Decision/Early Action, (5) Any supplemental materials, interviews, or demonstrated interest steps this school values.",
-      "campusVibe": "3-4 sentences about campus culture — describe the social scene, sports culture (athletic division, major teams, traditions, rivalries), Greek life presence, weekend activities, nearby town/city amenities, and the overall 'feel' of being a student there. Be vivid and specific.",
-      "notableFeature": "One unique relevant thing — campus culture, traditions, athletics, or lifestyle feature that makes this school special for THIS student"
+      "name": "Exact college name as given",
+      "whyFit": "2-3 sentences — lead with campus culture match, then academics. Quote student's words.",
+      "prosForStudent": ["Pro 1: culture/vibe match", "Pro 2: academic fit", "Pro 3: practical benefit"],
+      "consForStudent": ["Con 1", "Con 2"],
+      "challengesForStudent": ["Challenge specific to this student's profile"],
+      "howToGetIn": "5-7 detailed, actionable sentences: (1) GPA/test score comparison, (2) extracurriculars to strengthen app, (3) essay topic suggestions, (4) ED/EA strategy, (5) demonstrated interest steps.",
+      "campusVibe": "3-4 vivid sentences about the social scene, sports culture, Greek life, weekend activities, nearby amenities.",
+      "notableFeature": "One unique thing about this school for THIS student"
     }
   ],
-  "comparisonInsight": "A detailed 5-8 sentence analysis comparing all 5 recommendations. Address the student BY THEIR FIRST NAME if provided. LEAD with campus culture comparisons: (1) How each school's vibe and social environment differs, (2) Why this specific mix of 2 Safety, 2 Match, and 1 Reach schools works for their personality, (3) Campus culture tradeoffs between picks (e.g. big game-day energy vs. intimate community feel), (4) Which school might be the best overall culture fit and why. Reference their specific campus vibe and lifestyle answers throughout."
+  "comparisonInsight": "5-8 sentences comparing all the student's matched schools. Lead with campus culture differences. Reference their specific preferences."
 }
-
-Provide exactly 5 colleges: 2 Safety, 2 Match, 1 Reach. Sort by fitScore descending. Use real data values only. The Reach school MUST be realistic for this student's academic profile. The fitScore MUST primarily reflect campus culture and personality fit.
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
-function buildUserPrompt(prefs: Record<string, any>, collegeData: string, excludeColleges: string[] = []): string {
+function buildAIExplanationPrompt(prefs: Record<string, any>, colleges: any[], scorecardData: string): string {
   const allResponses = prefs.allResponses || {};
   const extraFields = Object.entries(allResponses)
     .filter(([key]) => key !== "email")
@@ -651,8 +637,8 @@ function buildUserPrompt(prefs: Record<string, any>, collegeData: string, exclud
     testDisplay = parts.join(", ");
   }
 
-  let prompt = `Student preferences (USE ALL OF THESE to select and rank colleges):
-- Student's first name: ${prefs.firstName || "Not provided"}
+  let prompt = `Student preferences:
+- First name: ${prefs.firstName || "Not provided"}
 - Home location: ${prefs.cityState || "Not specified"}
 - Weighted GPA: ${prefs.gpa || "Not specified"}
 - Test Scores: ${testDisplay}
@@ -665,21 +651,28 @@ function buildUserPrompt(prefs: Record<string, any>, collegeData: string, exclud
 - Campus life interests: ${prefs.campusLife || "No preference"}
 - Academic importance: ${prefs.academicImportance || "No preference"}
 - Distance from home: ${prefs.distanceFromHome || "No preference"}
-- Weather/Region preference: ${prefs.weatherRegion || "No preference"}
 - Area of study: ${prefs.areaOfStudy || "Undecided"}
 
 All survey responses:
-${extraFields}`;
+${extraFields}
 
-  if (excludeColleges.length > 0) {
-    prompt += `\n\nIMPORTANT: Do NOT include any of these colleges (already shown to the student):\n${excludeColleges.map(n => `- ${n}`).join("\n")}\nPick 5 DIFFERENT colleges instead.`;
-  }
+These 3 colleges were selected by our matching engine (provide explanations for EACH):
+${colleges.map((c, i) => `
+${i + 1}. ${c.name} (${c.location})
+   - Fit Category: ${c.fitCategory} | Fit Score: ${c.fitScore}/100
+   - Acceptance Rate: ${c.acceptanceRate}
+   - Net Price: ${c.netPrice}
+   - Graduation Rate: ${c.graduationRate}
+   - Top Programs: ${c.topPrograms.join(", ")}
+   - Setting: ${c.setting}
+   - Student Body: ${c.studentBody}
+   - Avg Starting Salary: ${c.avgStartingSalary}
+`).join("")}
 
-  if (collegeData) {
-    prompt += `\n\n--- REAL COLLEGE DATA FROM US DEPT OF EDUCATION ---\n${collegeData}\n--- END REAL DATA ---\n\nSelect the 5 best-fit colleges from this real data for this specific student. The selected colleges MUST reflect their unique preferences above.`;
-  } else {
-    prompt += `\n\nNote: Could not fetch live data. Recommend 5 colleges using your knowledge, ensuring they match this specific student's preferences.`;
-  }
+Additional context from the Department of Education database about these schools:
+${scorecardData}
+
+Write personalized, vivid explanations for each school. The "name" field in each college MUST match exactly.`;
 
   return prompt;
 }
@@ -713,7 +706,6 @@ serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   let matchId: string | null = null;
 
-  // Helper to update match status in DB
   const updateMatch = async (updates: Record<string, any>) => {
     if (!matchId) return;
     try {
@@ -735,14 +727,12 @@ serve(async (req) => {
       });
     }
 
-    // Check if user is premium (subscribed or admin)
+    // Check premium status
     let isPremiumUser = false;
     const authHeader = req.headers.get("authorization");
     if (authHeader) {
       const sbAdmin = createClient(supabaseUrl, serviceKey);
       const token = authHeader.replace("Bearer ", "");
-      
-      // Decode JWT to get user info (cryptographically signed by auth server)
       let authUserId: string | null = null;
       let authUserEmail: string | null = null;
       try {
@@ -752,15 +742,11 @@ serve(async (req) => {
           authUserId = payload?.sub || null;
           authUserEmail = payload?.email || null;
         }
-      } catch { /* ignore decode failures */ }
-      
+      } catch { /* ignore */ }
+
       if (authUserId) {
         const { data: roleData } = await sbAdmin
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", authUserId)
-          .eq("role", "admin")
-          .maybeSingle();
+          .from("user_roles").select("role").eq("user_id", authUserId).eq("role", "admin").maybeSingle();
         if (roleData) isPremiumUser = true;
 
         if (!isPremiumUser && authUserEmail) {
@@ -775,12 +761,12 @@ serve(async (req) => {
                 if (subs.data.length > 0) isPremiumUser = true;
               }
             }
-          } catch { /* ignore subscription check failures */ }
+          } catch { /* ignore */ }
         }
       }
     }
 
-    // Parse & validate input
+    // Parse input
     const body = await req.json();
     const raw = body?.preferences;
     matchId = typeof body?.matchId === "string" ? body.matchId : null;
@@ -796,10 +782,7 @@ serve(async (req) => {
       });
     }
 
-    // Mark as processing in DB
-    if (matchId) {
-      await updateMatch({ ai_status: "processing" });
-    }
+    if (matchId) await updateMatch({ ai_status: "processing" });
 
     // Sanitize
     const sanitize = (v: any): string => {
@@ -824,107 +807,133 @@ serve(async (req) => {
     }
     console.log("[college-match] Processing:", prefs.areaOfStudy, "campusSize:", prefs.campusSize);
 
-    // Parse exclude list for "discover more"
     const excludeColleges: string[] = Array.isArray(body?.excludeColleges)
       ? body.excludeColleges.filter((n: any) => typeof n === "string").slice(0, 20)
       : [];
 
-    // Ensure AI key exists
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
-      await updateMatch({ ai_status: "failed", ai_error: "Service configuration error" });
-      return new Response(JSON.stringify({ error: "Service configuration error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── Step 1: Fetch college data from primary source ──
+    // ── Step 1: Fetch college data from Scorecard ──
     const scorecard = await fetchFromScorecard(prefs);
     console.log(`[college-match] Scorecard returned ${scorecard.count} colleges`);
 
-    // ── Step 2: AI ranking (with fallback) ──
-    let recommendations: any;
-    let aiFailed = false;
-    let aiErrorMsg = "";
-
-    try {
-      const userPrompt = buildUserPrompt(prefs, scorecard.data, excludeColleges);
-      console.log("[college-match] Sending to AI with", userPrompt.length, "chars");
-
-      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.4,
-        }),
+    if (scorecard.raw.length === 0) {
+      await updateMatch({ ai_status: "failed", ai_error: "No matching colleges found in database" });
+      return new Response(JSON.stringify({ error: "No matching colleges found. Try broadening your preferences." }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-
-      if (!aiResp.ok) {
-        const errBody = await aiResp.text();
-        if (aiResp.status === 429) {
-          await updateMatch({ ai_status: "failed", ai_error: "Rate limit exceeded" });
-          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        if (aiResp.status === 402) {
-          await updateMatch({ ai_status: "failed", ai_error: "AI usage limit reached" });
-          return new Response(JSON.stringify({ error: "AI usage limit reached. Please try again later." }), {
-            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        throw new Error(`AI gateway ${aiResp.status}: ${errBody.substring(0, 200)}`);
-      }
-
-      const aiData = await aiResp.json();
-      const content = aiData.choices?.[0]?.message?.content;
-      if (!content) throw new Error("Empty AI response");
-
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      recommendations = JSON.parse(jsonMatch ? jsonMatch[0] : content);
-      console.log("[college-match] AI generated", recommendations.colleges?.length, "colleges");
-    } catch (aiErr) {
-      console.error("[college-match] AI generation failed:", aiErr);
-      aiFailed = true;
-      aiErrorMsg = aiErr instanceof Error ? aiErr.message : "AI generation failed";
-
-      // Generate fallback from scorecard data
-      if (scorecard.raw.length > 0) {
-        recommendations = generateFallbackResults(scorecard.raw, prefs);
-        console.log("[college-match] Using fallback results from", scorecard.raw.length, "scorecard records");
-      } else {
-        await updateMatch({ ai_status: "failed", ai_error: aiErrorMsg });
-        return new Response(JSON.stringify({ error: "Failed to generate recommendations. Please try again." }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
     }
 
-    // ── Step 3: Save results to database ──
+    // ── Step 2: Rule-based matching (deterministic) ──
+    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges);
+    console.log(`[college-match] Rule engine picked ${matchedColleges.length} colleges:`, matchedColleges.map(c => c.name));
+
+    // ── Step 3: AI explanations for top 3 ──
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    let aiEnhanced = false;
+    let studentProfile = {
+      summary: `Based on your preferences, we found ${matchedColleges.length} schools that match your criteria using U.S. Department of Education data.`,
+      topPriorities: [
+        prefs.areaOfStudy && prefs.areaOfStudy !== "Undecided" ? prefs.areaOfStudy : "Academic quality",
+        prefs.campusSize && prefs.campusSize !== "No preference" ? `${prefs.campusSize} campus` : "Campus fit",
+        prefs.financialAid === "Essential" ? "Financial aid" : "Affordability",
+      ],
+      idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
+    };
+    let comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Safety, Match, and Reach schools.`;
+
+    if (LOVABLE_API_KEY && matchedColleges.length >= 3) {
+      try {
+        const top3 = matchedColleges.slice(0, 3);
+        // Filter scorecard data to only include the matched schools for context
+        const matchedNames = new Set(top3.map(c => c.name.toLowerCase()));
+        const relevantScorecard = scorecard.raw.filter(r => matchedNames.has((r["school.name"] || "").toLowerCase()));
+        const scorecardContext = relevantScorecard.length > 0 ? formatScorecardForAI(relevantScorecard) : "";
+
+        const aiPrompt = buildAIExplanationPrompt(prefs, top3, scorecardContext);
+        console.log("[college-match] Sending AI explanation request for top 3,", aiPrompt.length, "chars");
+
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: AI_EXPLANATION_SYSTEM },
+              { role: "user", content: aiPrompt },
+            ],
+            temperature: 0.4,
+          }),
+        });
+
+        if (!aiResp.ok) {
+          const errBody = await aiResp.text();
+          if (aiResp.status === 429) {
+            console.warn("[college-match] AI rate limited, using rule-based results only");
+          } else if (aiResp.status === 402) {
+            console.warn("[college-match] AI credits exhausted, using rule-based results only");
+          } else {
+            throw new Error(`AI gateway ${aiResp.status}: ${errBody.substring(0, 200)}`);
+          }
+        } else {
+          const aiData = await aiResp.json();
+          const content = aiData.choices?.[0]?.message?.content;
+          if (content) {
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            const aiResult = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+            console.log("[college-match] AI generated explanations for", aiResult.colleges?.length, "colleges");
+
+            // Merge AI explanations into matched colleges (top 3 only)
+            if (aiResult.colleges && Array.isArray(aiResult.colleges)) {
+              for (const aiCollege of aiResult.colleges) {
+                const idx = matchedColleges.findIndex(c => c.name.toLowerCase() === (aiCollege.name || "").toLowerCase());
+                if (idx !== -1 && idx < 3) {
+                  // Overlay AI-generated text fields onto the rule-based data
+                  matchedColleges[idx].whyFit = aiCollege.whyFit || matchedColleges[idx].whyFit;
+                  matchedColleges[idx].prosForStudent = aiCollege.prosForStudent || matchedColleges[idx].prosForStudent;
+                  matchedColleges[idx].consForStudent = aiCollege.consForStudent || matchedColleges[idx].consForStudent;
+                  matchedColleges[idx].challengesForStudent = aiCollege.challengesForStudent || matchedColleges[idx].challengesForStudent;
+                  matchedColleges[idx].howToGetIn = aiCollege.howToGetIn || matchedColleges[idx].howToGetIn;
+                  matchedColleges[idx].campusVibe = aiCollege.campusVibe || matchedColleges[idx].campusVibe;
+                  matchedColleges[idx].notableFeature = aiCollege.notableFeature || matchedColleges[idx].notableFeature;
+                }
+              }
+            }
+
+            // Use AI-generated profile and comparison
+            if (aiResult.studentProfile) studentProfile = aiResult.studentProfile;
+            if (aiResult.comparisonInsight) comparisonInsight = aiResult.comparisonInsight;
+            aiEnhanced = true;
+          }
+        }
+      } catch (aiErr) {
+        console.error("[college-match] AI explanation failed (using rule-based only):", aiErr);
+      }
+    } else if (!LOVABLE_API_KEY) {
+      console.warn("[college-match] LOVABLE_API_KEY not configured, using rule-based results only");
+    }
+
+    // ── Step 4: Build final result and save ──
+    const recommendations = {
+      studentProfile,
+      colleges: matchedColleges,
+      comparisonInsight,
+    };
+
     if (matchId) {
       await updateMatch({
-        college_data: recommendations.colleges || [],
-        student_profile: recommendations.studentProfile || {},
-        comparison_insight: recommendations.comparisonInsight || "",
-        ai_status: aiFailed ? "failed" : "completed",
-        ai_error: aiFailed ? aiErrorMsg : null,
+        college_data: recommendations.colleges,
+        student_profile: recommendations.studentProfile,
+        comparison_insight: recommendations.comparisonInsight,
+        ai_status: "completed",
+        ai_error: null,
         results_generated_at: new Date().toISOString(),
-        results_version: 1,
+        results_version: aiEnhanced ? 2 : 1,
       });
     }
 
     // Mask premium fields for free tier
-    if (!isPremiumUser) {
-      recommendations = maskPremiumFields(recommendations);
-    }
+    const finalResult = isPremiumUser ? recommendations : maskPremiumFields({ ...recommendations });
 
-    return new Response(JSON.stringify(recommendations), {
+    return new Response(JSON.stringify(finalResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
