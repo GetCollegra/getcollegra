@@ -24,7 +24,7 @@ const FeedbackSurveyModal = () => {
         .select("feedback_completed")
         .eq("id", user.id)
         .single();
-      const completed = (data as any)?.feedback_completed ?? false;
+      const completed = data?.feedback_completed ?? false;
       setFeedbackCompleted(completed);
     })();
   }, [user]);
@@ -71,7 +71,7 @@ const FeedbackSurveyModal = () => {
     if (!user) return;
     await supabase
       .from("profiles")
-      .update({ feedback_completed: true } as any)
+      .update({ feedback_completed: true })
       .eq("id", user.id);
     setFeedbackCompleted(true);
     setShowSurvey(false);
