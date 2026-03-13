@@ -105,7 +105,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session) checkSubscription();
+      if (session?.user) {
+        ensureProfile(session.user);
+        checkSubscription();
+      } else setSubscriptionLoading(false);
       else setSubscriptionLoading(false);
     });
 
