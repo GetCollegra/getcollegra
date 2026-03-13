@@ -695,6 +695,40 @@ function maskPremiumFields(recommendations: any): any {
   return recommendations;
 }
 
+const preferenceKeyMap: Record<string, string> = {
+  first_name: "firstName",
+  city_state: "cityState",
+  test_score: "testScore",
+  sat_score: "satScore",
+  act_score: "actScore",
+  campus_size: "campusSize",
+  campus_vibe: "campusVibe",
+  location_type: "locationType",
+  max_cost: "maxCost",
+  acceptance_rate_pref: "acceptanceRatePref",
+  financial_aid: "financialAid",
+  campus_life: "campusLife",
+  academic_importance: "academicImportance",
+  distance_from_home: "distanceFromHome",
+  weather_region: "weatherRegion",
+  area_of_study: "areaOfStudy",
+};
+
+function normalizePreferenceKeys(input: Record<string, any>): Record<string, any> {
+  const normalized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(input)) {
+    const mappedKey = preferenceKeyMap[key] || key;
+    if (
+      normalized[mappedKey] === undefined ||
+      normalized[mappedKey] === null ||
+      normalized[mappedKey] === ""
+    ) {
+      normalized[mappedKey] = value;
+    }
+  }
+  return normalized;
+}
+
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
 serve(async (req) => {
@@ -718,10 +752,16 @@ serve(async (req) => {
   };
 
   try {
-    // Rate limit
+    // Parse input first so we can update match status consistently
+    const body = await req.json().catch(() => null);
+    const raw = body?.preferences;
+    matchId = typeof body?.matchId === "string" ? body.matchId : null;
+
+    // Rate limit only ad-hoc invocations (discover-more). Initial match generation
+    // is already tied to a persisted match row and should not be blocked by shared IP bursts.
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-                     req.headers.get("cf-connecting-ip") || "unknown";
-    if (!(await checkRateLimit(clientIp, "college-match"))) {
+      req.headers.get("cf-connecting-ip") || "unknown";
+    if (!matchId && !(await checkRateLimit(clientIp, "college-match"))) {
       return new Response(JSON.stringify({ error: "Too many requests. Please wait a moment." }), {
         status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -766,23 +806,20 @@ serve(async (req) => {
       }
     }
 
-    // Parse input
-    const body = await req.json();
-    const raw = body?.preferences;
-    matchId = typeof body?.matchId === "string" ? body.matchId : null;
-
     if (!raw || typeof raw !== "object") {
+      await updateMatch({ ai_status: "failed", ai_error: "Invalid input: preferences object required" });
       return new Response(JSON.stringify({ error: "Invalid input: preferences object required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (JSON.stringify(raw).length > 10_000) {
+      await updateMatch({ ai_status: "failed", ai_error: "Input too large" });
       return new Response(JSON.stringify({ error: "Input too large" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (matchId) await updateMatch({ ai_status: "processing" });
+    if (matchId) await updateMatch({ ai_status: "processing", ai_error: null });
 
     // Sanitize
     const sanitize = (v: any): string => {
@@ -791,7 +828,7 @@ serve(async (req) => {
       return /^\{.*\}$/.test(t) ? "" : t.substring(0, 500);
     };
 
-    const prefs: Record<string, any> = {};
+    const sanitizedPrefs: Record<string, any> = {};
     for (const [key, val] of Object.entries(raw)) {
       if (key === "allResponses" && typeof val === "object" && val !== null) {
         const cleaned: Record<string, string> = {};
@@ -799,12 +836,14 @@ serve(async (req) => {
           const s = sanitize(v);
           if (s) cleaned[k] = s;
         }
-        prefs[key] = cleaned;
+        sanitizedPrefs[key] = cleaned;
       } else {
         const s = sanitize(val);
-        prefs[key] = s || raw[key];
+        sanitizedPrefs[key] = s || raw[key];
       }
     }
+
+    const prefs = normalizePreferenceKeys(sanitizedPrefs);
     console.log("[college-match] Processing:", prefs.areaOfStudy, "campusSize:", prefs.campusSize);
 
     const excludeColleges: string[] = Array.isArray(body?.excludeColleges)
