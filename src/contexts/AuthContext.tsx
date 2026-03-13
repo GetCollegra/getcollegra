@@ -34,6 +34,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
+  // Ensure a profiles row exists for the current user (idempotent)
+  const ensureProfile = useCallback(async (currentUser: User) => {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+      if (!data) {
+        await supabase.from("profiles").upsert({
+          id: currentUser.id,
+          email: currentUser.email ?? null,
+          first_name: currentUser.user_metadata?.first_name ?? currentUser.email?.split("@")[0] ?? null,
+        }, { onConflict: "id" });
+      }
+    } catch {
+      // silent — profile will be created on next session
+    }
+  }, []);
+
   const checkSubscription = useCallback(async () => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     if (!currentSession) {
