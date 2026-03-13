@@ -865,7 +865,7 @@ serve(async (req) => {
     const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges);
     console.log(`[college-match] Rule engine picked ${matchedColleges.length} colleges:`, matchedColleges.map(c => c.name));
 
-    // ── Step 3: AI explanations for top 3 ──
+    // ── Step 3: AI explanations for top 3 (with model failover) ──
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     let aiEnhanced = false;
     let studentProfile = {
@@ -879,72 +879,96 @@ serve(async (req) => {
     };
     let comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Safety, Match, and Reach schools.`;
 
+    // Failover model chain — if one model is down/rate-limited, try the next
+    const AI_MODELS = [
+      "google/gemini-2.5-flash",
+      "google/gemini-3-flash-preview",
+      "openai/gpt-5-mini",
+      "google/gemini-2.5-flash-lite",
+    ];
+
     if (LOVABLE_API_KEY && matchedColleges.length >= 3) {
-      try {
-        const top3 = matchedColleges.slice(0, 3);
-        // Filter scorecard data to only include the matched schools for context
-        const matchedNames = new Set(top3.map(c => c.name.toLowerCase()));
-        const relevantScorecard = scorecard.raw.filter(r => matchedNames.has((r["school.name"] || "").toLowerCase()));
-        const scorecardContext = relevantScorecard.length > 0 ? formatScorecardForAI(relevantScorecard) : "";
+      const top3 = matchedColleges.slice(0, 3);
+      const matchedNames = new Set(top3.map(c => c.name.toLowerCase()));
+      const relevantScorecard = scorecard.raw.filter(r => matchedNames.has((r["school.name"] || "").toLowerCase()));
+      const scorecardContext = relevantScorecard.length > 0 ? formatScorecardForAI(relevantScorecard) : "";
+      const aiPrompt = buildAIExplanationPrompt(prefs, top3, scorecardContext);
 
-        const aiPrompt = buildAIExplanationPrompt(prefs, top3, scorecardContext);
-        console.log("[college-match] Sending AI explanation request for top 3,", aiPrompt.length, "chars");
+      for (const model of AI_MODELS) {
+        try {
+          console.log(`[college-match] Trying AI model: ${model} (${aiPrompt.length} chars)`);
 
-        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: AI_EXPLANATION_SYSTEM },
-              { role: "user", content: aiPrompt },
-            ],
-            temperature: 0.4,
-          }),
-        });
+          const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: "system", content: AI_EXPLANATION_SYSTEM },
+                { role: "user", content: aiPrompt },
+              ],
+              temperature: 0.4,
+            }),
+          });
 
-        if (!aiResp.ok) {
-          const errBody = await aiResp.text();
-          if (aiResp.status === 429) {
-            console.warn("[college-match] AI rate limited, using rule-based results only");
-          } else if (aiResp.status === 402) {
-            console.warn("[college-match] AI credits exhausted, using rule-based results only");
-          } else {
-            throw new Error(`AI gateway ${aiResp.status}: ${errBody.substring(0, 200)}`);
+          if (!aiResp.ok) {
+            const errBody = await aiResp.text();
+            if (aiResp.status === 429) {
+              console.warn(`[college-match] ${model} rate limited, trying next model`);
+              continue; // try next model
+            } else if (aiResp.status === 402) {
+              console.warn(`[college-match] ${model} credits exhausted, trying next model`);
+              continue; // try next model
+            } else if (aiResp.status >= 500) {
+              console.warn(`[college-match] ${model} server error ${aiResp.status}, trying next model`);
+              continue; // try next model
+            } else {
+              // 4xx client error (not 429/402) — don't failover, it won't help
+              console.error(`[college-match] ${model} client error ${aiResp.status}: ${errBody.substring(0, 200)}`);
+              break;
+            }
           }
-        } else {
+
           const aiData = await aiResp.json();
           const content = aiData.choices?.[0]?.message?.content;
-          if (content) {
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            const aiResult = JSON.parse(jsonMatch ? jsonMatch[0] : content);
-            console.log("[college-match] AI generated explanations for", aiResult.colleges?.length, "colleges");
+          if (!content) {
+            console.warn(`[college-match] ${model} returned empty content, trying next model`);
+            continue;
+          }
 
-            // Merge AI explanations into matched colleges (top 3 only)
-            if (aiResult.colleges && Array.isArray(aiResult.colleges)) {
-              for (const aiCollege of aiResult.colleges) {
-                const idx = matchedColleges.findIndex(c => c.name.toLowerCase() === (aiCollege.name || "").toLowerCase());
-                if (idx !== -1 && idx < 3) {
-                  // Overlay AI-generated text fields onto the rule-based data
-                  matchedColleges[idx].whyFit = aiCollege.whyFit || matchedColleges[idx].whyFit;
-                  matchedColleges[idx].prosForStudent = aiCollege.prosForStudent || matchedColleges[idx].prosForStudent;
-                  matchedColleges[idx].consForStudent = aiCollege.consForStudent || matchedColleges[idx].consForStudent;
-                  matchedColleges[idx].challengesForStudent = aiCollege.challengesForStudent || matchedColleges[idx].challengesForStudent;
-                  matchedColleges[idx].howToGetIn = aiCollege.howToGetIn || matchedColleges[idx].howToGetIn;
-                  matchedColleges[idx].campusVibe = aiCollege.campusVibe || matchedColleges[idx].campusVibe;
-                  matchedColleges[idx].notableFeature = aiCollege.notableFeature || matchedColleges[idx].notableFeature;
-                }
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          const aiResult = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+          console.log(`[college-match] ${model} generated explanations for`, aiResult.colleges?.length, "colleges");
+
+          // Merge AI explanations into matched colleges (top 3 only)
+          if (aiResult.colleges && Array.isArray(aiResult.colleges)) {
+            for (const aiCollege of aiResult.colleges) {
+              const idx = matchedColleges.findIndex(c => c.name.toLowerCase() === (aiCollege.name || "").toLowerCase());
+              if (idx !== -1 && idx < 3) {
+                matchedColleges[idx].whyFit = aiCollege.whyFit || matchedColleges[idx].whyFit;
+                matchedColleges[idx].prosForStudent = aiCollege.prosForStudent || matchedColleges[idx].prosForStudent;
+                matchedColleges[idx].consForStudent = aiCollege.consForStudent || matchedColleges[idx].consForStudent;
+                matchedColleges[idx].challengesForStudent = aiCollege.challengesForStudent || matchedColleges[idx].challengesForStudent;
+                matchedColleges[idx].howToGetIn = aiCollege.howToGetIn || matchedColleges[idx].howToGetIn;
+                matchedColleges[idx].campusVibe = aiCollege.campusVibe || matchedColleges[idx].campusVibe;
+                matchedColleges[idx].notableFeature = aiCollege.notableFeature || matchedColleges[idx].notableFeature;
               }
             }
-
-            // Use AI-generated profile and comparison
-            if (aiResult.studentProfile) studentProfile = aiResult.studentProfile;
-            if (aiResult.comparisonInsight) comparisonInsight = aiResult.comparisonInsight;
-            aiEnhanced = true;
           }
+
+          if (aiResult.studentProfile) studentProfile = aiResult.studentProfile;
+          if (aiResult.comparisonInsight) comparisonInsight = aiResult.comparisonInsight;
+          aiEnhanced = true;
+          break; // success — stop trying models
+
+        } catch (aiErr) {
+          console.error(`[college-match] ${model} failed:`, aiErr);
+          continue; // try next model
         }
-      } catch (aiErr) {
-        console.error("[college-match] AI explanation failed (using rule-based only):", aiErr);
+      }
+
+      if (!aiEnhanced) {
+        console.warn("[college-match] All AI models failed — returning rule-based results with fallback text");
       }
     } else if (!LOVABLE_API_KEY) {
       console.warn("[college-match] LOVABLE_API_KEY not configured, using rule-based results only");
