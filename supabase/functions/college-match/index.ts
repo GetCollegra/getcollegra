@@ -763,24 +763,16 @@ serve(async (req) => {
           .maybeSingle();
         if (roleData) isPremiumUser = true;
 
-        if (!isPremiumUser) {
+        if (!isPremiumUser && authUserEmail) {
           try {
-            // Decode the user's JWT to get email, then check Stripe directly
-            const tokenParts = token.split('.');
-            if (tokenParts.length === 3) {
-              const payload = JSON.parse(atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/')));
-              const userEmail = payload?.email;
-              if (userEmail) {
-                const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-                if (stripeKey) {
-                  const { default: Stripe } = await import("https://esm.sh/stripe@18.5.0");
-                  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-                  const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-                  if (customers.data.length > 0) {
-                    const subs = await stripe.subscriptions.list({ customer: customers.data[0].id, status: "active", limit: 1 });
-                    if (subs.data.length > 0) isPremiumUser = true;
-                  }
-                }
+            const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+            if (stripeKey) {
+              const { default: Stripe } = await import("https://esm.sh/stripe@18.5.0");
+              const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+              const customers = await stripe.customers.list({ email: authUserEmail, limit: 1 });
+              if (customers.data.length > 0) {
+                const subs = await stripe.subscriptions.list({ customer: customers.data[0].id, status: "active", limit: 1 });
+                if (subs.data.length > 0) isPremiumUser = true;
               }
             }
           } catch { /* ignore subscription check failures */ }
