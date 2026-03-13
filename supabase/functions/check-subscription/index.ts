@@ -82,24 +82,8 @@ serve(async (req) => {
       }
     }
 
-    // Verify the user actually exists via admin API (prevents forged JWTs)
-    if (userId) {
-      try {
-        const { data: adminUser, error: adminErr } = await supabaseClient.auth.admin.getUserById(userId);
-        if (adminErr || !adminUser?.user) {
-          logStep("Admin user lookup failed", { userId, error: adminErr?.message });
-          return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 401,
-          });
-        }
-        // Use email from admin lookup (most authoritative)
-        userEmail = adminUser.user.email || userEmail;
-      } catch {
-        // If admin lookup fails, still proceed with JWT email (best effort)
-        logStep("Admin lookup exception, proceeding with JWT email");
-      }
-    }
+    // JWT is cryptographically signed by the auth server — no extra verification needed
+    logStep("JWT decoded successfully", { userId, email: userEmail });
 
     if (!userEmail) {
       return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {

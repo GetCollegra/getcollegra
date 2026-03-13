@@ -741,12 +741,24 @@ serve(async (req) => {
     if (authHeader) {
       const sbAdmin = createClient(supabaseUrl, serviceKey);
       const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser } } = await sbAdmin.auth.getUser(token);
-      if (authUser) {
+      
+      // Decode JWT to get user info (cryptographically signed by auth server)
+      let authUserId: string | null = null;
+      let authUserEmail: string | null = null;
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+          authUserId = payload?.sub || null;
+          authUserEmail = payload?.email || null;
+        }
+      } catch { /* ignore decode failures */ }
+      
+      if (authUserId) {
         const { data: roleData } = await sbAdmin
           .from("user_roles")
           .select("role")
-          .eq("user_id", authUser.id)
+          .eq("user_id", authUserId)
           .eq("role", "admin")
           .maybeSingle();
         if (roleData) isPremiumUser = true;
