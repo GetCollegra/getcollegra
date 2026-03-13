@@ -752,10 +752,16 @@ serve(async (req) => {
   };
 
   try {
-    // Rate limit
+    // Parse input first so we can update match status consistently
+    const body = await req.json().catch(() => null);
+    const raw = body?.preferences;
+    matchId = typeof body?.matchId === "string" ? body.matchId : null;
+
+    // Rate limit only ad-hoc invocations (discover-more). Initial match generation
+    // is already tied to a persisted match row and should not be blocked by shared IP bursts.
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-                     req.headers.get("cf-connecting-ip") || "unknown";
-    if (!(await checkRateLimit(clientIp, "college-match"))) {
+      req.headers.get("cf-connecting-ip") || "unknown";
+    if (!matchId && !(await checkRateLimit(clientIp, "college-match"))) {
       return new Response(JSON.stringify({ error: "Too many requests. Please wait a moment." }), {
         status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -800,23 +806,20 @@ serve(async (req) => {
       }
     }
 
-    // Parse input
-    const body = await req.json();
-    const raw = body?.preferences;
-    matchId = typeof body?.matchId === "string" ? body.matchId : null;
-
     if (!raw || typeof raw !== "object") {
+      await updateMatch({ ai_status: "failed", ai_error: "Invalid input: preferences object required" });
       return new Response(JSON.stringify({ error: "Invalid input: preferences object required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (JSON.stringify(raw).length > 10_000) {
+      await updateMatch({ ai_status: "failed", ai_error: "Input too large" });
       return new Response(JSON.stringify({ error: "Input too large" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (matchId) await updateMatch({ ai_status: "processing" });
+    if (matchId) await updateMatch({ ai_status: "processing", ai_error: null });
 
     // Sanitize
     const sanitize = (v: any): string => {
