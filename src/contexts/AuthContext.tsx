@@ -76,7 +76,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const { data, error } = await supabase.functions.invoke("check-subscription");
-      if (error) throw error;
+      if (error) {
+        // 401 = expired/invalid session — treat as not subscribed
+        setIsSubscribed(false);
+        return;
+      }
       setIsSubscribed(data?.subscribed ?? false);
       setSubscriptionEnd(data?.subscription_end ?? null);
     } catch {
