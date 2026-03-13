@@ -495,6 +495,7 @@ const QuizResults = () => {
       if (!retryPrefs || !recs.colleges || recs.colleges.length < 3) return;
 
       console.log("[QuizResults] Triggering AI enhancement for match:", mId);
+      setAiEnhancing(true);
       const { data, error: fnErr } = await supabase.functions.invoke("enhance-college-explanations", {
         body: { matchId: mId, preferences: retryPrefs, colleges: recs.colleges },
       });
