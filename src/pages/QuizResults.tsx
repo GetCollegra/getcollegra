@@ -450,8 +450,16 @@ const QuizResults = () => {
           if (status === "completed" || status === "failed") {
             const recs = buildRecommendations(match);
             if (!recs) {
-              const aiError = (match as any).ai_error;
-              setError(aiError || "No results were generated. Please try the quiz again.");
+              if (status === "failed") {
+                const aiError = (match as any).ai_error;
+                setError(
+                  aiError
+                    ? `Results generation encountered an issue: ${aiError}. Please try the quiz again.`
+                    : "Results generation failed. Please try the quiz again."
+                );
+              } else {
+                setError("No results were generated. Please try the quiz again.");
+              }
             } else {
               setRecommendations(recs);
             }

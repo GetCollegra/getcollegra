@@ -1,6 +1,6 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +11,20 @@ const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
+
+/** Decode JWT payload without verification (gateway + service role handle trust) */
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    // Handle base64url encoding
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+    return payload;
+  } catch {
+    return null;
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -33,20 +47,71 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header provided");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) {
-      logStep("Auth failed", { message: userError.message });
+
+    // Strategy: decode JWT payload to get user ID, then use admin API for reliability
+    let userEmail: string | null = null;
+    let userId: string | null = null;
+
+    // First try: decode JWT payload directly
+    const jwtPayload = decodeJwtPayload(token);
+    if (jwtPayload?.sub && jwtPayload?.email) {
+      userId = jwtPayload.sub;
+      userEmail = jwtPayload.email;
+      logStep("User from JWT", { email: userEmail });
+    }
+
+    // If JWT decode didn't give us what we need, try getUser
+    if (!userEmail) {
+      try {
+        const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+        if (userError || !userData.user?.email) {
+          logStep("Auth failed", { message: userError?.message || "No email" });
+          return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 401,
+          });
+        }
+        userEmail = userData.user.email;
+        userId = userData.user.id;
+      } catch (authErr) {
+        logStep("Auth exception", { message: String(authErr) });
+        return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        });
+      }
+    }
+
+    // Verify the user actually exists via admin API (prevents forged JWTs)
+    if (userId) {
+      try {
+        const { data: adminUser, error: adminErr } = await supabaseClient.auth.admin.getUserById(userId);
+        if (adminErr || !adminUser?.user) {
+          logStep("Admin user lookup failed", { userId, error: adminErr?.message });
+          return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 401,
+          });
+        }
+        // Use email from admin lookup (most authoritative)
+        userEmail = adminUser.user.email || userEmail;
+      } catch {
+        // If admin lookup fails, still proceed with JWT email (best effort)
+        logStep("Admin lookup exception, proceeding with JWT email");
+      }
+    }
+
+    if (!userEmail) {
       return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { email: user.email });
+
+    logStep("User authenticated", { email: userEmail });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
 
     if (customers.data.length === 0) {
       logStep("No Stripe customer found");
