@@ -582,101 +582,6 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   });
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// AI EXPLANATION LAYER — personalizes top 3 colleges
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const AI_EXPLANATION_SYSTEM = `You are a college admissions expert writing personalized advice for a student. You will be given the student's preferences and 3 matched colleges with their data.
-
-Your job is to write compelling, personalized explanations for EACH of the 3 colleges plus an overall student profile and comparison.
-
-TONE: Address the student directly as "you" / "your". If their first name is provided, use it naturally. NEVER use "he/she/they/the student".
-
-Quote the student's own words from their preferences when relevant (e.g., "You said you want a 'spirited' campus…").
-
-Use EXACT data values — do not fabricate statistics.
-
-Return a JSON object with this exact structure:
-{
-  "studentProfile": {
-    "summary": "2-3 sentences about the student's preferences and what drives their ideal school choice. Lead with campus culture.",
-    "topPriorities": ["Priority 1", "Priority 2", "Priority 3"],
-    "idealSchoolType": "Brief description of their ideal school environment"
-  },
-  "colleges": [
-    {
-      "name": "Exact college name as given",
-      "whyFit": "2-3 sentences — lead with campus culture match, then academics. Quote student's words.",
-      "prosForStudent": ["Pro 1: culture/vibe match", "Pro 2: academic fit", "Pro 3: practical benefit"],
-      "consForStudent": ["Con 1", "Con 2"],
-      "challengesForStudent": ["Challenge specific to this student's profile"],
-      "howToGetIn": "5-7 detailed, actionable sentences: (1) GPA/test score comparison, (2) extracurriculars to strengthen app, (3) essay topic suggestions, (4) ED/EA strategy, (5) demonstrated interest steps.",
-      "campusVibe": "3-4 vivid sentences about the social scene, sports culture, Greek life, weekend activities, nearby amenities.",
-      "notableFeature": "One unique thing about this school for THIS student"
-    }
-  ],
-  "comparisonInsight": "5-8 sentences comparing all the student's matched schools. Lead with campus culture differences. Reference their specific preferences."
-}
-
-IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
-
-function buildAIExplanationPrompt(prefs: Record<string, any>, colleges: any[], scorecardData: string): string {
-  const allResponses = prefs.allResponses || {};
-  const extraFields = Object.entries(allResponses)
-    .filter(([key]) => key !== "email")
-    .map(([key, val]) => `- ${key.replace(/_/g, " ")}: ${val}`)
-    .join("\n");
-
-  const sat = prefs.satScore || "";
-  const act = prefs.actScore || "";
-  let testDisplay = prefs.testScore || "None";
-  if (sat || act) {
-    const parts = [];
-    if (sat) parts.push(`SAT: ${sat}`);
-    if (act) parts.push(`ACT: ${act}`);
-    testDisplay = parts.join(", ");
-  }
-
-  let prompt = `Student preferences:
-- First name: ${prefs.firstName || "Not provided"}
-- Home location: ${prefs.cityState || "Not specified"}
-- Weighted GPA: ${prefs.gpa || "Not specified"}
-- Test Scores: ${testDisplay}
-- Campus size: ${prefs.campusSize || "No preference"}
-- Campus vibe: ${prefs.campusVibe || "No preference"}
-- Location type: ${prefs.locationType || "No preference"}
-- Max cost/year: ${prefs.maxCost || "No preference"}
-- Acceptance rate comfort: ${prefs.acceptanceRatePref || "No preference"}
-- Financial aid importance: ${prefs.financialAid || "Important"}
-- Campus life interests: ${prefs.campusLife || "No preference"}
-- Academic importance: ${prefs.academicImportance || "No preference"}
-- Distance from home: ${prefs.distanceFromHome || "No preference"}
-- Area of study: ${prefs.areaOfStudy || "Undecided"}
-
-All survey responses:
-${extraFields}
-
-These 3 colleges were selected by our matching engine (provide explanations for EACH):
-${colleges.map((c, i) => `
-${i + 1}. ${c.name} (${c.location})
-   - Fit Category: ${c.fitCategory} | Fit Score: ${c.fitScore}/100
-   - Acceptance Rate: ${c.acceptanceRate}
-   - Net Price: ${c.netPrice}
-   - Graduation Rate: ${c.graduationRate}
-   - Top Programs: ${c.topPrograms.join(", ")}
-   - Setting: ${c.setting}
-   - Student Body: ${c.studentBody}
-   - Avg Starting Salary: ${c.avgStartingSalary}
-`).join("")}
-
-Additional context from the Department of Education database about these schools:
-${scorecardData}
-
-Write personalized, vivid explanations for each school. The "name" field in each college MUST match exactly.`;
-
-  return prompt;
-}
-
 // ─── Premium field masking ───────────────────────────────────────────────────
 
 const PREMIUM_FIELDS = [
@@ -752,13 +657,11 @@ serve(async (req) => {
   };
 
   try {
-    // Parse input first so we can update match status consistently
     const body = await req.json().catch(() => null);
     const raw = body?.preferences;
     matchId = typeof body?.matchId === "string" ? body.matchId : null;
 
-    // Rate limit only ad-hoc invocations (discover-more). Initial match generation
-    // is already tied to a persisted match row and should not be blocked by shared IP bursts.
+    // Rate limit only ad-hoc invocations (discover-more)
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") || "unknown";
     if (!matchId && !(await checkRateLimit(clientIp, "college-match"))) {
@@ -865,10 +768,8 @@ serve(async (req) => {
     const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges);
     console.log(`[college-match] Rule engine picked ${matchedColleges.length} colleges:`, matchedColleges.map(c => c.name));
 
-    // ── Step 3: AI explanations for top 3 (with model failover) ──
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    let aiEnhanced = false;
-    let studentProfile = {
+    // ── Step 3: Build student profile (rule-based) ──
+    const studentProfile = {
       summary: `Based on your preferences, we found ${matchedColleges.length} schools that match your criteria using U.S. Department of Education data.`,
       topPriorities: [
         prefs.areaOfStudy && prefs.areaOfStudy !== "Undecided" ? prefs.areaOfStudy : "Academic quality",
@@ -877,104 +778,9 @@ serve(async (req) => {
       ],
       idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
     };
-    let comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Safety, Match, and Reach schools.`;
+    const comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Safety, Match, and Reach schools.`;
 
-    // Failover model chain — if one model is down/rate-limited, try the next
-    const AI_MODELS = [
-      "google/gemini-2.5-flash",
-      "google/gemini-3-flash-preview",
-      "openai/gpt-5-mini",
-      "google/gemini-2.5-flash-lite",
-    ];
-
-    if (LOVABLE_API_KEY && matchedColleges.length >= 3) {
-      const top3 = matchedColleges.slice(0, 3);
-      const matchedNames = new Set(top3.map(c => c.name.toLowerCase()));
-      const relevantScorecard = scorecard.raw.filter(r => matchedNames.has((r["school.name"] || "").toLowerCase()));
-      const scorecardContext = relevantScorecard.length > 0 ? formatScorecardForAI(relevantScorecard) : "";
-      const aiPrompt = buildAIExplanationPrompt(prefs, top3, scorecardContext);
-
-      for (const model of AI_MODELS) {
-        try {
-          console.log(`[college-match] Trying AI model: ${model} (${aiPrompt.length} chars)`);
-
-          const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model,
-              messages: [
-                { role: "system", content: AI_EXPLANATION_SYSTEM },
-                { role: "user", content: aiPrompt },
-              ],
-              temperature: 0.4,
-            }),
-          });
-
-          if (!aiResp.ok) {
-            const errBody = await aiResp.text();
-            if (aiResp.status === 429) {
-              console.warn(`[college-match] ${model} rate limited, trying next model`);
-              continue; // try next model
-            } else if (aiResp.status === 402) {
-              console.warn(`[college-match] ${model} credits exhausted, trying next model`);
-              continue; // try next model
-            } else if (aiResp.status >= 500) {
-              console.warn(`[college-match] ${model} server error ${aiResp.status}, trying next model`);
-              continue; // try next model
-            } else {
-              // 4xx client error (not 429/402) — don't failover, it won't help
-              console.error(`[college-match] ${model} client error ${aiResp.status}: ${errBody.substring(0, 200)}`);
-              break;
-            }
-          }
-
-          const aiData = await aiResp.json();
-          const content = aiData.choices?.[0]?.message?.content;
-          if (!content) {
-            console.warn(`[college-match] ${model} returned empty content, trying next model`);
-            continue;
-          }
-
-          const jsonMatch = content.match(/\{[\s\S]*\}/);
-          const aiResult = JSON.parse(jsonMatch ? jsonMatch[0] : content);
-          console.log(`[college-match] ${model} generated explanations for`, aiResult.colleges?.length, "colleges");
-
-          // Merge AI explanations into matched colleges (top 3 only)
-          if (aiResult.colleges && Array.isArray(aiResult.colleges)) {
-            for (const aiCollege of aiResult.colleges) {
-              const idx = matchedColleges.findIndex(c => c.name.toLowerCase() === (aiCollege.name || "").toLowerCase());
-              if (idx !== -1 && idx < 3) {
-                matchedColleges[idx].whyFit = aiCollege.whyFit || matchedColleges[idx].whyFit;
-                matchedColleges[idx].prosForStudent = aiCollege.prosForStudent || matchedColleges[idx].prosForStudent;
-                matchedColleges[idx].consForStudent = aiCollege.consForStudent || matchedColleges[idx].consForStudent;
-                matchedColleges[idx].challengesForStudent = aiCollege.challengesForStudent || matchedColleges[idx].challengesForStudent;
-                matchedColleges[idx].howToGetIn = aiCollege.howToGetIn || matchedColleges[idx].howToGetIn;
-                matchedColleges[idx].campusVibe = aiCollege.campusVibe || matchedColleges[idx].campusVibe;
-                matchedColleges[idx].notableFeature = aiCollege.notableFeature || matchedColleges[idx].notableFeature;
-              }
-            }
-          }
-
-          if (aiResult.studentProfile) studentProfile = aiResult.studentProfile;
-          if (aiResult.comparisonInsight) comparisonInsight = aiResult.comparisonInsight;
-          aiEnhanced = true;
-          break; // success — stop trying models
-
-        } catch (aiErr) {
-          console.error(`[college-match] ${model} failed:`, aiErr);
-          continue; // try next model
-        }
-      }
-
-      if (!aiEnhanced) {
-        console.warn("[college-match] All AI models failed — returning rule-based results with fallback text");
-      }
-    } else if (!LOVABLE_API_KEY) {
-      console.warn("[college-match] LOVABLE_API_KEY not configured, using rule-based results only");
-    }
-
-    // ── Step 4: Build final result and save ──
+    // ── Step 4: Build final result and save as completed (version 1 = rule-based) ──
     const recommendations = {
       studentProfile,
       colleges: matchedColleges,
@@ -989,7 +795,7 @@ serve(async (req) => {
         ai_status: "completed",
         ai_error: null,
         results_generated_at: new Date().toISOString(),
-        results_version: aiEnhanced ? 2 : 1,
+        results_version: 1,
       });
     }
 

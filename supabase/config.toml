@@ -27,3 +27,5 @@ project_id = "iyaflygbuoghplhykhzd"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = false
+  [functions.enhance-college-explanations]
+    verify_jwt = false
