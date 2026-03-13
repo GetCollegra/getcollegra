@@ -47,19 +47,24 @@ const FeedbackSurveyModal = () => {
     if (!showSurvey) return;
 
     const handleMessage = async (event: MessageEvent) => {
+      let payload: Record<string, unknown> | null = null;
+
       if (typeof event.data === "string") {
         try {
           const parsed = JSON.parse(event.data);
           if (parsed?.event === "Tally.FormSubmitted") {
-            await markCompleted();
+            payload = parsed;
           }
         } catch {
           // not JSON, ignore
         }
       }
-      // Tally also sends object payloads
-      if (event.data?.event === "Tally.FormSubmitted") {
-        await markCompleted();
+      if (!payload && event.data?.event === "Tally.FormSubmitted") {
+        payload = event.data;
+      }
+
+      if (payload) {
+        await saveFeedbackAndComplete(payload);
       }
     };
 
