@@ -514,6 +514,8 @@ const QuizResults = () => {
       });
     } catch (err) {
       console.warn("[QuizResults] AI enhancement error:", err);
+    } finally {
+      setAiEnhancing(false);
     }
   };
 
