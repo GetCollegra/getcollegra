@@ -487,6 +487,34 @@ const QuizResults = () => {
     };
   };
 
+  // Trigger AI enhancement for rule-based results (version 1)
+  const triggerAIEnhancement = async (mId: string, recs: Recommendations, rawPrefs: unknown) => {
+    try {
+      const retryPrefs = buildRetryPreferences(rawPrefs);
+      if (!retryPrefs || !recs.colleges || recs.colleges.length < 3) return;
+
+      console.log("[QuizResults] Triggering AI enhancement for match:", mId);
+      const { data, error: fnErr } = await supabase.functions.invoke("enhance-college-explanations", {
+        body: { matchId: mId, preferences: retryPrefs, colleges: recs.colleges },
+      });
+
+      if (fnErr || !data?.enhanced) {
+        console.warn("[QuizResults] AI enhancement failed:", fnErr || data?.error);
+        return;
+      }
+      if (data.alreadyDone) return;
+
+      console.log("[QuizResults] AI enhancement succeeded, updating UI");
+      setRecommendations({
+        colleges: data.colleges as College[],
+        studentProfile: data.studentProfile || recs.studentProfile,
+        comparisonInsight: data.comparisonInsight || recs.comparisonInsight,
+      });
+    } catch (err) {
+      console.warn("[QuizResults] AI enhancement error:", err);
+    }
+  };
+
   useEffect(() => {
     const matchId = searchParams.get("match_id");
 
@@ -495,7 +523,7 @@ const QuizResults = () => {
       let cancelled = false;
       let pollCount = 0;
       let recoveryTriggered = false;
-      const MAX_POLLS = 20; // 20 × 3s = 60s max
+      const MAX_POLLS = 20;
 
       const loadMatch = async () => {
         try {
@@ -513,64 +541,49 @@ const QuizResults = () => {
             return;
           }
 
-          // Extract survey context from raw_preferences
           extractSurveyContext((match as any).raw_preferences);
-
           const status = (match as any).ai_status || "completed";
+          const version = (match as any).results_version || 1;
 
           if (status === "completed" || status === "failed") {
             const recs = buildRecommendations(match);
             if (!recs) {
-              if (status === "failed") {
-                const aiError = (match as any).ai_error;
-                setError(
-                  aiError
-                    ? `Results generation encountered an issue: ${aiError}. Please try the quiz again.`
-                    : "Results generation failed. Please try the quiz again."
-                );
-              } else {
-                setError("No results were generated. Please try the quiz again.");
-              }
+              setError(status === "failed"
+                ? `Results generation encountered an issue: ${(match as any).ai_error || "Unknown error"}. Please try the quiz again.`
+                : "No results were generated. Please try the quiz again.");
             } else {
               setRecommendations(recs);
+              // If rule-based only (version 1), trigger AI enhancement in background
+              if (version < 2 && !cancelled) {
+                triggerAIEnhancement(matchId, recs, (match as any).raw_preferences);
+              }
             }
             setLoading(false);
             return;
           }
 
-          // Recover rare stuck pending rows (e.g. interrupted initial invocation)
+          // Recover stuck pending rows
           if (status === "pending" && !recoveryTriggered) {
             const createdAt = Date.parse(String((match as any).created_at || ""));
             const ageMs = Number.isFinite(createdAt) ? Date.now() - createdAt : 0;
-
             if (ageMs > 8000) {
               const retryPreferences = buildRetryPreferences((match as any).raw_preferences);
               if (retryPreferences) {
                 recoveryTriggered = true;
                 supabase.functions.invoke("college-match", {
                   body: { preferences: retryPreferences, matchId },
-                }).then(({ error: retryError }) => {
-                  if (retryError) {
-                    console.error("[QuizResults] Recovery invoke failed:", retryError);
-                  }
-                }).catch((retryErr) => {
-                  console.error("[QuizResults] Recovery invoke crashed:", retryErr);
-                });
+                }).catch(err => console.error("[QuizResults] Recovery failed:", err));
               }
             }
           }
 
-          // Still pending/processing — poll
           pollCount++;
           if (pollCount >= MAX_POLLS && !cancelled) {
             setError("Results are taking longer than expected. Please refresh the page or try again.");
             setLoading(false);
             return;
           }
-
-          if (!cancelled) {
-            setTimeout(loadMatch, 3000);
-          }
+          if (!cancelled) setTimeout(loadMatch, 3000);
         } catch {
           if (!cancelled) {
             setError("Failed to load results. Please try again.");
@@ -585,7 +598,6 @@ const QuizResults = () => {
 
     // ── Priority 2: Legacy router state ──
     if (routerState?.recommendations) {
-      console.log("Using pre-fetched results from router state");
       setRecommendations(routerState.recommendations);
       setLoading(false);
       return;
@@ -611,12 +623,16 @@ const QuizResults = () => {
         if (matches && matches.length > 0) {
           const match = matches[0];
           const status = (match as any).ai_status || "completed";
+          const version = (match as any).results_version || 1;
 
           if (status === "completed" || status === "failed") {
             const recs = buildRecommendations(match);
             if (recs) {
               setRecommendations(recs);
               extractSurveyContext((match as any).raw_preferences);
+              if (version < 2) {
+                triggerAIEnhancement(match.id, recs, (match as any).raw_preferences);
+              }
             } else {
               setError("No results found. Please take the quiz first.");
             }
