@@ -582,6 +582,192 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   });
 }
 
+// ─── Premium field masking ───────────────────────────────────────────────────
+
+const PREMIUM_FIELDS = [
+  "tuitionInState", "tuitionOutOfState", "avgFinancialAid",
+  "studentFacultyRatio", "studentBody", "campusSize",
+  "avgStartingSalary", "graduationRate",
+];
+
+function maskPremiumFields(recommendations: any): any {
+  if (!recommendations?.colleges || !Array.isArray(recommendations.colleges)) return recommendations;
+  recommendations.colleges = recommendations.colleges.map((c: any) => {
+    const masked = { ...c };
+    for (const f of PREMIUM_FIELDS) masked[f] = "Premium";
+    return masked;
+  });
+  return recommendations;
+}
+
+const preferenceKeyMap: Record<string, string> = {
+  first_name: "firstName",
+  city_state: "cityState",
+  test_score: "testScore",
+  sat_score: "satScore",
+  act_score: "actScore",
+  campus_size: "campusSize",
+  campus_vibe: "campusVibe",
+  location_type: "locationType",
+  max_cost: "maxCost",
+  acceptance_rate_pref: "acceptanceRatePref",
+  financial_aid: "financialAid",
+  campus_life: "campusLife",
+  academic_importance: "academicImportance",
+  distance_from_home: "distanceFromHome",
+  weather_region: "weatherRegion",
+  area_of_study: "areaOfStudy",
+};
+
+function normalizePreferenceKeys(input: Record<string, any>): Record<string, any> {
+  const normalized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(input)) {
+    const mappedKey = preferenceKeyMap[key] || key;
+    if (
+      normalized[mappedKey] === undefined ||
+      normalized[mappedKey] === null ||
+      normalized[mappedKey] === ""
+    ) {
+      normalized[mappedKey] = value;
+    }
+  }
+  return normalized;
+}
+
+// ─── Main Handler ────────────────────────────────────────────────────────────
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  let matchId: string | null = null;
+
+  const updateMatch = async (updates: Record<string, any>) => {
+    if (!matchId) return;
+    try {
+      const sb = createClient(supabaseUrl, serviceKey);
+      await sb.from("college_matches").update(updates).eq("id", matchId);
+      console.log(`[college-match] Updated match ${matchId} → ${updates.ai_status || "data"}`);
+    } catch (e) {
+      console.error("[college-match] DB update failed:", e);
+    }
+  };
+
+  try {
+    const body = await req.json().catch(() => null);
+    const raw = body?.preferences;
+    matchId = typeof body?.matchId === "string" ? body.matchId : null;
+
+    // Rate limit only ad-hoc invocations (discover-more)
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") || "unknown";
+    if (!matchId && !(await checkRateLimit(clientIp, "college-match"))) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please wait a moment." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check premium status
+    let isPremiumUser = false;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
+      const sbAdmin = createClient(supabaseUrl, serviceKey);
+      const token = authHeader.replace("Bearer ", "");
+      let authUserId: string | null = null;
+      let authUserEmail: string | null = null;
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+          authUserId = payload?.sub || null;
+          authUserEmail = payload?.email || null;
+        }
+      } catch { /* ignore */ }
+
+      if (authUserId) {
+        const { data: roleData } = await sbAdmin
+          .from("user_roles").select("role").eq("user_id", authUserId).eq("role", "admin").maybeSingle();
+        if (roleData) isPremiumUser = true;
+
+        if (!isPremiumUser && authUserEmail) {
+          try {
+            const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+            if (stripeKey) {
+              const { default: Stripe } = await import("https://esm.sh/stripe@18.5.0");
+              const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+              const customers = await stripe.customers.list({ email: authUserEmail, limit: 1 });
+              if (customers.data.length > 0) {
+                const subs = await stripe.subscriptions.list({ customer: customers.data[0].id, status: "active", limit: 1 });
+                if (subs.data.length > 0) isPremiumUser = true;
+              }
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    }
+
+    if (!raw || typeof raw !== "object") {
+      await updateMatch({ ai_status: "failed", ai_error: "Invalid input: preferences object required" });
+      return new Response(JSON.stringify({ error: "Invalid input: preferences object required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (JSON.stringify(raw).length > 10_000) {
+      await updateMatch({ ai_status: "failed", ai_error: "Input too large" });
+      return new Response(JSON.stringify({ error: "Input too large" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (matchId) await updateMatch({ ai_status: "processing", ai_error: null });
+
+    // Sanitize
+    const sanitize = (v: any): string => {
+      if (typeof v !== "string") return "";
+      const t = v.trim();
+      return /^\{.*\}$/.test(t) ? "" : t.substring(0, 500);
+    };
+
+    const sanitizedPrefs: Record<string, any> = {};
+    for (const [key, val] of Object.entries(raw)) {
+      if (key === "allResponses" && typeof val === "object" && val !== null) {
+        const cleaned: Record<string, string> = {};
+        for (const [k, v] of Object.entries(val as Record<string, any>)) {
+          const s = sanitize(v);
+          if (s) cleaned[k] = s;
+        }
+        sanitizedPrefs[key] = cleaned;
+      } else {
+        const s = sanitize(val);
+        sanitizedPrefs[key] = s || raw[key];
+      }
+    }
+
+    const prefs = normalizePreferenceKeys(sanitizedPrefs);
+    console.log("[college-match] Processing:", prefs.areaOfStudy, "campusSize:", prefs.campusSize);
+
+    const excludeColleges: string[] = Array.isArray(body?.excludeColleges)
+      ? body.excludeColleges.filter((n: any) => typeof n === "string").slice(0, 20)
+      : [];
+
+    // ── Step 1: Fetch college data from Scorecard ──
+    const scorecard = await fetchFromScorecard(prefs);
+    console.log(`[college-match] Scorecard returned ${scorecard.count} colleges`);
+
+    if (scorecard.raw.length === 0) {
+      await updateMatch({ ai_status: "failed", ai_error: "No matching colleges found in database" });
+      return new Response(JSON.stringify({ error: "No matching colleges found. Try broadening your preferences." }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Step 2: Rule-based matching (deterministic) ──
+    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges);
+    console.log(`[college-match] Rule engine picked ${matchedColleges.length} colleges:`, matchedColleges.map(c => c.name));
+
     // ── Step 3: Build student profile (rule-based) ──
     const studentProfile = {
       summary: `Based on your preferences, we found ${matchedColleges.length} schools that match your criteria using U.S. Department of Education data.`,
