@@ -72,12 +72,28 @@ const FeedbackSurveyModal = () => {
     return () => window.removeEventListener("message", handleMessage);
   }, [showSurvey, user]);
 
-  const markCompleted = async () => {
+  const saveFeedbackAndComplete = async (payload: Record<string, unknown>) => {
     if (!user) return;
-    await supabase
-      .from("profiles")
-      .update({ feedback_completed: true })
-      .eq("id", user.id);
+
+    // Save feedback response (upsert to prevent duplicates)
+    const { error } = await supabase
+      .from("feedback_responses")
+      .upsert(
+        {
+          user_id: user.id,
+          response_data: payload as unknown as import("@/integrations/supabase/types").Json,
+        },
+        { onConflict: "user_id" }
+      );
+
+    // Only mark completed if save succeeded
+    if (!error) {
+      await supabase
+        .from("profiles")
+        .update({ feedback_completed: true })
+        .eq("id", user.id);
+    }
+
     setFeedbackCompleted(true);
     setShowSurvey(false);
     setShowModal(false);
