@@ -143,6 +143,27 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_responses: {
+        Row: {
+          created_at: string
+          id: string
+          response_data: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          response_data?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          response_data?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
