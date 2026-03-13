@@ -227,12 +227,44 @@ const Survey = () => {
           }
         }
 
+        // Guard: reject empty submissions
+        if (Object.keys(preferencesData).length === 0) {
+          console.warn("[Survey] Empty submission — ignoring");
+          setIsSubmitting(false);
+          isProcessingSubmissionRef.current = false;
+          return;
+        }
+
         // Save to survey_submissions (audit trail)
         const email = preferencesData.email || null;
         await supabase.from("survey_submissions").insert({
           email,
           preferences: preferencesData,
         });
+
+        // ── Save raw quiz answers to quiz_answers table ──
+        if (user) {
+          // Dedup: check for recent quiz_answers within 2 minutes
+          const { data: recentAnswers } = await supabase
+            .from("quiz_answers" as any)
+            .select("id")
+            .eq("user_id", user.id)
+            .gte("created_at", new Date(Date.now() - 2 * 60 * 1000).toISOString())
+            .limit(1);
+
+          if (!recentAnswers || recentAnswers.length === 0) {
+            const { error: qaError } = await supabase
+              .from("quiz_answers" as any)
+              .insert({ user_id: user.id, answers: preferencesData } as any);
+            if (qaError) {
+              console.error("[Survey] Failed to save quiz answers:", qaError);
+            } else {
+              console.log("[Survey] Quiz answers saved to quiz_answers table");
+            }
+          } else {
+            console.log("[Survey] Skipping duplicate quiz_answers insert");
+          }
+        }
 
         // Build preferences object for the edge function
         const clean = (val: string | undefined, fallback: string): string => {
