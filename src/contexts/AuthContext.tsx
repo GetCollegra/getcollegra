@@ -82,7 +82,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsSubscribed(false);
         return;
       }
-      setIsSubscribed(data?.subscribed ?? false);
+      const newSubscribed = data?.subscribed ?? false;
+      // Track subscription changes
+      if (newSubscribed && !isSubscribed) {
+        capture("subscription_started");
+      } else if (!newSubscribed && isSubscribed) {
+        capture("subscription_cancelled");
+      }
+      setIsSubscribed(newSubscribed);
       setSubscriptionEnd(data?.subscription_end ?? null);
     } catch {
       // silent fail — keep current state
