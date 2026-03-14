@@ -311,8 +311,8 @@ const Dashboard = () => {
     if (colleges.length === 0) return null;
     const bestMatch = [...colleges].sort((a, b) => b.fitScore - a.fitScore)[0];
     const mostAffordable = [...colleges].sort((a, b) => {
-      const priceA = parseInt(a.netPrice.replace(/[^0-9]/g, "")) || 999999;
-      const priceB = parseInt(b.netPrice.replace(/[^0-9]/g, "")) || 999999;
+      const priceA = parseInt(a.tuitionOutOfState.replace(/[^0-9]/g, "")) || 999999;
+      const priceB = parseInt(b.tuitionOutOfState.replace(/[^0-9]/g, "")) || 999999;
       return priceA - priceB;
     })[0];
     const safetySchools = colleges.filter(c => c.fitCategory === "Safety");
