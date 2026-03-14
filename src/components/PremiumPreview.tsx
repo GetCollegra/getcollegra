@@ -17,7 +17,7 @@ const sampleColleges = [
 const compareMetrics = [
   { label: "Fit Score", values: ["94%", "91%", "88%"] },
   { label: "Acceptance Rate", values: ["23%", "17%", "21%"] },
-  { label: "Net Price", values: ["$16,800", "$12,400", "$18,200"] },
+  { label: "Annual Price", values: ["$56,212", "$60,348", "$58,100"] },
   { label: "Graduation Rate", values: ["92%", "90%", "94%"] },
   { label: "Student:Faculty", values: ["15:1", "18:1", "14:1"] },
 ];
@@ -85,7 +85,7 @@ const PremiumPreview = () => {
           className="space-y-2 mt-3 pt-3 border-t border-border"
         >
           <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Net Price</span>
+            <span className="text-muted-foreground">Annual Price</span>
             <span className="font-medium text-foreground">{college.price}/yr</span>
           </div>
           <div className="flex justify-between text-xs">

@@ -211,7 +211,7 @@ export default function CollegeNotesPanel({ open, onClose, college, collegeName,
                 </div>
                 <div className="flex items-center gap-2 text-sm p-2 rounded-lg bg-muted/50">
                   <DollarSign className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span className="text-muted-foreground truncate">{college.netPrice}</span>
+                  <span className="text-muted-foreground truncate">{college.tuitionOutOfState}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm p-2 rounded-lg bg-muted/50">
                   <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
