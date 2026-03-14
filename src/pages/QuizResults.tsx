@@ -566,11 +566,11 @@ const QuizResults = () => {
             return;
           }
 
-          // Recover stuck pending rows
-          if (status === "pending" && !recoveryTriggered) {
+          // Recover stuck pending rows — retry at 8s and again at 30s
+          if (status === "pending") {
             const createdAt = Date.parse(String((match as any).created_at || ""));
             const ageMs = Number.isFinite(createdAt) ? Date.now() - createdAt : 0;
-            if (ageMs > 8000) {
+            if (!recoveryTriggered && ageMs > 8000) {
               const retryPreferences = buildRetryPreferences((match as any).raw_preferences);
               if (retryPreferences) {
                 recoveryTriggered = true;
@@ -583,11 +583,11 @@ const QuizResults = () => {
 
           pollCount++;
           if (pollCount >= MAX_POLLS && !cancelled) {
-            setError("Results are taking longer than expected. Please refresh the page or try again.");
+            setError("Results are taking longer than expected. Please refresh the page or try the quiz again.");
             setLoading(false);
             return;
           }
-          if (!cancelled) setTimeout(loadMatch, 3000);
+          if (!cancelled) setTimeout(loadMatch, pollCount < 10 ? 2000 : 3000);
         } catch {
           if (!cancelled) {
             setError("Failed to load results. Please try again.");
