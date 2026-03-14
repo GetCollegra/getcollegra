@@ -284,10 +284,10 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
             { icon: DollarSign, label: "Net Price", value: college.netPrice },
             { icon: BarChart3, label: "Grad Rate", value: college.graduationRate },
             { icon: TrendingUp, label: "Avg Salary", value: college.avgStartingSalary },
-          ].map((stat, si) => (
+          ].filter(stat => stat.value && stat.value !== "N/A" && stat.value !== "Premium" && stat.value !== "Not reported").map((stat, si, arr) => (
             <div
               key={stat.label}
-              className={`p-3 sm:p-4 md:p-5 ${si % 2 === 0 ? "border-r border-border" : ""} ${si < 2 ? "border-b md:border-b-0 border-border" : ""}`}
+              className={`p-3 sm:p-4 md:p-5 ${si < arr.length - 1 ? "border-r border-border" : ""} ${si < 2 ? "border-b md:border-b-0 border-border" : ""}`}
             >
               <div className="flex items-center gap-1 text-muted-foreground text-[10px] sm:text-xs mb-1">
                 <stat.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {stat.label}

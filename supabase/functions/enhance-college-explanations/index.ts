@@ -33,7 +33,10 @@ Return a JSON object with this exact structure:
       "challengesForStudent": ["Challenge specific to this student's profile"],
       "howToGetIn": "5-7 detailed, actionable sentences: (1) GPA/test score comparison, (2) extracurriculars to strengthen app, (3) essay topic suggestions, (4) ED/EA strategy, (5) demonstrated interest steps.",
       "campusVibe": "3-4 vivid sentences about the social scene, sports culture, Greek life, weekend activities, nearby amenities.",
-      "notableFeature": "One unique thing about this school for THIS student"
+      "notableFeature": "One unique thing about this school for THIS student",
+      "studentFacultyRatio": "e.g. '12:1' — the student-to-faculty ratio if you know it, or null if unsure",
+      "campusSize": "e.g. 'Medium (8,500 students)' — refine the campus size description with student count if known",
+      "avgFinancialAid": "e.g. '~$35,000' — estimated average financial aid package if you know it, or null if unsure"
     }
   ],
   "comparisonInsight": "5-8 sentences comparing all the student's matched schools. Lead with campus culture differences. Reference their specific preferences."
@@ -196,21 +199,33 @@ Write personalized, vivid explanations for each school. The "name" field in each
 
     // Merge AI explanations into colleges
     const enhancedColleges = [...colleges];
+    const NA_VALUES = new Set(["N/A", "See school website", "—", "", "Not reported", "Premium"]);
+    const shouldReplace = (existing: any, aiVal: any) =>
+      aiVal && aiVal !== "null" && (NA_VALUES.has(existing) || !existing);
+
     if (aiResult.colleges && Array.isArray(aiResult.colleges)) {
       for (const aiCollege of aiResult.colleges) {
         const idx = enhancedColleges.findIndex(
           (c: any) => c.name.toLowerCase() === (aiCollege.name || "").toLowerCase()
         );
         if (idx !== -1 && idx < 3) {
+          const existing = enhancedColleges[idx];
           enhancedColleges[idx] = {
-            ...enhancedColleges[idx],
-            whyFit: aiCollege.whyFit || enhancedColleges[idx].whyFit,
-            prosForStudent: aiCollege.prosForStudent || enhancedColleges[idx].prosForStudent,
-            consForStudent: aiCollege.consForStudent || enhancedColleges[idx].consForStudent,
-            challengesForStudent: aiCollege.challengesForStudent || enhancedColleges[idx].challengesForStudent,
-            howToGetIn: aiCollege.howToGetIn || enhancedColleges[idx].howToGetIn,
-            campusVibe: aiCollege.campusVibe || enhancedColleges[idx].campusVibe,
-            notableFeature: aiCollege.notableFeature || enhancedColleges[idx].notableFeature,
+            ...existing,
+            whyFit: aiCollege.whyFit || existing.whyFit,
+            prosForStudent: aiCollege.prosForStudent || existing.prosForStudent,
+            consForStudent: aiCollege.consForStudent || existing.consForStudent,
+            challengesForStudent: aiCollege.challengesForStudent || existing.challengesForStudent,
+            howToGetIn: aiCollege.howToGetIn || existing.howToGetIn,
+            campusVibe: aiCollege.campusVibe || existing.campusVibe,
+            notableFeature: aiCollege.notableFeature || existing.notableFeature,
+            // Fill in missing data fields from AI knowledge
+            studentFacultyRatio: shouldReplace(existing.studentFacultyRatio, aiCollege.studentFacultyRatio)
+              ? aiCollege.studentFacultyRatio : existing.studentFacultyRatio,
+            campusSize: shouldReplace(existing.campusSize, aiCollege.campusSize)
+              ? aiCollege.campusSize : existing.campusSize,
+            avgFinancialAid: shouldReplace(existing.avgFinancialAid, aiCollege.avgFinancialAid)
+              ? aiCollege.avgFinancialAid : existing.avgFinancialAid,
           };
         }
       }

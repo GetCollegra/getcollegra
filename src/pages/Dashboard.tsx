@@ -730,14 +730,17 @@ const Dashboard = () => {
                                     { label: "Student:Faculty", value: saved.college_data.studentFacultyRatio, icon: BookOpen },
                                     { label: "Campus Size", value: saved.college_data.campusSize, icon: MapPin },
                                     { label: "Avg Starting Salary", value: saved.college_data.avgStartingSalary, icon: Briefcase },
-                                  ].map(item => {
+                                  ].filter(item => {
+                                    const v = item.value;
+                                    return v && v !== "Premium" && v !== "N/A" && v !== "See school website" && v !== "—";
+                                  }).map(item => {
                                     const Icon = item.icon;
                                     return (
                                       <div key={item.label} className="bg-card rounded-lg p-3 border border-border/50">
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                                           <Icon className="h-3 w-3" />{item.label}
                                         </div>
-                                        <p className="text-sm font-semibold text-foreground">{item.value || "—"}</p>
+                                        <p className="text-sm font-semibold text-foreground">{item.value}</p>
                                       </div>
                                     );
                                   })}
