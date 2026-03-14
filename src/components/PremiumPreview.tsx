@@ -17,7 +17,7 @@ const sampleColleges = [
 const compareMetrics = [
   { label: "Fit Score", values: ["94%", "91%", "88%"] },
   { label: "Acceptance Rate", values: ["23%", "17%", "21%"] },
-  { label: "Net Price", values: ["$16,800", "$12,400", "$18,200"] },
+  { label: "Annual Price", values: ["$56,212", "$60,348", "$58,100"] },
   { label: "Graduation Rate", values: ["92%", "90%", "94%"] },
   { label: "Student:Faculty", values: ["15:1", "18:1", "14:1"] },
 ];
