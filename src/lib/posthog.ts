@@ -11,4 +11,13 @@ export const initPostHog = () => {
   }
 };
 
+/** Fire a custom PostHog event (no-ops in dev / when PostHog isn't loaded) */
+export const capture = (event: string, properties?: Record<string, unknown>) => {
+  try {
+    posthog.capture(event, properties);
+  } catch {
+    // silent
+  }
+};
+
 export { posthog };

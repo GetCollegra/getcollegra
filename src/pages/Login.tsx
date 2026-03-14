@@ -42,6 +42,7 @@ const Login = () => {
     if (error) {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
     } else {
+      capture("login_completed");
       navigate(from);
     }
   };

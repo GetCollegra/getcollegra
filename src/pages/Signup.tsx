@@ -53,6 +53,7 @@ const Signup = () => {
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
     } else {
+      capture("signup_completed", { email });
       setSuccess(true);
     }
   };
