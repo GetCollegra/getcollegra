@@ -352,20 +352,21 @@ export default function CollegeComparison({
                   {/* Values */}
                   {unmaskedCompared.map(c => {
                     const rawValue = row.getValue(c.college_data);
-                    const isPremiumMasked = typeof rawValue === "string" && rawValue === "Premium";
-                    const value = isPremiumMasked ? "N/A" : rawValue;
+                    const NA_VALUES = new Set(["Premium", "N/A", "See school website", "Not reported", "—", ""]);
+                    const isUnavailable = typeof rawValue === "string" && NA_VALUES.has(rawValue);
+                    const value = isUnavailable ? "—" : rawValue;
                     const best = isBest(c.id);
-                    const showBar = row.format !== "text" && !isPremiumMasked;
+                    const showBar = row.format !== "text" && !isUnavailable;
 
                     return (
                       <div key={c.id} className="min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-sm font-semibold truncate ${
-                            best ? "text-primary" : "text-foreground"
+                            isUnavailable ? "text-muted-foreground/50" : best ? "text-primary" : "text-foreground"
                           }`}>
                             {value}
                           </span>
-                          {best && !isPremiumMasked && (
+                          {best && !isUnavailable && (
                             <Badge className="bg-primary/10 text-primary border-0 text-[9px] px-1.5 py-0 shrink-0">
                               Best
                             </Badge>
