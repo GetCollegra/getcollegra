@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { capture } from "@/lib/posthog";
 
 export async function startCheckout(toast: (opts: { title: string; description: string; variant?: "default" | "destructive" }) => void) {
   const checkoutWindow = window.open("about:blank", "_blank");
