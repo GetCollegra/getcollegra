@@ -201,7 +201,7 @@ const Profile = () => {
         setExportingData(false);
         return;
       }
-      const headers = ["College Name", "Status", "Location", "Acceptance Rate", "Net Price", "Fit Score", "Notes"];
+      const headers = ["College Name", "Status", "Location", "Acceptance Rate", "Annual Price", "Fit Score", "Notes"];
       const rows = data.map(d => {
         const c = d.college_data as any;
         return [
