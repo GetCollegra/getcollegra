@@ -4,6 +4,7 @@ import { lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { capture } from "@/lib/posthog";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -136,6 +137,7 @@ const Dashboard = () => {
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
+    if (!authLoading && user) capture("dashboard_opened");
   }, [authLoading, user, navigate]);
 
   // Refresh subscription after checkout redirect
@@ -272,6 +274,7 @@ const Dashboard = () => {
     } else if (data) {
       setSavedColleges(prev => [{ ...data, college_data: data.college_data as unknown as College, notes: data.notes || "" }, ...prev]);
       toast({ title: "Saved!", description: `${college.name} added to your list.` });
+      capture("college_saved", { college_name: college.name });
     }
   };
 
@@ -283,6 +286,7 @@ const Dashboard = () => {
   const updateNotes = async (id: string, notes: string) => {
     await supabase.from("saved_colleges").update({ notes }).eq("id", id);
     setSavedColleges(prev => prev.map(s => s.id === id ? { ...s, notes } : s));
+    capture("notes_added", { college_id: id });
   };
 
   const removeCollege = async (id: string) => {
@@ -295,7 +299,10 @@ const Dashboard = () => {
     setCompareIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
-      else if (next.size < 4) next.add(id);
+      else if (next.size < 4) {
+        next.add(id);
+        capture("compare_used", { college_id: id });
+      }
       else toast({ title: "Max 4 colleges", description: "Remove one to add another." });
       return next;
     });
@@ -482,7 +489,7 @@ const Dashboard = () => {
           )}
         </motion.section>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+        <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === "map") capture("map_opened", { source: "dashboard_tab" }); }} className="space-y-8">
           <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
             <TabsTrigger value="matches" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><GraduationCap className="h-4 w-4" /> Matches</TabsTrigger>
             <TabsTrigger value="saved" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-soft"><Bookmark className="h-4 w-4" /> Saved</TabsTrigger>

@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
+import { capture } from "@/lib/posthog";
 
 export async function startCheckout(toast: (opts: { title: string; description: string; variant?: "default" | "destructive" }) => void) {
+  capture("checkout_started");
   const checkoutWindow = window.open("about:blank", "_blank");
   try {
     const { data: sessionData } = await supabase.auth.getSession();

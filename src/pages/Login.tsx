@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
+import { capture } from "@/lib/posthog";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -41,6 +42,7 @@ const Login = () => {
     if (error) {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
     } else {
+      capture("login_completed");
       navigate(from);
     }
   };

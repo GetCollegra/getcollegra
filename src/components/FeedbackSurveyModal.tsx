@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ClipboardList } from "lucide-react";
+import { capture } from "@/lib/posthog";
 
 const TALLY_URL = "https://tally.so/r/b5e0B2";
 const TIMER_SECONDS = 90;
@@ -35,6 +36,7 @@ const FeedbackSurveyModal = () => {
 
     timerRef.current = setTimeout(() => {
       setShowModal(true);
+      capture("feedback_survey_opened");
     }, TIMER_SECONDS * 1000);
 
     return () => {
@@ -113,6 +115,7 @@ const FeedbackSurveyModal = () => {
     }
 
     setFeedbackCompleted(true);
+    capture("feedback_survey_completed");
     setShowSurvey(false);
     setShowModal(false);
   };

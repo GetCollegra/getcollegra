@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { capture } from "@/lib/posthog";
 
 const loadingMessages = [
   "Analyzing your preferences...",
@@ -126,6 +127,7 @@ const Survey = () => {
 
       try {
         setIsSubmitting(true);
+        capture("quiz_started");
         console.log("Tally payload:", JSON.stringify(parsed, null, 2));
 
         // Keyword-based mapping
@@ -363,6 +365,7 @@ const Survey = () => {
         }).catch(err => console.error("[Survey] Edge function call failed:", err));
 
         // Navigate immediately — results page will poll DB
+        capture("quiz_completed", { matchId });
         hasNavigatedToResultsRef.current = true;
         navigate(`/quiz-results?match_id=${matchId}`, { replace: true });
       } catch (err) {

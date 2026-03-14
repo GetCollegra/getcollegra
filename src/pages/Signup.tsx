@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, ArrowRight, CheckCircle2 } from "lucide-react";
 import Header from "@/components/Header";
+import { capture } from "@/lib/posthog";
 
 const Signup = () => {
   const [firstName, setFirstName] = useState("");
@@ -18,6 +19,7 @@ const Signup = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    capture("signup_started");
     if (password.length < 6) {
       toast({ title: "Password too short", description: "Use at least 6 characters.", variant: "destructive" });
       return;
@@ -51,6 +53,7 @@ const Signup = () => {
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
     } else {
+      capture("signup_completed", { email });
       setSuccess(true);
     }
   };

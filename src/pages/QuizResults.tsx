@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { trackClick } from "@/lib/analytics";
+import { capture } from "@/lib/posthog";
 import { startCheckout } from "@/lib/checkout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -385,6 +386,11 @@ const QuizResults = () => {
   const [aiEnhancing, setAiEnhancing] = useState(false);
   const { toast } = useToast();
   const { isSubscribed } = useAuth();
+
+  // Fire results_viewed when recommendations load
+  useEffect(() => {
+    if (recommendations) capture("results_viewed", { collegeCount: recommendations.colleges?.length });
+  }, [recommendations]);
 
   // Read results passed via router state from Survey page
   const routerState = location.state as { recommendations?: Recommendations; surveyContext?: Record<string, string> } | null;

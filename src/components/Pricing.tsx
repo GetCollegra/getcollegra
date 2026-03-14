@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { trackClick } from "@/lib/analytics";
+import { capture } from "@/lib/posthog";
 import { startCheckout } from "@/lib/checkout";
 import { useToast } from "@/hooks/use-toast";
 
@@ -11,6 +12,7 @@ const Pricing = () => {
 
   const handlePricingClick = (label: string, section: string) => {
     trackClick(label, section);
+    capture("premium_clicked", { source: "pricing" });
     startCheckout(toast);
   };
 
