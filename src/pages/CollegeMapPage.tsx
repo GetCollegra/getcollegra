@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { capture } from "@/lib/posthog";
 import Header from "@/components/Header";
 import { Loader2, MapPin, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
