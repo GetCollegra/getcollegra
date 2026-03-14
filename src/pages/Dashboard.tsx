@@ -299,7 +299,10 @@ const Dashboard = () => {
     setCompareIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
-      else if (next.size < 4) next.add(id);
+      else if (next.size < 4) {
+        next.add(id);
+        capture("compare_used", { college_id: id });
+      }
       else toast({ title: "Max 4 colleges", description: "Remove one to add another." });
       return next;
     });

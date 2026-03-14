@@ -54,6 +54,7 @@ const CollegeMapPage = () => {
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
+    if (!authLoading && user) capture("map_opened", { source: "standalone" });
   }, [authLoading, user, navigate]);
 
   // Load matches and saved colleges

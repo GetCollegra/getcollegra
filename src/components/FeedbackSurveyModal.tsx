@@ -115,6 +115,7 @@ const FeedbackSurveyModal = () => {
     }
 
     setFeedbackCompleted(true);
+    capture("feedback_survey_completed");
     setShowSurvey(false);
     setShowModal(false);
   };

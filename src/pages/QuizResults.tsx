@@ -387,6 +387,11 @@ const QuizResults = () => {
   const { toast } = useToast();
   const { isSubscribed } = useAuth();
 
+  // Fire results_viewed when recommendations load
+  useEffect(() => {
+    if (recommendations) capture("results_viewed", { collegeCount: recommendations.colleges?.length });
+  }, [recommendations]);
+
   // Read results passed via router state from Survey page
   const routerState = location.state as { recommendations?: Recommendations; surveyContext?: Record<string, string> } | null;
 
