@@ -1065,7 +1065,7 @@ const QuizResults = () => {
                         {[
                           { label: "Category", key: "fitCategory" },
                           { label: "Acceptance Rate", key: "acceptanceRate" },
-                          { label: "Net Price", key: "netPrice" },
+                          { label: "Annual Price", key: "tuitionOutOfState" },
                           { label: "Graduation Rate", key: "graduationRate" },
                           { label: "Avg Starting Salary", key: "avgStartingSalary" },
                           { label: "Student Body", key: "studentBody" },

@@ -49,11 +49,11 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     higherIsBetter: true, // higher acceptance = easier to get in
   },
   {
-    label: "Net Price",
-    key: "netPrice",
+    label: "Annual Price",
+    key: "tuitionOutOfState",
     icon: DollarSign,
-    getValue: c => c.netPrice,
-    getNumeric: c => parseInt(c.netPrice.replace(/[^0-9]/g, "")) || 0,
+    getValue: c => c.tuitionOutOfState,
+    getNumeric: c => parseInt(c.tuitionOutOfState.replace(/[^0-9]/g, "")) || 0,
     format: "currency",
     higherIsBetter: false,
   },

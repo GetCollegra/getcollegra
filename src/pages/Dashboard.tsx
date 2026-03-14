@@ -547,7 +547,7 @@ const Dashboard = () => {
                                 </div>
                                 <div className="flex items-center gap-1.5 text-muted-foreground">
                                   <DollarSign className="h-3.5 w-3.5" />
-                                  <span>{college.netPrice}</span>
+                                  <span>{college.tuitionOutOfState}</span>
                                 </div>
                               </div>
                               <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>

@@ -85,7 +85,7 @@ const PremiumPreview = () => {
           className="space-y-2 mt-3 pt-3 border-t border-border"
         >
           <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Net Price</span>
+            <span className="text-muted-foreground">Annual Price</span>
             <span className="font-medium text-foreground">{college.price}/yr</span>
           </div>
           <div className="flex justify-between text-xs">
