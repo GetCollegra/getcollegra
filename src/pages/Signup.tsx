@@ -19,6 +19,7 @@ const Signup = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    capture("signup_started");
     if (password.length < 6) {
       toast({ title: "Password too short", description: "Use at least 6 characters.", variant: "destructive" });
       return;
