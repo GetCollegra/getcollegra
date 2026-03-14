@@ -199,21 +199,33 @@ Write personalized, vivid explanations for each school. The "name" field in each
 
     // Merge AI explanations into colleges
     const enhancedColleges = [...colleges];
+    const NA_VALUES = new Set(["N/A", "See school website", "—", "", "Not reported", "Premium"]);
+    const shouldReplace = (existing: any, aiVal: any) =>
+      aiVal && aiVal !== "null" && (NA_VALUES.has(existing) || !existing);
+
     if (aiResult.colleges && Array.isArray(aiResult.colleges)) {
       for (const aiCollege of aiResult.colleges) {
         const idx = enhancedColleges.findIndex(
           (c: any) => c.name.toLowerCase() === (aiCollege.name || "").toLowerCase()
         );
         if (idx !== -1 && idx < 3) {
+          const existing = enhancedColleges[idx];
           enhancedColleges[idx] = {
-            ...enhancedColleges[idx],
-            whyFit: aiCollege.whyFit || enhancedColleges[idx].whyFit,
-            prosForStudent: aiCollege.prosForStudent || enhancedColleges[idx].prosForStudent,
-            consForStudent: aiCollege.consForStudent || enhancedColleges[idx].consForStudent,
-            challengesForStudent: aiCollege.challengesForStudent || enhancedColleges[idx].challengesForStudent,
-            howToGetIn: aiCollege.howToGetIn || enhancedColleges[idx].howToGetIn,
-            campusVibe: aiCollege.campusVibe || enhancedColleges[idx].campusVibe,
-            notableFeature: aiCollege.notableFeature || enhancedColleges[idx].notableFeature,
+            ...existing,
+            whyFit: aiCollege.whyFit || existing.whyFit,
+            prosForStudent: aiCollege.prosForStudent || existing.prosForStudent,
+            consForStudent: aiCollege.consForStudent || existing.consForStudent,
+            challengesForStudent: aiCollege.challengesForStudent || existing.challengesForStudent,
+            howToGetIn: aiCollege.howToGetIn || existing.howToGetIn,
+            campusVibe: aiCollege.campusVibe || existing.campusVibe,
+            notableFeature: aiCollege.notableFeature || existing.notableFeature,
+            // Fill in missing data fields from AI knowledge
+            studentFacultyRatio: shouldReplace(existing.studentFacultyRatio, aiCollege.studentFacultyRatio)
+              ? aiCollege.studentFacultyRatio : existing.studentFacultyRatio,
+            campusSize: shouldReplace(existing.campusSize, aiCollege.campusSize)
+              ? aiCollege.campusSize : existing.campusSize,
+            avgFinancialAid: shouldReplace(existing.avgFinancialAid, aiCollege.avgFinancialAid)
+              ? aiCollege.avgFinancialAid : existing.avgFinancialAid,
           };
         }
       }
