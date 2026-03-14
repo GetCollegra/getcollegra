@@ -274,6 +274,7 @@ const Dashboard = () => {
     } else if (data) {
       setSavedColleges(prev => [{ ...data, college_data: data.college_data as unknown as College, notes: data.notes || "" }, ...prev]);
       toast({ title: "Saved!", description: `${college.name} added to your list.` });
+      capture("college_saved", { college_name: college.name });
     }
   };
 
