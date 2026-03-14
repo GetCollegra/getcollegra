@@ -571,8 +571,8 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   addFrom(matchPool, 2);
   addFrom(reachPool, 1);
 
-  // Pad if needed
-  for (const s of scored) {
+  // Pad if needed (skip unrealistic)
+  for (const s of realistic) {
     if (picked.length >= 5) break;
     if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
   }
