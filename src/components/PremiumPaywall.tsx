@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { capture } from "@/lib/posthog";
 
 const premiumFeatures = [
   { icon: BarChart3, label: "Side-by-side college comparison" },
