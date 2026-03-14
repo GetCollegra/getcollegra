@@ -332,11 +332,12 @@ function parseStudentGPA(prefs: Record<string, any>): number {
   return isNaN(gpa) ? 3.0 : Math.min(5.0, Math.max(0, gpa));
 }
 
-function determineFitCategory(r: any, gpa: number, studentSAT: number | null, studentACT: number | null): "Safety" | "Match" | "Reach" {
+function determineFitCategory(r: any, gpa: number, studentSAT: number | null, studentACT: number | null): "Safety" | "Match" | "Reach" | "unrealistic" {
   const admRate = r["latest.admissions.admission_rate.overall"];
 
   // Test score comparison
   let scorePosition: "above" | "within" | "below" = "within";
+  let scoreDelta = 0; // how far above/below (normalized 0-1 scale)
 
   if (studentSAT) {
     const sat25 = r["latest.admissions.sat_scores.25th_percentile.critical_reading"] && r["latest.admissions.sat_scores.25th_percentile.math"]
@@ -345,26 +346,61 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
     const sat75 = r["latest.admissions.sat_scores.75th_percentile.critical_reading"] && r["latest.admissions.sat_scores.75th_percentile.math"]
       ? Number(r["latest.admissions.sat_scores.75th_percentile.critical_reading"]) + Number(r["latest.admissions.sat_scores.75th_percentile.math"])
       : null;
-    if (sat75 && studentSAT > sat75) scorePosition = "above";
-    else if (sat25 && studentSAT < sat25) scorePosition = "below";
+    if (sat75 && studentSAT > sat75) {
+      scorePosition = "above";
+      scoreDelta = (studentSAT - sat75) / 1600;
+    } else if (sat25 && studentSAT < sat25) {
+      scorePosition = "below";
+      scoreDelta = (sat25 - studentSAT) / 1600;
+    }
   } else if (studentACT) {
     const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
     const act75 = r["latest.admissions.act_scores.75th_percentile.cumulative"];
-    if (act75 && studentACT > Number(act75)) scorePosition = "above";
-    else if (act25 && studentACT < Number(act25)) scorePosition = "below";
+    if (act75 && studentACT > Number(act75)) {
+      scorePosition = "above";
+      scoreDelta = (studentACT - Number(act75)) / 36;
+    } else if (act25 && studentACT < Number(act25)) {
+      scorePosition = "below";
+      scoreDelta = (Number(act25) - studentACT) / 36;
+    }
   }
 
-  // GPA-based acceptance rate thresholds
-  let reachMaxAcceptance = 0.5;
-  if (gpa >= 3.9) reachMaxAcceptance = 0.15;
-  else if (gpa >= 3.8) reachMaxAcceptance = 0.25;
-  else if (gpa >= 3.5) reachMaxAcceptance = 0.30;
-  else if (gpa >= 3.0) reachMaxAcceptance = 0.40;
+  // ── Realistic Reach thresholds ──
+  // Define the minimum acceptance rate a student can realistically "reach" for
+  // based on GPA. Schools more selective than this are filtered out entirely.
+  let realisticFloor = 0;
+  if (gpa < 2.5) realisticFloor = 0.40;       // below 2.5 → no schools under 40%
+  else if (gpa < 3.0) realisticFloor = 0.20;   // 2.5-3.0 → no schools under 20%
+  else if (gpa < 3.5) realisticFloor = 0.10;   // 3.0-3.5 → no schools under 10%
+  else if (gpa < 3.8) realisticFloor = 0.05;   // 3.5-3.8 → no schools under 5%
+  // 3.8+ → any school is fair game
 
-  if (scorePosition === "above" && admRate != null && admRate > 0.5) return "Safety";
-  if (scorePosition === "above" && admRate != null && admRate > 0.3) return "Safety";
-  if (scorePosition === "below" || (admRate != null && admRate <= reachMaxAcceptance && admRate <= 0.3)) return "Reach";
+  // If scores are far below AND acceptance rate is below the realistic floor, exclude
+  if (admRate != null && admRate < realisticFloor) {
+    if (scorePosition === "below" && scoreDelta > 0.10) return "unrealistic";
+    if (scorePosition !== "above" && gpa < 3.0 && admRate < 0.15) return "unrealistic";
+  }
+
+  // ── Safety: scores above 75th percentile + higher acceptance ──
+  if (scorePosition === "above" && admRate != null && admRate > 0.30) return "Safety";
+
+  // ── Reach: scores below OR very selective school for this student ──
+  // GPA-calibrated reach threshold (what acceptance rate feels like a "reach")
+  let reachThreshold = 0.5;
+  if (gpa >= 3.9) reachThreshold = 0.15;
+  else if (gpa >= 3.8) reachThreshold = 0.20;
+  else if (gpa >= 3.5) reachThreshold = 0.30;
+  else if (gpa >= 3.0) reachThreshold = 0.40;
+
+  // Below 25th percentile on scores = always a reach
+  if (scorePosition === "below" && scoreDelta > 0.05) return "Reach";
+  // Low acceptance rate relative to GPA = reach
+  if (admRate != null && admRate <= reachThreshold) return "Reach";
+
+  // ── Safety: high acceptance rate schools ──
   if (admRate != null && admRate > 0.6) return "Safety";
+  if (scorePosition === "above" && admRate != null && admRate > 0.25) return "Safety";
+
   return "Match";
 }
 
@@ -512,9 +548,12 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     })
     .sort((a, b) => b.fitScore - a.fitScore);
 
-  const safetyPool = scored.filter(s => s.fitCategory === "Safety");
-  const matchPool = scored.filter(s => s.fitCategory === "Match");
-  const reachPool = scored.filter(s => s.fitCategory === "Reach");
+  // Filter out unrealistic schools before pooling
+  const realistic = scored.filter(s => s.fitCategory !== "unrealistic");
+
+  const safetyPool = realistic.filter(s => s.fitCategory === "Safety");
+  const matchPool = realistic.filter(s => s.fitCategory === "Match");
+  const reachPool = realistic.filter(s => s.fitCategory === "Reach");
 
   // Pick 2 Safety, 2 Match, 1 Reach
   const picked: typeof scored = [];
@@ -532,8 +571,8 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   addFrom(matchPool, 2);
   addFrom(reachPool, 1);
 
-  // Pad if needed
-  for (const s of scored) {
+  // Pad if needed (skip unrealistic)
+  for (const s of realistic) {
     if (picked.length >= 5) break;
     if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
   }
