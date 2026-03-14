@@ -137,6 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         ensureProfile(session.user);
         checkSubscription();
+        identifyPostHog(session.user);
       } else {
         setSubscriptionLoading(false);
       }
