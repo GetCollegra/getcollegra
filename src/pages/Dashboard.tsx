@@ -286,6 +286,7 @@ const Dashboard = () => {
   const updateNotes = async (id: string, notes: string) => {
     await supabase.from("saved_colleges").update({ notes }).eq("id", id);
     setSavedColleges(prev => prev.map(s => s.id === id ? { ...s, notes } : s));
+    capture("notes_added", { college_id: id });
   };
 
   const removeCollege = async (id: string) => {
