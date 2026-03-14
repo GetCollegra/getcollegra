@@ -33,7 +33,10 @@ Return a JSON object with this exact structure:
       "challengesForStudent": ["Challenge specific to this student's profile"],
       "howToGetIn": "5-7 detailed, actionable sentences: (1) GPA/test score comparison, (2) extracurriculars to strengthen app, (3) essay topic suggestions, (4) ED/EA strategy, (5) demonstrated interest steps.",
       "campusVibe": "3-4 vivid sentences about the social scene, sports culture, Greek life, weekend activities, nearby amenities.",
-      "notableFeature": "One unique thing about this school for THIS student"
+      "notableFeature": "One unique thing about this school for THIS student",
+      "studentFacultyRatio": "e.g. '12:1' — the student-to-faculty ratio if you know it, or null if unsure",
+      "campusSize": "e.g. 'Medium (8,500 students)' — refine the campus size description with student count if known",
+      "avgFinancialAid": "e.g. '~$35,000' — estimated average financial aid package if you know it, or null if unsure"
     }
   ],
   "comparisonInsight": "5-8 sentences comparing all the student's matched schools. Lead with campus culture differences. Reference their specific preferences."
