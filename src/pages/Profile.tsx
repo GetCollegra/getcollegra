@@ -209,7 +209,7 @@ const Profile = () => {
           d.status,
           c?.location || "—",
           c?.acceptanceRate || "—",
-          c?.netPrice || "—",
+          c?.tuitionOutOfState || "—",
           c?.fitScore || "—",
           (d.notes || "").replace(/"/g, '""'),
         ].map(v => `"${v}"`).join(",");
