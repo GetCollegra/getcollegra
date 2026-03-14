@@ -127,6 +127,7 @@ const Survey = () => {
 
       try {
         setIsSubmitting(true);
+        capture("quiz_started");
         console.log("Tally payload:", JSON.stringify(parsed, null, 2));
 
         // Keyword-based mapping
