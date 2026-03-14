@@ -36,6 +36,7 @@ const FeedbackSurveyModal = () => {
 
     timerRef.current = setTimeout(() => {
       setShowModal(true);
+      capture("feedback_survey_opened");
     }, TIMER_SECONDS * 1000);
 
     return () => {
