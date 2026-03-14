@@ -281,7 +281,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
         <div className="grid grid-cols-2 md:grid-cols-4 border-t border-border">
           {[
             { icon: GraduationCap, label: "Acceptance", value: college.acceptanceRate },
-            { icon: DollarSign, label: "Net Price", value: college.netPrice },
+            { icon: DollarSign, label: "Annual Price", value: college.tuitionOutOfState },
             { icon: BarChart3, label: "Grad Rate", value: college.graduationRate },
             { icon: TrendingUp, label: "Avg Salary", value: college.avgStartingSalary },
           ].filter(stat => stat.value && stat.value !== "N/A" && stat.value !== "Premium" && stat.value !== "Not reported").map((stat, si, arr) => (
