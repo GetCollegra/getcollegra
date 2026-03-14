@@ -12,6 +12,7 @@ const Pricing = () => {
 
   const handlePricingClick = (label: string, section: string) => {
     trackClick(label, section);
+    capture("premium_clicked", { source: "pricing" });
     startCheckout(toast);
   };
 
