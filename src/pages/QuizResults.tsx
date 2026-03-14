@@ -527,7 +527,7 @@ const QuizResults = () => {
       let cancelled = false;
       let pollCount = 0;
       let recoveryTriggered = false;
-      const MAX_POLLS = 20;
+      const MAX_POLLS = 60;
 
       const loadMatch = async () => {
         try {
