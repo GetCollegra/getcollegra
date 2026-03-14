@@ -548,9 +548,12 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     })
     .sort((a, b) => b.fitScore - a.fitScore);
 
-  const safetyPool = scored.filter(s => s.fitCategory === "Safety");
-  const matchPool = scored.filter(s => s.fitCategory === "Match");
-  const reachPool = scored.filter(s => s.fitCategory === "Reach");
+  // Filter out unrealistic schools before pooling
+  const realistic = scored.filter(s => s.fitCategory !== "unrealistic");
+
+  const safetyPool = realistic.filter(s => s.fitCategory === "Safety");
+  const matchPool = realistic.filter(s => s.fitCategory === "Match");
+  const reachPool = realistic.filter(s => s.fitCategory === "Reach");
 
   // Pick 2 Safety, 2 Match, 1 Reach
   const picked: typeof scored = [];
