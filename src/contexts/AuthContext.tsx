@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { posthog } from "@/lib/posthog";
 
 type AuthContextType = {
   user: User | null;
@@ -90,6 +91,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const identifyPostHog = useCallback(async (currentUser: User) => {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, email")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+      const meta = currentUser.user_metadata ?? {};
+      posthog.identify(currentUser.id, {
+        email: profile?.email ?? currentUser.email,
+        first_name: profile?.first_name ?? meta.first_name,
+        subscription_tier: isSubscribed ? "premium" : "free",
+        state: meta.state,
+        graduation_year: meta.graduation_year,
+        intended_major: meta.intended_major,
+      });
+    } catch {
+      // silent — identification is best-effort
+    }
+  }, [isSubscribed]);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -98,7 +121,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         ensureProfile(session.user);
         checkSubscription();
+        identifyPostHog(session.user);
       } else {
+        posthog.reset();
         setIsSubscribed(false);
         setSubscriptionEnd(null);
         setSubscriptionLoading(false);
@@ -112,6 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         ensureProfile(session.user);
         checkSubscription();
+        identifyPostHog(session.user);
       } else {
         setSubscriptionLoading(false);
       }
