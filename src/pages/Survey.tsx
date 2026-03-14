@@ -365,6 +365,7 @@ const Survey = () => {
         }).catch(err => console.error("[Survey] Edge function call failed:", err));
 
         // Navigate immediately — results page will poll DB
+        capture("quiz_completed", { matchId });
         hasNavigatedToResultsRef.current = true;
         navigate(`/quiz-results?match_id=${matchId}`, { replace: true });
       } catch (err) {

@@ -19,6 +19,7 @@ export default function PremiumPaywall() {
   const { toast } = useToast();
 
   const handleUpgrade = async () => {
+    capture("premium_clicked", { source: "paywall" });
     setLoading(true);
     // Open window synchronously to avoid popup blocker
     const checkoutWindow = window.open("about:blank", "_blank");
