@@ -281,6 +281,12 @@ const Dashboard = () => {
   const updateStatus = async (id: string, status: string) => {
     await supabase.from("saved_colleges").update({ status }).eq("id", id);
     setSavedColleges(prev => prev.map(s => s.id === id ? { ...s, status } : s));
+    // Recompute weight adjustments when user changes college status (e.g. "Applying")
+    if (user && (status === "Applying" || status === "Applied" || status === "Accepted")) {
+      supabase.functions.invoke("compute-weight-adjustments", {
+        body: { userId: user.id },
+      }).catch(() => {});
+    }
   };
 
   const updateNotes = async (id: string, notes: string) => {
