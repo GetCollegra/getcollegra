@@ -53,6 +53,7 @@ const AI_MODELS = [
 ];
 
 serve(async (req) => {
+  console.log("[enhance] ===== FUNCTION START =====", new Date().toISOString());
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -66,6 +67,7 @@ serve(async (req) => {
     const matchId = body?.matchId;
     const preferences = body?.preferences;
     const colleges = body?.colleges;
+    console.log("[enhance] Received:", JSON.stringify({ matchId, hasPrefs: !!preferences, collegeCount: colleges?.length }));
 
     if (!matchId || !preferences || !colleges || !Array.isArray(colleges)) {
       return new Response(JSON.stringify({ error: "matchId, preferences, and colleges are required" }), {
