@@ -690,6 +690,9 @@ function normalizePreferenceKeys(input: Record<string, any>): Record<string, any
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
 serve(async (req) => {
+  console.log("[college-match] ===== FUNCTION START =====", new Date().toISOString());
+  console.log("[college-match] Method:", req.method);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -701,18 +704,25 @@ serve(async (req) => {
   const updateMatch = async (updates: Record<string, any>) => {
     if (!matchId) return;
     try {
+      console.log(`[college-match] DB UPDATE match=${matchId}, status=${updates.ai_status || "data-only"}, keys=${Object.keys(updates).join(",")}`);
       const sb = createClient(supabaseUrl, serviceKey);
-      await sb.from("college_matches").update(updates).eq("id", matchId);
-      console.log(`[college-match] Updated match ${matchId} → ${updates.ai_status || "data"}`);
+      const { error: updateErr } = await sb.from("college_matches").update(updates).eq("id", matchId);
+      if (updateErr) {
+        console.error(`[college-match] DB UPDATE FAILED for ${matchId}:`, updateErr.message);
+      } else {
+        console.log(`[college-match] DB UPDATE SUCCESS for ${matchId}`);
+      }
     } catch (e) {
-      console.error("[college-match] DB update failed:", e);
+      console.error("[college-match] DB update exception:", e);
     }
   };
 
   try {
-    const body = await req.json().catch(() => null);
+    const body = await req.json().catch((e: any) => { console.error("[college-match] Failed to parse request body:", e); return null; });
+    console.log("[college-match] Received payload:", JSON.stringify({ hasPreferences: !!body?.preferences, matchId: body?.matchId, hasExclude: !!body?.excludeColleges }));
     const raw = body?.preferences;
     matchId = typeof body?.matchId === "string" ? body.matchId : null;
+    console.log("[college-match] matchId:", matchId, "| preferences keys:", raw ? Object.keys(raw).join(",") : "NONE");
 
     // Rate limit only ad-hoc invocations (discover-more)
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
