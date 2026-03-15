@@ -546,7 +546,7 @@ function getTopPrograms(r: any): string[] {
  * Rule-based engine: score all colleges, pick 2 Safety / 2 Match / 1 Reach.
  * Returns structured college objects WITH placeholder text for AI-generated fields.
  */
-function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = []): any[] {
+function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = [], weightAdj?: Record<string, number>): any[] {
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
   const studentACT = parseStudentACT(prefs);
@@ -557,7 +557,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     .filter(r => !excludeSet.has((r["school.name"] || "").toLowerCase()))
     .map(r => {
       const fitCategory = determineFitCategory(r, gpa, studentSAT, studentACT);
-      const fitScore = computeFitScore(r, prefs, fitCategory);
+      const fitScore = computeFitScore(r, prefs, fitCategory, weightAdj);
       return { raw: r, fitCategory, fitScore };
     })
     .sort((a, b) => b.fitScore - a.fitScore);
