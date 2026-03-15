@@ -228,7 +228,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
           )}
 
           {/* Challenges & How to Get In */}
-          {((college.challengesForStudent && college.challengesForStudent.length > 0) || college.howToGetIn) && (
+          {((Array.isArray(college.challengesForStudent) && college.challengesForStudent.length > 0) || college.howToGetIn) && (
             <div className="mb-2">
               <button
                 onClick={() => setChallengesExpanded(!challengesExpanded)}
