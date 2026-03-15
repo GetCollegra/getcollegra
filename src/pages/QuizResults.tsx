@@ -192,7 +192,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
           </div>
 
           {/* Pros - expandable on mobile */}
-          {college.prosForStudent.length > 0 && (
+          {Array.isArray(college.prosForStudent) && college.prosForStudent.length > 0 && (
             <div className="mb-3">
               <button
                 onClick={() => setExpanded(!expanded)}
