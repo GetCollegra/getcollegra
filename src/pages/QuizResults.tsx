@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link, useSearchParams, useLocation } from "react-router-dom";
@@ -384,6 +384,7 @@ const QuizResults = () => {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [dbSurveyContext, setDbSurveyContext] = useState<Record<string, string>>({});
   const [aiEnhancing, setAiEnhancing] = useState(false);
+  const aiEnhancementTriggered = useRef(false);
   const { toast } = useToast();
   const { isSubscribed } = useAuth();
 
@@ -496,6 +497,10 @@ const QuizResults = () => {
 
   // Trigger AI enhancement for rule-based results (version 1)
   const triggerAIEnhancement = async (mId: string, recs: Recommendations, rawPrefs: unknown) => {
+    // Prevent duplicate AI requests across renders/refreshes
+    if (aiEnhancementTriggered.current) return;
+    aiEnhancementTriggered.current = true;
+
     try {
       const retryPrefs = buildRetryPreferences(rawPrefs);
       if (!retryPrefs || !recs.colleges || recs.colleges.length < 3) return;

@@ -406,32 +406,34 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
 
 /**
  * Compute fitScore (0–100) using weighted factors:
- * - Campus Culture & Personality (35%)
+ * - Campus Culture & Personality (25%)
  * - Academic Major Fit (25%)
- * - Distance From Home (15%)
- * - School Size (10%)
- * - Cost & Affordability (10%)
- * - Admission Chances (5%)
+ * - Cost & Affordability (15%)
+ * - Distance From Home (12%)
+ * - Admission Realism (10%)
+ * - School Size (8%)
+ * - Support Level (5%)
  */
-function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string): number {
+function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string, adj?: Record<string, number>): number {
+  const a = adj || {};
   let score = 0;
 
-  // 1. Campus Culture (35 pts max)
+  // 1. Campus Culture (25 pts max)
   const locale = r["school.locale"];
   const localeDesc = locale <= 13 ? "urban" : locale <= 23 ? "suburban" : locale <= 33 ? "town" : "rural";
   const prefLoc = (prefs.locationType || "").toLowerCase();
-  let cultureScore = 15; // baseline
-  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 30;
-  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 30;
-  else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 22;
+  let cultureScore = 10; // baseline
+  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 22;
+  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 22;
+  else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 16;
 
   // Vibe bonus
   const vibe = (prefs.campusVibe || "").toLowerCase();
   const size = r["latest.student.size"] || 0;
-  if (vibe.includes("spirited") && size > 15000) cultureScore = Math.min(35, cultureScore + 5);
-  else if (vibe.includes("tight") && size < 5000) cultureScore = Math.min(35, cultureScore + 5);
-  else if (vibe.includes("chill")) cultureScore = Math.min(35, cultureScore + 3);
-  score += Math.min(35, cultureScore);
+  if (vibe.includes("spirited") && size > 15000) cultureScore = Math.min(25, cultureScore + 3);
+  else if (vibe.includes("tight") && size < 5000) cultureScore = Math.min(25, cultureScore + 3);
+  else if (vibe.includes("chill")) cultureScore = Math.min(25, cultureScore + 2);
+  score += Math.min(25, cultureScore) + (a.culture || 0);
 
   // 2. Academic Major Fit (25 pts max)
   const study = (prefs.areaOfStudy || "").toLowerCase();
@@ -444,49 +446,20 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
         if (pct > bestProgramPct) bestProgramPct = pct;
       }
     }
-    if (bestProgramPct > 0.10) academicScore = 25;
-    else if (bestProgramPct > 0.05) academicScore = 18;
-    else if (bestProgramPct > 0) academicScore = 10;
+    // Smoother gradient: 0→5, >2%→10, >5%→15, >10%→20, >15%→25
+    if (bestProgramPct > 0.15) academicScore = 25;
+    else if (bestProgramPct > 0.10) academicScore = 20;
+    else if (bestProgramPct > 0.05) academicScore = 15;
+    else if (bestProgramPct > 0.02) academicScore = 10;
+    else if (bestProgramPct > 0) academicScore = 7;
     else academicScore = 5;
   }
-  score += academicScore;
+  score += academicScore + (a.academic || 0);
 
-  // 3. Distance From Home (15 pts max)
-  const distPref = (prefs.distanceFromHome || "").toLowerCase();
-  const cityState = (prefs.cityState || "").toLowerCase();
-  const schoolState = (r["school.state"] || "").toLowerCase();
-  let distScore = 8; // default
-  if (distPref.includes("anywhere") || distPref.includes("no preference")) {
-    distScore = 12;
-  } else if (distPref.includes("close") || distPref.includes("1 hour") || distPref.includes("under 2")) {
-    // Check if same state
-    if (cityState.includes(schoolState) || schoolState.length === 2 && cityState.includes(schoolState)) distScore = 15;
-    else distScore = 3;
-  } else if (distPref.includes("2-4") || distPref.includes("few hours")) {
-    const fips = getStateFips(cityState);
-    const schoolFips = getStateFips(r["school.city"] + ", " + r["school.state"]);
-    if (fips.length > 0 && schoolFips.length > 0) {
-      const nearby = getNearbyStates(fips[0], distPref);
-      distScore = nearby.includes(schoolFips[0]) ? 13 : 5;
-    }
-  }
-  score += distScore;
-
-  // 4. School Size (10 pts max)
-  const sizePref = (prefs.campusSize || "").toLowerCase();
-  const studentSize = Number(r["latest.student.size"] || 0);
-  let sizeScore = 5;
-  if (!sizePref || sizePref.includes("no preference")) sizeScore = 7;
-  else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 10;
-  else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 10;
-  else if (sizePref.includes("large") && studentSize > 15000) sizeScore = 10;
-  else sizeScore = 3;
-  score += sizeScore;
-
-  // 5. Cost & Affordability (10 pts max)
+  // 3. Cost & Affordability (15 pts max — increased for realism)
   const costPref = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
   const netPrice = r["latest.cost.avg_net_price.overall"];
-  let costScore = 5;
+  let costScore = 7;
   if (netPrice != null) {
     let maxBudget = 50000;
     if (costPref.includes("under 10") || costPref.includes("less than 10")) maxBudget = 10000;
@@ -494,16 +467,57 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
     else if (costPref.includes("20") && costPref.includes("30")) maxBudget = 30000;
     else if (costPref.includes("30") && costPref.includes("45")) maxBudget = 45000;
 
-    if (netPrice <= maxBudget) costScore = 10;
-    else if (netPrice <= maxBudget * 1.2) costScore = 6;
+    if (netPrice <= maxBudget * 0.8) costScore = 15;
+    else if (netPrice <= maxBudget) costScore = 12;
+    else if (netPrice <= maxBudget * 1.2) costScore = 7;
     else costScore = 2;
   }
-  score += costScore;
+  score += costScore + (a.cost || 0);
 
-  // 6. Admission Chances (5 pts max)
-  if (fitCategory === "Safety") score += 5;
-  else if (fitCategory === "Match") score += 3;
-  else score += 1;
+  // 4. Distance From Home (12 pts max)
+  const distPref = (prefs.distanceFromHome || "").toLowerCase();
+  const cityState = (prefs.cityState || "").toLowerCase();
+  const schoolState = (r["school.state"] || "").toLowerCase();
+  let distScore = 6; // default
+  if (distPref.includes("anywhere") || distPref.includes("no preference")) {
+    distScore = 9;
+  } else if (distPref.includes("close") || distPref.includes("1 hour") || distPref.includes("under 2")) {
+    if (cityState.includes(schoolState) || schoolState.length === 2 && cityState.includes(schoolState)) distScore = 12;
+    else distScore = 2;
+  } else if (distPref.includes("2-4") || distPref.includes("few hours")) {
+    const fips = getStateFips(cityState);
+    const schoolFips = getStateFips(r["school.city"] + ", " + r["school.state"]);
+    if (fips.length > 0 && schoolFips.length > 0) {
+      const nearby = getNearbyStates(fips[0], distPref);
+      distScore = nearby.includes(schoolFips[0]) ? 10 : 4;
+    }
+  }
+  score += distScore + (a.distance || 0);
+
+  // 5. Admission Realism (10 pts max — doubled for better calibration)
+  if (fitCategory === "Safety") score += 10 + (a.admission || 0);
+  else if (fitCategory === "Match") score += 7 + (a.admission || 0);
+  else score += 2; // Reach
+
+  // 6. School Size (8 pts max)
+  const sizePref = (prefs.campusSize || "").toLowerCase();
+  const studentSize = Number(r["latest.student.size"] || 0);
+  let sizeScore = 4;
+  if (!sizePref || sizePref.includes("no preference")) sizeScore = 5;
+  else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 8;
+  else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 8;
+  else if (sizePref.includes("large") && studentSize > 15000) sizeScore = 8;
+  else sizeScore = 2;
+  score += sizeScore + (a.size || 0);
+
+  // 7. Support Level (5 pts max — NEW: graduation rate + Pell grant rate as proxy)
+  const gradRate = r["latest.completion.rate_suppressed.overall"];
+  const pellRate = r["latest.aid.pell_grant_rate"];
+  let supportScore = 2;
+  if (gradRate != null && gradRate > 0.70) supportScore += 2;
+  else if (gradRate != null && gradRate > 0.50) supportScore += 1;
+  if (pellRate != null && pellRate > 0.30) supportScore += 1; // schools serving more aid-recipients tend to have stronger support
+  score += Math.min(5, supportScore) + (a.support || 0);
 
   return Math.min(100, Math.max(0, score));
 }
@@ -532,7 +546,7 @@ function getTopPrograms(r: any): string[] {
  * Rule-based engine: score all colleges, pick 2 Safety / 2 Match / 1 Reach.
  * Returns structured college objects WITH placeholder text for AI-generated fields.
  */
-function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = []): any[] {
+function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = [], weightAdj?: Record<string, number>): any[] {
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
   const studentACT = parseStudentACT(prefs);
@@ -543,7 +557,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     .filter(r => !excludeSet.has((r["school.name"] || "").toLowerCase()))
     .map(r => {
       const fitCategory = determineFitCategory(r, gpa, studentSAT, studentACT);
-      const fitScore = computeFitScore(r, prefs, fitCategory);
+      const fitScore = computeFitScore(r, prefs, fitCategory, weightAdj);
       return { raw: r, fitCategory, fitScore };
     })
     .sort((a, b) => b.fitScore - a.fitScore);
@@ -792,8 +806,42 @@ serve(async (req) => {
       ? body.excludeColleges.filter((n: any) => typeof n === "string").slice(0, 20)
       : [];
 
-    // ── Step 1: Fetch college data from Scorecard ──
-    const scorecard = await fetchFromScorecard(prefs);
+    // ── Step 1: Fetch college data from Scorecard + weight adjustments in parallel ──
+    let weightAdj: Record<string, number> | undefined;
+    const authUserId = (() => {
+      try {
+        const token = (authHeader || "").replace("Bearer ", "");
+        const parts = token.split(".");
+        if (parts.length === 3) return JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))).sub;
+      } catch { /* ignore */ }
+      return null;
+    })();
+
+    const [scorecard, adjResult] = await Promise.all([
+      fetchFromScorecard(prefs),
+      authUserId
+        ? createClient(supabaseUrl, serviceKey)
+            .from("scoring_weight_adjustments")
+            .select("culture_adj, academic_adj, cost_adj, distance_adj, admission_adj, size_adj, support_adj")
+            .eq("user_id", authUserId)
+            .maybeSingle()
+            .then(({ data }) => data)
+            .catch(() => null)
+        : Promise.resolve(null),
+    ]);
+
+    if (adjResult) {
+      weightAdj = {
+        culture: Number(adjResult.culture_adj) || 0,
+        academic: Number(adjResult.academic_adj) || 0,
+        cost: Number(adjResult.cost_adj) || 0,
+        distance: Number(adjResult.distance_adj) || 0,
+        admission: Number(adjResult.admission_adj) || 0,
+        size: Number(adjResult.size_adj) || 0,
+        support: Number(adjResult.support_adj) || 0,
+      };
+      console.log("[college-match] Applying user weight adjustments:", weightAdj);
+    }
     console.log(`[college-match] Scorecard returned ${scorecard.count} colleges`);
 
     if (scorecard.raw.length === 0) {
@@ -803,8 +851,8 @@ serve(async (req) => {
       });
     }
 
-    // ── Step 2: Rule-based matching (deterministic) ──
-    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges);
+    // ── Step 2: Rule-based matching (deterministic + user adjustments) ──
+    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges, weightAdj);
     console.log(`[college-match] Rule engine picked ${matchedColleges.length} colleges:`, matchedColleges.map(c => c.name));
 
     // ── Step 3: Build student profile (rule-based) ──
