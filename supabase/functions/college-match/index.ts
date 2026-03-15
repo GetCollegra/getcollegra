@@ -414,7 +414,8 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
  * - School Size (8%)
  * - Support Level (5%)
  */
-function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string): number {
+function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string, adj?: Record<string, number>): number {
+  const a = adj || {};
   let score = 0;
 
   // 1. Campus Culture (25 pts max)
