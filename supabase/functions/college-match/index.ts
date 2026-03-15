@@ -785,7 +785,10 @@ serve(async (req) => {
       });
     }
 
-    if (matchId) await updateMatch({ ai_status: "processing", ai_error: null });
+    if (matchId) {
+      console.log("[college-match] Setting match to processing...");
+      await updateMatch({ ai_status: "processing", ai_error: null });
+    }
 
     // Sanitize
     const sanitize = (v: any): string => {
