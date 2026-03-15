@@ -806,8 +806,42 @@ serve(async (req) => {
       ? body.excludeColleges.filter((n: any) => typeof n === "string").slice(0, 20)
       : [];
 
-    // ── Step 1: Fetch college data from Scorecard ──
-    const scorecard = await fetchFromScorecard(prefs);
+    // ── Step 1: Fetch college data from Scorecard + weight adjustments in parallel ──
+    let weightAdj: Record<string, number> | undefined;
+    const authUserId = (() => {
+      try {
+        const token = (authHeader || "").replace("Bearer ", "");
+        const parts = token.split(".");
+        if (parts.length === 3) return JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))).sub;
+      } catch { /* ignore */ }
+      return null;
+    })();
+
+    const [scorecard, adjResult] = await Promise.all([
+      fetchFromScorecard(prefs),
+      authUserId
+        ? createClient(supabaseUrl, serviceKey)
+            .from("scoring_weight_adjustments")
+            .select("culture_adj, academic_adj, cost_adj, distance_adj, admission_adj, size_adj, support_adj")
+            .eq("user_id", authUserId)
+            .maybeSingle()
+            .then(({ data }) => data)
+            .catch(() => null)
+        : Promise.resolve(null),
+    ]);
+
+    if (adjResult) {
+      weightAdj = {
+        culture: Number(adjResult.culture_adj) || 0,
+        academic: Number(adjResult.academic_adj) || 0,
+        cost: Number(adjResult.cost_adj) || 0,
+        distance: Number(adjResult.distance_adj) || 0,
+        admission: Number(adjResult.admission_adj) || 0,
+        size: Number(adjResult.size_adj) || 0,
+        support: Number(adjResult.support_adj) || 0,
+      };
+      console.log("[college-match] Applying user weight adjustments:", weightAdj);
+    }
     console.log(`[college-match] Scorecard returned ${scorecard.count} colleges`);
 
     if (scorecard.raw.length === 0) {
@@ -817,8 +851,8 @@ serve(async (req) => {
       });
     }
 
-    // ── Step 2: Rule-based matching (deterministic) ──
-    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges);
+    // ── Step 2: Rule-based matching (deterministic + user adjustments) ──
+    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges, weightAdj);
     console.log(`[college-match] Rule engine picked ${matchedColleges.length} colleges:`, matchedColleges.map(c => c.name));
 
     // ── Step 3: Build student profile (rule-based) ──
