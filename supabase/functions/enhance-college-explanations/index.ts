@@ -237,15 +237,21 @@ Write personalized, vivid explanations for each school. The "name" field in each
     const comparisonInsight = aiResult.comparisonInsight || "";
 
     // Save enhanced results to DB
-    await sb.from("college_matches").update({
+    console.log(`[enhance] Saving enhanced results for match ${matchId}, ${enhancedColleges.length} colleges`);
+    const { error: saveErr } = await sb.from("college_matches").update({
       college_data: enhancedColleges,
       student_profile: studentProfile,
       comparison_insight: comparisonInsight,
       results_version: 2,
     }).eq("id", matchId);
 
-    console.log(`[enhance] Saved enhanced results for match ${matchId}`);
+    if (saveErr) {
+      console.error(`[enhance] DB save failed:`, saveErr.message);
+    } else {
+      console.log(`[enhance] Saved enhanced results for match ${matchId} SUCCESS`);
+    }
 
+    console.log("[enhance] ===== RETURNING ENHANCED RESPONSE =====");
     return new Response(JSON.stringify({
       enhanced: true,
       colleges: enhancedColleges,
@@ -256,7 +262,7 @@ Write personalized, vivid explanations for each school. The "name" field in each
     });
 
   } catch (e) {
-    console.error("[enhance] Error:", e);
+    console.error("[enhance] ===== CAUGHT ERROR =====", e instanceof Error ? e.message : e, e instanceof Error ? e.stack : "");
     return new Response(JSON.stringify({ enhanced: false, error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
