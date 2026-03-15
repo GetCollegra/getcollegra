@@ -192,7 +192,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
           </div>
 
           {/* Pros - expandable on mobile */}
-          {college.prosForStudent.length > 0 && (
+          {Array.isArray(college.prosForStudent) && college.prosForStudent.length > 0 && (
             <div className="mb-3">
               <button
                 onClick={() => setExpanded(!expanded)}
@@ -228,7 +228,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
           )}
 
           {/* Challenges & How to Get In */}
-          {((college.challengesForStudent && college.challengesForStudent.length > 0) || college.howToGetIn) && (
+          {((Array.isArray(college.challengesForStudent) && college.challengesForStudent.length > 0) || college.howToGetIn) && (
             <div className="mb-2">
               <button
                 onClick={() => setChallengesExpanded(!challengesExpanded)}
@@ -247,7 +247,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
                     transition={{ duration: 0.25 }}
                     className="overflow-hidden"
                   >
-                    {college.challengesForStudent && college.challengesForStudent.length > 0 && (
+                    {Array.isArray(college.challengesForStudent) && college.challengesForStudent.length > 0 && (
                       <ul className="space-y-1.5 mb-3">
                         {college.challengesForStudent.map((challenge, ci) => (
                           <motion.li
