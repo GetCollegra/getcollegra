@@ -29,3 +29,5 @@ project_id = "iyaflygbuoghplhykhzd"
     verify_jwt = false
   [functions.enhance-college-explanations]
     verify_jwt = false
+  [functions.compute-weight-adjustments]
+    verify_jwt = false
