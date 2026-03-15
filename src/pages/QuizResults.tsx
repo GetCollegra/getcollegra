@@ -619,6 +619,11 @@ const QuizResults = () => {
     }
 
     // ── Priority 3: Load latest match from DB for current user ──
+    let cancelledLatest = false;
+    let latestPollCount = 0;
+    let latestRecoveryTriggered = false;
+    const MAX_LATEST_POLLS = 60;
+
     const loadLatest = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -649,10 +654,50 @@ const QuizResults = () => {
                 triggerAIEnhancement(match.id, recs, (match as any).raw_preferences);
               }
             } else {
+              // completed but empty — trigger recovery
+              const retryPreferences = buildRetryPreferences((match as any).raw_preferences);
+              if (retryPreferences && !latestRecoveryTriggered) {
+                latestRecoveryTriggered = true;
+                console.log("[QuizResults] Completed but empty, triggering recovery for:", match.id);
+                supabase.functions.invoke("college-match", {
+                  body: { preferences: retryPreferences, matchId: match.id },
+                }).catch(err => console.error("[QuizResults] Recovery failed:", err));
+                // Continue polling
+                latestPollCount++;
+                if (latestPollCount < MAX_LATEST_POLLS && !cancelledLatest) {
+                  setTimeout(loadLatest, 3000);
+                  return;
+                }
+              }
               setError("No results found. Please take the quiz first.");
             }
           } else {
-            setError("Your results are still being generated. Please refresh in a moment.");
+            // Still pending/processing — trigger recovery and poll
+            if (!latestRecoveryTriggered) {
+              const createdAt = Date.parse(String((match as any).created_at || ""));
+              const ageMs = Number.isFinite(createdAt) ? Date.now() - createdAt : 0;
+              if (ageMs > 5000) {
+                const retryPreferences = buildRetryPreferences((match as any).raw_preferences);
+                if (retryPreferences) {
+                  latestRecoveryTriggered = true;
+                  console.log("[QuizResults] Pending match, triggering recovery for:", match.id);
+                  supabase.functions.invoke("college-match", {
+                    body: { preferences: retryPreferences, matchId: match.id },
+                  }).catch(err => console.error("[QuizResults] Recovery failed:", err));
+                }
+              }
+            }
+
+            latestPollCount++;
+            if (latestPollCount >= MAX_LATEST_POLLS && !cancelledLatest) {
+              setError("Results are taking longer than expected. Please refresh the page or try the quiz again.");
+              setLoading(false);
+              return;
+            }
+            if (!cancelledLatest) {
+              setTimeout(loadLatest, latestPollCount < 10 ? 2000 : 3000);
+              return;
+            }
           }
         } else {
           setError("No results found. Please take the quiz first.");
@@ -664,6 +709,7 @@ const QuizResults = () => {
     };
 
     loadLatest();
+    return () => { cancelledLatest = true; };
   }, [routerState, searchParams]);
 
   // Results are now persisted by the edge function — no client-side save needed
