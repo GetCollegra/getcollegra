@@ -454,7 +454,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
     else if (bestProgramPct > 0) academicScore = 7;
     else academicScore = 5;
   }
-  score += academicScore;
+  score += academicScore + (a.academic || 0);
 
   // 3. Cost & Affordability (15 pts max — increased for realism)
   const costPref = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
