@@ -266,6 +266,51 @@ export type Database = {
         }
         Relationships: []
       }
+      scoring_weight_adjustments: {
+        Row: {
+          academic_adj: number
+          admission_adj: number
+          computed_from: Json
+          cost_adj: number
+          created_at: string
+          culture_adj: number
+          distance_adj: number
+          id: string
+          size_adj: number
+          support_adj: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          academic_adj?: number
+          admission_adj?: number
+          computed_from?: Json
+          cost_adj?: number
+          created_at?: string
+          culture_adj?: number
+          distance_adj?: number
+          id?: string
+          size_adj?: number
+          support_adj?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          academic_adj?: number
+          admission_adj?: number
+          computed_from?: Json
+          cost_adj?: number
+          created_at?: string
+          culture_adj?: number
+          distance_adj?: number
+          id?: string
+          size_adj?: number
+          support_adj?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
