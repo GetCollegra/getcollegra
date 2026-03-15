@@ -517,7 +517,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   if (gradRate != null && gradRate > 0.70) supportScore += 2;
   else if (gradRate != null && gradRate > 0.50) supportScore += 1;
   if (pellRate != null && pellRate > 0.30) supportScore += 1; // schools serving more aid-recipients tend to have stronger support
-  score += Math.min(5, supportScore);
+  score += Math.min(5, supportScore) + (a.support || 0);
 
   return Math.min(100, Math.max(0, score));
 }
