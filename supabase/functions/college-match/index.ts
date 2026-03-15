@@ -690,6 +690,9 @@ function normalizePreferenceKeys(input: Record<string, any>): Record<string, any
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
 serve(async (req) => {
+  console.log("[college-match] ===== FUNCTION START =====", new Date().toISOString());
+  console.log("[college-match] Method:", req.method);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -701,18 +704,25 @@ serve(async (req) => {
   const updateMatch = async (updates: Record<string, any>) => {
     if (!matchId) return;
     try {
+      console.log(`[college-match] DB UPDATE match=${matchId}, status=${updates.ai_status || "data-only"}, keys=${Object.keys(updates).join(",")}`);
       const sb = createClient(supabaseUrl, serviceKey);
-      await sb.from("college_matches").update(updates).eq("id", matchId);
-      console.log(`[college-match] Updated match ${matchId} → ${updates.ai_status || "data"}`);
+      const { error: updateErr } = await sb.from("college_matches").update(updates).eq("id", matchId);
+      if (updateErr) {
+        console.error(`[college-match] DB UPDATE FAILED for ${matchId}:`, updateErr.message);
+      } else {
+        console.log(`[college-match] DB UPDATE SUCCESS for ${matchId}`);
+      }
     } catch (e) {
-      console.error("[college-match] DB update failed:", e);
+      console.error("[college-match] DB update exception:", e);
     }
   };
 
   try {
-    const body = await req.json().catch(() => null);
+    const body = await req.json().catch((e: any) => { console.error("[college-match] Failed to parse request body:", e); return null; });
+    console.log("[college-match] Received payload:", JSON.stringify({ hasPreferences: !!body?.preferences, matchId: body?.matchId, hasExclude: !!body?.excludeColleges }));
     const raw = body?.preferences;
     matchId = typeof body?.matchId === "string" ? body.matchId : null;
+    console.log("[college-match] matchId:", matchId, "| preferences keys:", raw ? Object.keys(raw).join(",") : "NONE");
 
     // Rate limit only ad-hoc invocations (discover-more)
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -775,7 +785,10 @@ serve(async (req) => {
       });
     }
 
-    if (matchId) await updateMatch({ ai_status: "processing", ai_error: null });
+    if (matchId) {
+      console.log("[college-match] Setting match to processing...");
+      await updateMatch({ ai_status: "processing", ai_error: null });
+    }
 
     // Sanitize
     const sanitize = (v: any): string => {
@@ -868,6 +881,7 @@ serve(async (req) => {
     const comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Safety, Match, and Reach schools.`;
 
     // ── Step 4: Build final result and save as completed (version 1 = rule-based) ──
+    console.log("[college-match] Step 4: Building final result...");
     const recommendations = {
       studentProfile,
       colleges: matchedColleges,
@@ -875,6 +889,7 @@ serve(async (req) => {
     };
 
     if (matchId) {
+      console.log("[college-match] Saving completed results to DB for match:", matchId);
       await updateMatch({
         college_data: recommendations.colleges,
         student_profile: recommendations.studentProfile,
@@ -889,11 +904,12 @@ serve(async (req) => {
     // Mask premium fields for free tier
     const finalResult = isPremiumUser ? recommendations : maskPremiumFields({ ...recommendations });
 
+    console.log("[college-match] ===== RETURNING RESPONSE ===== colleges:", finalResult.colleges?.length, "isPremium:", isPremiumUser);
     return new Response(JSON.stringify(finalResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("[college-match] Unexpected error:", e);
+    console.error("[college-match] ===== CAUGHT ERROR =====", e instanceof Error ? e.message : e, e instanceof Error ? e.stack : "");
     await updateMatch({
       ai_status: "failed",
       ai_error: e instanceof Error ? e.message : "Unexpected error",
