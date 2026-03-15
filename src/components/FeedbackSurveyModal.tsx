@@ -112,6 +112,11 @@ const FeedbackSurveyModal = () => {
         .from("profiles")
         .update({ feedback_completed: true })
         .eq("id", user.id);
+
+      // Trigger weight adjustment recomputation in background
+      supabase.functions.invoke("compute-weight-adjustments", {
+        body: { userId: user.id },
+      }).catch(() => {});
     }
 
     setFeedbackCompleted(true);
