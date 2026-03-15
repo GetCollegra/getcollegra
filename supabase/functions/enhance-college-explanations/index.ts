@@ -199,6 +199,13 @@ Write personalized, vivid explanations for each school. The "name" field in each
       });
     }
 
+    // Ensure a value is an array of strings
+    const ensureArray = (val: any): string[] => {
+      if (Array.isArray(val)) return val.map(String);
+      if (typeof val === "string" && val.trim()) return [val];
+      return [];
+    };
+
     // Merge AI explanations into colleges
     const enhancedColleges = [...colleges];
     const NA_VALUES = new Set(["N/A", "See school website", "—", "", "Not reported", "Premium"]);
@@ -212,12 +219,15 @@ Write personalized, vivid explanations for each school. The "name" field in each
         );
         if (idx !== -1 && idx < 3) {
           const existing = enhancedColleges[idx];
+          const aiPros = ensureArray(aiCollege.prosForStudent);
+          const aiCons = ensureArray(aiCollege.consForStudent);
+          const aiChallenges = ensureArray(aiCollege.challengesForStudent);
           enhancedColleges[idx] = {
             ...existing,
             whyFit: aiCollege.whyFit || existing.whyFit,
-            prosForStudent: aiCollege.prosForStudent || existing.prosForStudent,
-            consForStudent: aiCollege.consForStudent || existing.consForStudent,
-            challengesForStudent: aiCollege.challengesForStudent || existing.challengesForStudent,
+            prosForStudent: aiPros.length > 0 ? aiPros : ensureArray(existing.prosForStudent),
+            consForStudent: aiCons.length > 0 ? aiCons : ensureArray(existing.consForStudent),
+            challengesForStudent: aiChallenges.length > 0 ? aiChallenges : ensureArray(existing.challengesForStudent),
             howToGetIn: aiCollege.howToGetIn || existing.howToGetIn,
             campusVibe: aiCollege.campusVibe || existing.campusVibe,
             notableFeature: aiCollege.notableFeature || existing.notableFeature,
