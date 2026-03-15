@@ -247,7 +247,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
                     transition={{ duration: 0.25 }}
                     className="overflow-hidden"
                   >
-                    {college.challengesForStudent && college.challengesForStudent.length > 0 && (
+                    {Array.isArray(college.challengesForStudent) && college.challengesForStudent.length > 0 && (
                       <ul className="space-y-1.5 mb-3">
                         {college.challengesForStudent.map((challenge, ci) => (
                           <motion.li
