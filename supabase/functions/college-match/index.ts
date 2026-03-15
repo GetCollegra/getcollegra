@@ -508,7 +508,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 8;
   else if (sizePref.includes("large") && studentSize > 15000) sizeScore = 8;
   else sizeScore = 2;
-  score += sizeScore;
+  score += sizeScore + (a.size || 0);
 
   // 7. Support Level (5 pts max — NEW: graduation rate + Pell grant rate as proxy)
   const gradRate = r["latest.completion.rate_suppressed.overall"];
