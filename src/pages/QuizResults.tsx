@@ -384,6 +384,7 @@ const QuizResults = () => {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [dbSurveyContext, setDbSurveyContext] = useState<Record<string, string>>({});
   const [aiEnhancing, setAiEnhancing] = useState(false);
+  const aiEnhancementTriggered = useRef(false);
   const { toast } = useToast();
   const { isSubscribed } = useAuth();
 
