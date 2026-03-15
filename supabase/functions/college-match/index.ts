@@ -472,7 +472,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
     else if (netPrice <= maxBudget * 1.2) costScore = 7;
     else costScore = 2;
   }
-  score += costScore;
+  score += costScore + (a.cost || 0);
 
   // 4. Distance From Home (12 pts max)
   const distPref = (prefs.distanceFromHome || "").toLowerCase();
