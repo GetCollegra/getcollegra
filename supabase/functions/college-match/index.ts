@@ -492,7 +492,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
       distScore = nearby.includes(schoolFips[0]) ? 10 : 4;
     }
   }
-  score += distScore;
+  score += distScore + (a.distance || 0);
 
   // 5. Admission Realism (10 pts max — doubled for better calibration)
   if (fitCategory === "Safety") score += 10;
