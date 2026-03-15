@@ -495,8 +495,8 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   score += distScore + (a.distance || 0);
 
   // 5. Admission Realism (10 pts max — doubled for better calibration)
-  if (fitCategory === "Safety") score += 10;
-  else if (fitCategory === "Match") score += 7;
+  if (fitCategory === "Safety") score += 10 + (a.admission || 0);
+  else if (fitCategory === "Match") score += 7 + (a.admission || 0);
   else score += 2; // Reach
 
   // 6. School Size (8 pts max)
