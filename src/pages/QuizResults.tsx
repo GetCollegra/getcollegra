@@ -497,6 +497,10 @@ const QuizResults = () => {
 
   // Trigger AI enhancement for rule-based results (version 1)
   const triggerAIEnhancement = async (mId: string, recs: Recommendations, rawPrefs: unknown) => {
+    // Prevent duplicate AI requests across renders/refreshes
+    if (aiEnhancementTriggered.current) return;
+    aiEnhancementTriggered.current = true;
+
     try {
       const retryPrefs = buildRetryPreferences(rawPrefs);
       if (!retryPrefs || !recs.colleges || recs.colleges.length < 3) return;
