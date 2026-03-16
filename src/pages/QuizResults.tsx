@@ -1168,6 +1168,20 @@ const QuizResults = () => {
               </div>
             </section>
 
+            {/* How You Compare Leaderboard */}
+            <HowYouCompare
+              surveyContext={surveyContext}
+              recommendations={recommendations}
+              firstName={surveyContext.first_name || surveyContext.firstName}
+            />
+
+            {/* Share Results */}
+            <ShareResults
+              recommendations={recommendations}
+              personalityName="College Personality"
+              firstName={surveyContext.first_name || surveyContext.firstName}
+            />
+
             {/* AI Insight Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-background">
               <div className="container px-4">
