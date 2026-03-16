@@ -154,8 +154,8 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
   else if (size.includes("large")) p.set("latest.student.size__range", "15000..30000");
 
   const loc = (prefs.locationType || "").toLowerCase();
-  if (loc.includes("urban") || loc.includes("city")) p.set("school.locale__range", "11..13");
-  else if (loc.includes("suburban")) p.set("school.locale__range", "21..23");
+  if (loc.includes("suburban")) p.set("school.locale__range", "21..23");
+  else if (loc.includes("urban") || loc.includes("city")) p.set("school.locale__range", "11..13");
   else if (loc.includes("rural") || loc.includes("small town")) p.set("school.locale__range", "31..43");
 
   const cost = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
