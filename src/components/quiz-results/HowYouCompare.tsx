@@ -122,7 +122,7 @@ const HowYouCompare = ({ surveyContext, recommendations, firstName }: HowYouComp
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               transition={{ delay: 0.35 }}
-              className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-gradient mb-2"
+              className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-gradient mb-2 py-1 leading-tight"
             >
               Top {100 - rarity}%
             </motion.p>
