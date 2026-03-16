@@ -912,6 +912,7 @@ const QuizResults = () => {
 
             {/* Student Profile Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-gradient-subtle">
+              <div className="container px-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
