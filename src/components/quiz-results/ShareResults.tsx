@@ -18,7 +18,7 @@ const ShareResults = ({ recommendations, personalityName, firstName }: ShareResu
   const colleges = recommendations.colleges || [];
   const topNames = colleges.slice(0, 3).map((c) => c.name).join(", ");
 
-  const shareText = `I just took the Collegra college quiz and I'm "${personalityName}"! 🎓 My top matches: ${topNames}. Find your college personality at getcollegra.lovable.app`;
+  const shareText = `I got the '${personalityName}' college personality on Collegra 🎓\n\nMy top matches were ${colleges.length >= 3 ? `${colleges[0].name}, ${colleges[1].name}, and ${colleges[2].name}` : topNames}.\n\nTake the quiz and see your results:\nhttps://getcollegra.com`;
 
   const handleShare = async () => {
     if (navigator.share) {
