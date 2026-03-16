@@ -215,11 +215,11 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
 
   const broadeningSteps: Array<{ label: string; transform: (q: string) => string }> = [
     { label: "drop state filter", transform: (q) => q.replace(/&school\.state_fips=[^&]*/g, "") },
-    { label: "drop locale filter", transform: (q) => q.replace(/&school\.locale__range=[^&]*/g, "") },
     { label: "drop size filter", transform: (q) => q.replace(/&latest\.student\.size__range=[^&]*/g, "") },
     { label: "widen acceptance rate to 0-50%", transform: (q) => q.replace(/latest\.admissions\.admission_rate\.overall__range=[^&]*/g, "latest.admissions.admission_rate.overall__range=0..0.50") },
     { label: "widen acceptance rate to full range", transform: (q) => q.replace(/latest\.admissions\.admission_rate\.overall__range=[^&]*/g, "latest.admissions.admission_rate.overall__range=0..1") },
     { label: "drop cost filter", transform: (q) => q.replace(/&latest\.cost\.avg_net_price\.overall__range=[^&]*/g, "") },
+    { label: "drop locale filter", transform: (q) => q.replace(/&school\.locale__range=[^&]*/g, "") },
   ];
 
   let results = await runQuery(baseQuery);
