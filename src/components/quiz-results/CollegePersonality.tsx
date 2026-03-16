@@ -50,7 +50,7 @@ const PERSONALITIES = [
 
 type TraitBar = { label: string; value: number; color: string };
 
-function derivePersonality(
+export function derivePersonality(
   surveyContext: Record<string, string>,
   recommendations: Recommendations
 ): { personality: typeof PERSONALITIES[0]; traits: TraitBar[] } {
