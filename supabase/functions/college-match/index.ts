@@ -423,9 +423,10 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   const localeDesc = locale <= 13 ? "urban" : locale <= 23 ? "suburban" : locale <= 33 ? "town" : "rural";
   const prefLoc = (prefs.locationType || "").toLowerCase();
   let cultureScore = 10; // baseline
-  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 22;
-  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 22;
+  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 23;
+  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 23;
   else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 16;
+  else cultureScore = 4; // strong penalty for mismatched locale when user has a clear preference
 
   // Vibe bonus
   const vibe = (prefs.campusVibe || "").toLowerCase();
