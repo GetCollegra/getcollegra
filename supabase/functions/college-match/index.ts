@@ -215,11 +215,11 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
 
   const broadeningSteps: Array<{ label: string; transform: (q: string) => string }> = [
     { label: "drop state filter", transform: (q) => q.replace(/&school\.state_fips=[^&]*/g, "") },
-    { label: "drop locale filter", transform: (q) => q.replace(/&school\.locale__range=[^&]*/g, "") },
     { label: "drop size filter", transform: (q) => q.replace(/&latest\.student\.size__range=[^&]*/g, "") },
     { label: "widen acceptance rate to 0-50%", transform: (q) => q.replace(/latest\.admissions\.admission_rate\.overall__range=[^&]*/g, "latest.admissions.admission_rate.overall__range=0..0.50") },
     { label: "widen acceptance rate to full range", transform: (q) => q.replace(/latest\.admissions\.admission_rate\.overall__range=[^&]*/g, "latest.admissions.admission_rate.overall__range=0..1") },
     { label: "drop cost filter", transform: (q) => q.replace(/&latest\.cost\.avg_net_price\.overall__range=[^&]*/g, "") },
+    { label: "drop locale filter", transform: (q) => q.replace(/&school\.locale__range=[^&]*/g, "") },
   ];
 
   let results = await runQuery(baseQuery);
@@ -423,9 +423,10 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   const localeDesc = locale <= 13 ? "urban" : locale <= 23 ? "suburban" : locale <= 33 ? "town" : "rural";
   const prefLoc = (prefs.locationType || "").toLowerCase();
   let cultureScore = 10; // baseline
-  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 22;
-  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 22;
+  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 23;
+  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 23;
   else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 16;
+  else cultureScore = 4; // strong penalty for mismatched locale when user has a clear preference
 
   // Vibe bonus
   const vibe = (prefs.campusVibe || "").toLowerCase();
