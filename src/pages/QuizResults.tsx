@@ -1178,7 +1178,7 @@ const QuizResults = () => {
             {/* Share Results */}
             <ShareResults
               recommendations={recommendations}
-              personalityName="College Personality"
+              personalityName={derivePersonality(surveyContext, recommendations).personality.name}
               firstName={surveyContext.first_name || surveyContext.firstName}
             />
 
