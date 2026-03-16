@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CollegePersonality, { derivePersonality } from "@/components/quiz-results/CollegePersonality";
+import HowYouCompare from "@/components/quiz-results/HowYouCompare";
+import ShareResults from "@/components/quiz-results/ShareResults";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { trackClick } from "@/lib/analytics";
@@ -900,6 +903,13 @@ const QuizResults = () => {
 
         {recommendations && !loading && (
           <>
+            {/* College Personality Hero Card */}
+            <CollegePersonality
+              surveyContext={surveyContext}
+              recommendations={recommendations}
+              firstName={surveyContext.first_name || surveyContext.firstName}
+            />
+
             {/* Student Profile Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-gradient-subtle">
               <div className="container px-4">
@@ -1157,6 +1167,20 @@ const QuizResults = () => {
                 </motion.div>
               </div>
             </section>
+
+            {/* How You Compare Leaderboard */}
+            <HowYouCompare
+              surveyContext={surveyContext}
+              recommendations={recommendations}
+              firstName={surveyContext.first_name || surveyContext.firstName}
+            />
+
+            {/* Share Results */}
+            <ShareResults
+              recommendations={recommendations}
+              personalityName={derivePersonality(surveyContext, recommendations).personality.name}
+              firstName={surveyContext.first_name || surveyContext.firstName}
+            />
 
             {/* AI Insight Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-background">
