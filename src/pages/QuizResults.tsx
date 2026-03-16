@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CollegePersonality from "@/components/quiz-results/CollegePersonality";
+import HowYouCompare from "@/components/quiz-results/HowYouCompare";
+import ShareResults from "@/components/quiz-results/ShareResults";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { trackClick } from "@/lib/analytics";
