@@ -903,9 +903,15 @@ const QuizResults = () => {
 
         {recommendations && !loading && (
           <>
+            {/* College Personality Hero Card */}
+            <CollegePersonality
+              surveyContext={surveyContext}
+              recommendations={recommendations}
+              firstName={surveyContext.first_name || surveyContext.firstName}
+            />
+
             {/* Student Profile Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-gradient-subtle">
-              <div className="container px-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
