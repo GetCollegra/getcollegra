@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import type { College, Recommendations } from "@/types/college";
 
-// Personality archetypes derived from quiz answers + match results
 const PERSONALITIES = [
   {
     id: "trailblazer",
@@ -47,6 +46,12 @@ const PERSONALITIES = [
     description: "You see the world differently. Whether it's art, design, writing, or music — you want a campus that nurtures your creative fire.",
   },
   {
+    id: "connector",
+    name: "The Social Connector",
+    emoji: "🤝",
+    description: "You light up every room. Greek life, athletics, school spirit — you want a campus buzzing with energy and connection.",
+  },
+  {
     id: "dreamer",
     name: "The Big Dreamer",
     emoji: "✨",
@@ -56,18 +61,17 @@ const PERSONALITIES = [
 
 type TraitBar = { label: string; value: number; color: string };
 
-/** Grab a quiz answer from either camelCase or snake_case key */
+/** Grab a quiz answer from either camelCase or snake_case key, lowercased */
 const pref = (ctx: Record<string, string>, ...keys: string[]): string => {
   for (const k of keys) {
     const v = ctx[k];
-    if (typeof v === "string" && v.trim() && v.trim() !== "No preference" && v.trim() !== "Undecided") return v.trim().toLowerCase();
+    if (typeof v === "string" && v.trim()) return v.trim().toLowerCase();
   }
   return "";
 };
 
-/** Check if a preference string includes any of the given keywords */
-const includes = (val: string, ...keywords: string[]) =>
-  keywords.some((kw) => val.includes(kw));
+const has = (val: string, ...keywords: string[]) =>
+  keywords.some((kw) => val.includes(kw.toLowerCase()));
 
 export function derivePersonality(
   surveyContext: Record<string, string>,
@@ -75,7 +79,7 @@ export function derivePersonality(
 ): { personality: typeof PERSONALITIES[0]; traits: TraitBar[] } {
   const colleges = recommendations.colleges || [];
 
-  // ── Extract quiz answers ──
+  // ── Read actual Tally quiz answers ──
   const distance = pref(surveyContext, "distanceFromHome", "distance_from_home");
   const maxCost = pref(surveyContext, "maxCost", "max_cost");
   const campusLife = pref(surveyContext, "campusLife", "campus_life");
@@ -88,98 +92,148 @@ export function derivePersonality(
   const areaOfStudy = pref(surveyContext, "areaOfStudy", "area_of_study");
   const gpa = pref(surveyContext, "gpa");
 
-  // ── Derive signals from answers ──
+  // ── Derive boolean signals from exact Tally option values ──
   const hasReach = colleges.some((c) => c.fitCategory === "Reach");
   const avgFit = colleges.length > 0 ? colleges.reduce((s, c) => s + (c.fitScore || 0), 0) / colleges.length : 75;
 
-  const wantsCloseToHome = includes(distance, "close", "100", "50", "near", "state", "short");
-  const wantsFarFromHome = includes(distance, "far", "anywhere", "500", "1000", "no limit", "doesn't matter", "coast");
+  // Distance: "under 1 hour" / "up to 3 hours" = close; "anywhere in the u.s" / "up to 10 hours" = far
+  const wantsCloseToHome = has(distance, "under 1", "up to 3");
+  const wantsFarFromHome = has(distance, "anywhere", "up to 10");
 
-  const isCostConscious = includes(maxCost, "under", "low", "cheap", "affordable", "15", "20", "10") ||
-    includes(finAid, "very", "extremely", "essential", "critical");
+  // Cost: "under $10,000" / "$10,000-$20,000" = budget-conscious
+  const isCostConscious = has(maxCost, "under $10", "$10,000-$20") || has(finAid, "essential", "very important");
 
-  const isCampusLifeFocused = includes(campusLife, "very", "extremely", "essential", "love", "huge") ||
-    includes(campusVibe, "social", "greek", "party", "active", "spirited", "lively");
+  // Campus vibe: exact Tally options
+  const isSportsSpirit = has(campusVibe, "big school with lots of sports", "sports and school spirit");
+  const isBalanced = has(campusVibe, "balanced academics and social");
+  const isQuietAcademic = has(campusVibe, "academically focused and quieter");
+  const isCreativeArtsy = has(campusVibe, "creative", "artsy");
+  const isTightKnit = has(campusVibe, "tight-knit", "community feel");
 
-  const isAcademicFocused = includes(academic, "very", "extremely", "essential", "most", "top") ||
-    includes(campusVibe, "academic", "studious", "intellectual", "research");
+  // Campus life interests (multi-select, may be comma-separated)
+  const hasAthletics = has(campusLife, "athletics", "sports");
+  const hasGreekLife = has(campusLife, "greek");
+  const hasResearch = has(campusLife, "research");
+  const hasFineArts = has(campusLife, "fine arts");
+  const hasStudentMedia = has(campusLife, "student media", "newspaper", "radio", "film");
+  const hasStudyAbroad = has(campusLife, "study abroad");
+  const hasInternships = has(campusLife, "internship", "career networking");
+  const hasSchoolSpirit = has(campusLife, "school spirit");
+  const hasClubs = has(campusLife, "student clubs", "intramural");
+  const hasCommunityService = has(campusLife, "community service");
 
-  const isCompetitive = includes(acceptance, "selective", "competitive", "30", "20", "10", "elite", "top") ||
-    (gpa && parseFloat(gpa) >= 3.7);
+  // Academics importance: "top priority" / "very important" = high
+  const isAcademicFocused = has(academic, "top priority", "very important");
 
-  const isCreative = includes(areaOfStudy, "art", "design", "music", "theater", "theatre", "film", "creative", "media", "writing", "communications");
+  // Acceptance rate: "highly selective 10-25" / "very selective 10<" = competitive
+  const isCompetitive = has(acceptance, "highly selective", "very selective");
+  const isModerate = has(acceptance, "moderately selective", "selective 25");
 
-  const wantsBigCity = includes(locationType, "urban", "city", "metro", "downtown");
-  const wantsLargeCampus = includes(campusSize, "large", "big", "20,000", "30,000", "major");
+  // Area of study
+  const isCreativeStudy = has(areaOfStudy, "creative arts", "design");
+  const isSTEM = has(areaOfStudy, "stem", "computer science", "engineering", "math");
+  const isBusiness = has(areaOfStudy, "business", "economics");
+  const isPreMed = has(areaOfStudy, "pre-med", "health");
+  const isHumanities = has(areaOfStudy, "humanities", "history", "english", "philosophy");
 
-  // ── Score each personality archetype ──
+  // Campus size
+  const isLargeCampus = has(campusSize, "large", "very large", "30,000");
+  const isSmallCampus = has(campusSize, "small", "fewer than 5,000");
+
+  // Location
+  const wantsBigCity = has(locationType, "big city");
+
+  // High GPA
+  const gpaNum = gpa ? parseFloat(gpa) : 0;
+  const highGPA = gpaNum >= 3.7;
+
+  // ── Score each archetype ──
   const scores: Record<string, number> = {
-    trailblazer: 0,
-    scholar: 0,
-    explorer: 0,
-    strategist: 0,
-    homegrown: 0,
-    adventurer: 0,
-    creative: 0,
-    dreamer: 0,
+    trailblazer: 0, scholar: 0, explorer: 0, strategist: 0,
+    homegrown: 0, adventurer: 0, creative: 0, connector: 0, dreamer: 1,
   };
 
-  // Trailblazer — competitive + high GPA + reach schools
-  if (isCompetitive) scores.trailblazer += 3;
+  // Trailblazer: competitive schools + high GPA + reach
+  if (isCompetitive) scores.trailblazer += 4;
   if (hasReach) scores.trailblazer += 2;
-  if (gpa && parseFloat(gpa) >= 3.5) scores.trailblazer += 1;
+  if (highGPA) scores.trailblazer += 2;
+  if (isAcademicFocused && isCompetitive) scores.trailblazer += 1;
 
-  // Scholar — academic focus
+  // Scholar: academic focus + research + quiet vibe
   if (isAcademicFocused) scores.scholar += 3;
-  if (includes(campusVibe, "research", "studious", "intellectual")) scores.scholar += 2;
-  if (!isCampusLifeFocused) scores.scholar += 1;
+  if (isQuietAcademic) scores.scholar += 3;
+  if (hasResearch) scores.scholar += 2;
+  if (isSTEM || isPreMed) scores.scholar += 1;
+  if (isSmallCampus) scores.scholar += 1;
 
-  // Explorer — campus life + social vibe
-  if (isCampusLifeFocused) scores.explorer += 3;
-  if (wantsLargeCampus) scores.explorer += 1;
-  if (includes(campusVibe, "diverse", "inclusive", "community")) scores.explorer += 1;
+  // Explorer: balanced + clubs + study abroad + large campus
+  if (isBalanced) scores.explorer += 2;
+  if (hasStudyAbroad) scores.explorer += 3;
+  if (hasClubs) scores.explorer += 2;
+  if (hasCommunityService) scores.explorer += 1;
+  if (isLargeCampus) scores.explorer += 1;
+  if (wantsBigCity) scores.explorer += 1;
 
-  // Strategist — cost-conscious + practical
-  if (isCostConscious) scores.strategist += 3;
-  if (!isCompetitive && !wantsFarFromHome) scores.strategist += 1;
-  if (avgFit > 80) scores.strategist += 1;
+  // Strategist: cost-conscious + internships + practical
+  if (isCostConscious) scores.strategist += 4;
+  if (hasInternships) scores.strategist += 2;
+  if (isBusiness) scores.strategist += 2;
+  if (isModerate) scores.strategist += 1;
 
-  // Hometown Hero — close to home
-  if (wantsCloseToHome) scores.homegrown += 4;
-  if (includes(campusSize, "small", "medium")) scores.homegrown += 1;
+  // Hometown Hero: close to home + small/tight-knit
+  if (wantsCloseToHome) scores.homegrown += 5;
+  if (isTightKnit) scores.homegrown += 2;
+  if (isSmallCampus) scores.homegrown += 1;
 
-  // Adventurer — far from home + big city + large campus
-  if (wantsFarFromHome) scores.adventurer += 3;
+  // Adventurer: far from home + big city + large campus
+  if (wantsFarFromHome) scores.adventurer += 4;
   if (wantsBigCity) scores.adventurer += 2;
-  if (wantsLargeCampus) scores.adventurer += 1;
+  if (isLargeCampus) scores.adventurer += 1;
+  if (hasStudyAbroad) scores.adventurer += 1;
 
-  // Creative — arts/design/media
-  if (isCreative) scores.creative += 4;
-  if (includes(campusVibe, "creative", "artistic", "expressive")) scores.creative += 2;
+  // Creative Visionary: artsy vibe + fine arts + creative studies + student media
+  if (isCreativeArtsy) scores.creative += 4;
+  if (hasFineArts) scores.creative += 3;
+  if (isCreativeStudy) scores.creative += 3;
+  if (hasStudentMedia) scores.creative += 2;
+  if (isHumanities) scores.creative += 1;
 
-  // Dreamer baseline (fallback)
-  scores.dreamer += 1;
+  // Social Connector: sports + greek + school spirit + big campus
+  if (isSportsSpirit) scores.connector += 4;
+  if (hasGreekLife) scores.connector += 3;
+  if (hasAthletics) scores.connector += 2;
+  if (hasSchoolSpirit) scores.connector += 2;
+  if (isLargeCampus) scores.connector += 1;
 
-  // Pick the highest scoring personality
+  // Pick highest
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const winnerId = sorted[0][1] > 1 ? sorted[0][0] : "dreamer";
   const personality = PERSONALITIES.find((p) => p.id === winnerId) || PERSONALITIES[PERSONALITIES.length - 1];
 
-  // ── Derive trait bars from actual quiz answers ──
-  const ambition = Math.min(98, Math.max(35,
-    (isCompetitive ? 30 : 0) + (hasReach ? 20 : 0) + (isAcademicFocused ? 15 : 0) +
-    (gpa ? Math.round(parseFloat(gpa) * 12) : 30) + 20
+  // ── Trait bars derived from actual answers ──
+  const ambition = Math.min(98, Math.max(30,
+    (isCompetitive ? 30 : isModerate ? 15 : 5) +
+    (hasReach ? 15 : 0) +
+    (isAcademicFocused ? 15 : 0) +
+    (highGPA ? 15 : gpaNum >= 3.0 ? 8 : 0) +
+    (hasResearch ? 5 : 0) + 20
   ));
 
-  const practicality = Math.min(95, Math.max(30,
-    (isCostConscious ? 30 : 0) + (wantsCloseToHome ? 20 : 0) +
-    (!isCompetitive ? 10 : 0) + Math.round(avgFit * 0.35) + 10
+  const practicality = Math.min(95, Math.max(25,
+    (isCostConscious ? 30 : 10) +
+    (wantsCloseToHome ? 15 : 0) +
+    (hasInternships ? 10 : 0) +
+    (isBusiness ? 5 : 0) +
+    Math.round(avgFit * 0.3) + 5
   ));
 
-  const adventureSpirit = Math.min(96, Math.max(25,
-    (wantsFarFromHome ? 30 : 0) + (wantsBigCity ? 20 : 0) +
-    (isCampusLifeFocused ? 15 : 0) + (wantsLargeCampus ? 10 : 0) +
-    (!wantsCloseToHome ? 15 : 0) + 10
+  const adventureSpirit = Math.min(96, Math.max(20,
+    (wantsFarFromHome ? 25 : 5) +
+    (wantsBigCity ? 15 : 0) +
+    (isLargeCampus ? 10 : 0) +
+    (hasStudyAbroad ? 15 : 0) +
+    (isSportsSpirit || hasGreekLife ? 10 : 0) +
+    (!wantsCloseToHome ? 10 : 0) + 5
   ));
 
   const traits: TraitBar[] = [
