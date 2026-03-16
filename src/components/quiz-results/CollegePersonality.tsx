@@ -9,85 +9,178 @@ const PERSONALITIES = [
     name: "The Trailblazer",
     emoji: "🚀",
     description: "You chase big dreams and aren't afraid to aim high. You thrive in competitive environments where ambition meets opportunity.",
-    triggers: { reach: true, competitive: true },
   },
   {
     id: "scholar",
     name: "The Focused Scholar",
     emoji: "📚",
     description: "Academics come first for you. You want a school where learning is serious, professors are accessible, and research opportunities abound.",
-    triggers: { academic: true },
   },
   {
     id: "explorer",
     name: "The Campus Explorer",
     emoji: "🌍",
     description: "You want the full college experience — campus life, clubs, community, and connection. The vibe matters as much as the degree.",
-    triggers: { campusLife: true },
   },
   {
     id: "strategist",
     name: "The Smart Strategist",
     emoji: "🧠",
     description: "You balance ambition with practicality. Value for money, career outcomes, and smart choices define your college search.",
-    triggers: { value: true },
   },
   {
     id: "homegrown",
     name: "The Hometown Hero",
     emoji: "🏡",
     description: "Staying close to your roots matters. You want a great education without straying too far from family and community.",
-    triggers: { closeToHome: true },
+  },
+  {
+    id: "adventurer",
+    name: "The Adventurer",
+    emoji: "🧭",
+    description: "You want to explore new places and break out of your comfort zone. A fresh city, new culture, and big campus energy call to you.",
+  },
+  {
+    id: "creative",
+    name: "The Creative Visionary",
+    emoji: "🎨",
+    description: "You see the world differently. Whether it's art, design, writing, or music — you want a campus that nurtures your creative fire.",
   },
   {
     id: "dreamer",
     name: "The Big Dreamer",
     emoji: "✨",
     description: "You're open to possibilities and ready for whatever college life throws your way. Your curiosity is your superpower.",
-    triggers: { default: true },
   },
 ];
 
 type TraitBar = { label: string; value: number; color: string };
+
+/** Grab a quiz answer from either camelCase or snake_case key */
+const pref = (ctx: Record<string, string>, ...keys: string[]): string => {
+  for (const k of keys) {
+    const v = ctx[k];
+    if (typeof v === "string" && v.trim() && v.trim() !== "No preference" && v.trim() !== "Undecided") return v.trim().toLowerCase();
+  }
+  return "";
+};
+
+/** Check if a preference string includes any of the given keywords */
+const includes = (val: string, ...keywords: string[]) =>
+  keywords.some((kw) => val.includes(kw));
 
 export function derivePersonality(
   surveyContext: Record<string, string>,
   recommendations: Recommendations
 ): { personality: typeof PERSONALITIES[0]; traits: TraitBar[] } {
   const colleges = recommendations.colleges || [];
-  const prefs = surveyContext;
 
-  // Derive signals
+  // ── Extract quiz answers ──
+  const distance = pref(surveyContext, "distanceFromHome", "distance_from_home");
+  const maxCost = pref(surveyContext, "maxCost", "max_cost");
+  const campusLife = pref(surveyContext, "campusLife", "campus_life");
+  const academic = pref(surveyContext, "academicImportance", "academic_importance");
+  const acceptance = pref(surveyContext, "acceptanceRatePref", "acceptance_rate_pref");
+  const finAid = pref(surveyContext, "financialAid", "financial_aid");
+  const campusVibe = pref(surveyContext, "campusVibe", "campus_vibe");
+  const campusSize = pref(surveyContext, "campusSize", "campus_size");
+  const locationType = pref(surveyContext, "locationType", "location_type");
+  const areaOfStudy = pref(surveyContext, "areaOfStudy", "area_of_study");
+  const gpa = pref(surveyContext, "gpa");
+
+  // ── Derive signals from answers ──
   const hasReach = colleges.some((c) => c.fitCategory === "Reach");
   const avgFit = colleges.length > 0 ? colleges.reduce((s, c) => s + (c.fitScore || 0), 0) / colleges.length : 75;
-  const wantsCloseToHome = ["< 100 miles", "Under 100 miles", "Close to home", "Within my state"].some(
-    (v) => (prefs.distanceFromHome || prefs.distance_from_home || "").toLowerCase().includes(v.toLowerCase())
-  );
-  const costFocused = ["Under $15,000", "Under $20,000", "Affordable", "Low cost"].some(
-    (v) => (prefs.maxCost || prefs.max_cost || "").toLowerCase().includes(v.toLowerCase())
-  );
-  const campusLifeFocused = ["Very important", "Extremely important"].some(
-    (v) => (prefs.campusLife || prefs.campus_life || "").toLowerCase().includes(v.toLowerCase())
-  );
-  const academicFocused = ["Very important", "Extremely important"].some(
-    (v) => (prefs.academicImportance || prefs.academic_importance || "").toLowerCase().includes(v.toLowerCase())
-  );
-  const competitivePref = ["Highly selective", "Competitive", "< 30%"].some(
-    (v) => (prefs.acceptanceRatePref || prefs.acceptance_rate_pref || "").toLowerCase().includes(v.toLowerCase())
-  );
 
-  // Pick personality
-  let personality = PERSONALITIES[PERSONALITIES.length - 1]; // default dreamer
-  if (hasReach && competitivePref) personality = PERSONALITIES[0]; // trailblazer
-  else if (academicFocused) personality = PERSONALITIES[1]; // scholar
-  else if (campusLifeFocused) personality = PERSONALITIES[2]; // explorer
-  else if (costFocused) personality = PERSONALITIES[3]; // strategist
-  else if (wantsCloseToHome) personality = PERSONALITIES[4]; // homegrown
+  const wantsCloseToHome = includes(distance, "close", "100", "50", "near", "state", "short");
+  const wantsFarFromHome = includes(distance, "far", "anywhere", "500", "1000", "no limit", "doesn't matter", "coast");
 
-  // Derive trait bars
-  const ambition = Math.min(98, Math.max(40, hasReach ? 88 : competitivePref ? 82 : Math.round(avgFit * 0.9)));
-  const practicality = Math.min(95, Math.max(35, costFocused ? 91 : wantsCloseToHome ? 85 : 62));
-  const adventureSpirit = Math.min(96, Math.max(30, campusLifeFocused ? 89 : !wantsCloseToHome ? 78 : 45));
+  const isCostConscious = includes(maxCost, "under", "low", "cheap", "affordable", "15", "20", "10") ||
+    includes(finAid, "very", "extremely", "essential", "critical");
+
+  const isCampusLifeFocused = includes(campusLife, "very", "extremely", "essential", "love", "huge") ||
+    includes(campusVibe, "social", "greek", "party", "active", "spirited", "lively");
+
+  const isAcademicFocused = includes(academic, "very", "extremely", "essential", "most", "top") ||
+    includes(campusVibe, "academic", "studious", "intellectual", "research");
+
+  const isCompetitive = includes(acceptance, "selective", "competitive", "30", "20", "10", "elite", "top") ||
+    (gpa && parseFloat(gpa) >= 3.7);
+
+  const isCreative = includes(areaOfStudy, "art", "design", "music", "theater", "theatre", "film", "creative", "media", "writing", "communications");
+
+  const wantsBigCity = includes(locationType, "urban", "city", "metro", "downtown");
+  const wantsLargeCampus = includes(campusSize, "large", "big", "20,000", "30,000", "major");
+
+  // ── Score each personality archetype ──
+  const scores: Record<string, number> = {
+    trailblazer: 0,
+    scholar: 0,
+    explorer: 0,
+    strategist: 0,
+    homegrown: 0,
+    adventurer: 0,
+    creative: 0,
+    dreamer: 0,
+  };
+
+  // Trailblazer — competitive + high GPA + reach schools
+  if (isCompetitive) scores.trailblazer += 3;
+  if (hasReach) scores.trailblazer += 2;
+  if (gpa && parseFloat(gpa) >= 3.5) scores.trailblazer += 1;
+
+  // Scholar — academic focus
+  if (isAcademicFocused) scores.scholar += 3;
+  if (includes(campusVibe, "research", "studious", "intellectual")) scores.scholar += 2;
+  if (!isCampusLifeFocused) scores.scholar += 1;
+
+  // Explorer — campus life + social vibe
+  if (isCampusLifeFocused) scores.explorer += 3;
+  if (wantsLargeCampus) scores.explorer += 1;
+  if (includes(campusVibe, "diverse", "inclusive", "community")) scores.explorer += 1;
+
+  // Strategist — cost-conscious + practical
+  if (isCostConscious) scores.strategist += 3;
+  if (!isCompetitive && !wantsFarFromHome) scores.strategist += 1;
+  if (avgFit > 80) scores.strategist += 1;
+
+  // Hometown Hero — close to home
+  if (wantsCloseToHome) scores.homegrown += 4;
+  if (includes(campusSize, "small", "medium")) scores.homegrown += 1;
+
+  // Adventurer — far from home + big city + large campus
+  if (wantsFarFromHome) scores.adventurer += 3;
+  if (wantsBigCity) scores.adventurer += 2;
+  if (wantsLargeCampus) scores.adventurer += 1;
+
+  // Creative — arts/design/media
+  if (isCreative) scores.creative += 4;
+  if (includes(campusVibe, "creative", "artistic", "expressive")) scores.creative += 2;
+
+  // Dreamer baseline (fallback)
+  scores.dreamer += 1;
+
+  // Pick the highest scoring personality
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const winnerId = sorted[0][1] > 1 ? sorted[0][0] : "dreamer";
+  const personality = PERSONALITIES.find((p) => p.id === winnerId) || PERSONALITIES[PERSONALITIES.length - 1];
+
+  // ── Derive trait bars from actual quiz answers ──
+  const ambition = Math.min(98, Math.max(35,
+    (isCompetitive ? 30 : 0) + (hasReach ? 20 : 0) + (isAcademicFocused ? 15 : 0) +
+    (gpa ? Math.round(parseFloat(gpa) * 12) : 30) + 20
+  ));
+
+  const practicality = Math.min(95, Math.max(30,
+    (isCostConscious ? 30 : 0) + (wantsCloseToHome ? 20 : 0) +
+    (!isCompetitive ? 10 : 0) + Math.round(avgFit * 0.35) + 10
+  ));
+
+  const adventureSpirit = Math.min(96, Math.max(25,
+    (wantsFarFromHome ? 30 : 0) + (wantsBigCity ? 20 : 0) +
+    (isCampusLifeFocused ? 15 : 0) + (wantsLargeCampus ? 10 : 0) +
+    (!wantsCloseToHome ? 15 : 0) + 10
+  ));
 
   const traits: TraitBar[] = [
     { label: "Ambition", value: ambition, color: "bg-primary" },
