@@ -14,41 +14,58 @@ function deriveComparison(
   surveyContext: Record<string, string>,
   recommendations: Recommendations
 ) {
-  const prefs = surveyContext;
+  const p = (key: string, alt?: string) => {
+    const v = surveyContext[key] || (alt ? surveyContext[alt] : "") || "";
+    return v.trim().toLowerCase();
+  };
+
+  const has = (val: string, ...kw: string[]) => kw.some((k) => val.includes(k.toLowerCase()));
+
   const colleges = recommendations.colleges || [];
   const avgFit = colleges.length > 0 ? Math.round(colleges.reduce((s, c) => s + (c.fitScore || 0), 0) / colleges.length) : 75;
 
-  // Rarity — derived from how specific/niche the preferences are
-  const filledPrefs = Object.values(prefs).filter((v) => v && v !== "No preference" && v !== "Undecided").length;
+  // Count meaningful (non-default) answers
+  const filledPrefs = Object.values(surveyContext).filter(
+    (v) => v && !["no preference", "undecided", "none"].includes(v.trim().toLowerCase())
+  ).length;
   const rarity = Math.min(97, Math.max(12, Math.round(filledPrefs * 5.5 + avgFit * 0.25)));
 
-  // Strongest traits
+  // Derive strongest traits from actual Tally answers
+  const academic = p("academicImportance", "academic_importance");
+  const acceptance = p("acceptanceRatePref", "acceptance_rate_pref");
+  const maxCost = p("maxCost", "max_cost");
+  const finAid = p("financialAid", "financial_aid");
+  const campusLife = p("campusLife", "campus_life");
+  const campusVibe = p("campusVibe", "campus_vibe");
+  const distance = p("distanceFromHome", "distance_from_home");
+  const areaOfStudy = p("areaOfStudy", "area_of_study");
+
   const strongestTraits: string[] = [];
-  const academicFocused = ["Very important", "Extremely important"].some(
-    (v) => (prefs.academicImportance || prefs.academic_importance || "").toLowerCase().includes(v.toLowerCase())
-  );
-  const costFocused = ["Under $15,000", "Under $20,000", "Affordable"].some(
-    (v) => (prefs.maxCost || prefs.max_cost || "").toLowerCase().includes(v.toLowerCase())
-  );
-  const campusLifeFocused = ["Very important", "Extremely important"].some(
-    (v) => (prefs.campusLife || prefs.campus_life || "").toLowerCase().includes(v.toLowerCase())
-  );
 
-  if (academicFocused) strongestTraits.push("Academic Drive");
-  if (costFocused) strongestTraits.push("Budget Awareness");
-  if (campusLifeFocused) strongestTraits.push("Community Focus");
-  if (colleges.some((c) => c.fitCategory === "Reach")) strongestTraits.push("High Ambition");
-  if (strongestTraits.length === 0) strongestTraits.push("Balanced Approach", "Open-Minded");
-  if (strongestTraits.length === 1) strongestTraits.push("Self-Aware");
+  if (has(academic, "top priority", "very important")) strongestTraits.push("Academic Drive");
+  if (has(acceptance, "highly selective", "very selective")) strongestTraits.push("High Ambition");
+  if (has(maxCost, "under $10", "$10,000-$20") || has(finAid, "essential", "very important")) strongestTraits.push("Budget Savvy");
+  if (has(campusVibe, "big school", "sports and school spirit") || has(campusLife, "athletics", "greek")) strongestTraits.push("Social Energy");
+  if (has(campusVibe, "creative", "artsy") || has(campusLife, "fine arts", "student media")) strongestTraits.push("Creative Spirit");
+  if (has(campusLife, "research") || has(areaOfStudy, "stem", "computer", "pre-med")) strongestTraits.push("Research Minded");
+  if (has(campusLife, "internship", "career")) strongestTraits.push("Career Focused");
+  if (has(distance, "under 1", "up to 3")) strongestTraits.push("Close to Home");
+  if (has(distance, "anywhere")) strongestTraits.push("Wanderlust");
+  if (has(campusLife, "study abroad")) strongestTraits.push("Global Curiosity");
+  if (has(campusLife, "community service")) strongestTraits.push("Community Heart");
 
-  // Leaderboard data
+  // Keep top 4, ensure at least 2
+  const topTraits = strongestTraits.slice(0, 4);
+  if (topTraits.length === 0) topTraits.push("Balanced Approach", "Open-Minded");
+  if (topTraits.length === 1) topTraits.push("Self-Aware");
+
   const leaderboard: LeaderboardRow[] = [
     { trait: "Match Quality", you: `${avgFit}%`, avg: "68%", icon: Star },
     { trait: "Preference Clarity", you: `${Math.min(95, filledPrefs * 7)}%`, avg: "52%", icon: Zap },
     { trait: "Research Depth", you: colleges.length >= 5 ? "Top 15%" : "Top 30%", avg: "Top 50%", icon: TrendingUp },
   ];
 
-  return { rarity, strongestTraits, leaderboard };
+  return { rarity, strongestTraits: topTraits, leaderboard };
 }
 
 const HowYouCompare = ({ surveyContext, recommendations, firstName }: HowYouCompareProps) => {
