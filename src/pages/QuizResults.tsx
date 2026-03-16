@@ -1045,47 +1045,6 @@ const QuizResults = () => {
                     </>
                   )}
 
-                  {/* Discover More button - Premium only */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="text-center pt-6 sm:pt-10"
-                  >
-                    {isSubscribed ? (
-                      <>
-                        <Button
-                          onClick={discoverMore}
-                          disabled={loadingMore}
-                          size="lg"
-                          variant="outline"
-                          className="rounded-full px-8 sm:px-10 gap-2 border-primary/30 hover:bg-primary/5 hover:border-primary/50 text-primary font-semibold"
-                        >
-                          {loadingMore ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" /> Finding more matches...</>
-                          ) : (
-                            <><Sparkles className="w-4 h-4" /> Discover More Matches</>
-                          )}
-                        </Button>
-                        <p className="text-muted-foreground text-xs sm:text-sm mt-3">
-                          Find 5 more colleges that fit your preferences
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          onClick={() => { trackClick("Discover More Premium Gate", "QuizResults"); startCheckout(toast); }}
-                          size="lg"
-                          className="rounded-full px-8 sm:px-10 gap-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-bold shadow-elevated"
-                        >
-                          <Lock className="w-4 h-4" /> Unlock More Matches – $9.99/mo
-                        </Button>
-                        <p className="text-muted-foreground text-xs sm:text-sm mt-3">
-                          Premium members can discover unlimited additional colleges
-                        </p>
-                      </>
-                    )}
-                  </motion.div>
                 </div>
               </div>
             </section>
