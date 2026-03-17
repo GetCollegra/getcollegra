@@ -661,11 +661,24 @@ function getTopPrograms(r: any): string[] {
  * Rule-based engine: score all colleges, pick 2 Safety / 2 Match / 1 Reach.
  * Returns structured college objects WITH placeholder text for AI-generated fields.
  */
+/**
+ * Rule-based engine: score all colleges, distribute by listMode preference.
+ * listMode: "Safe & Practical" → 3S/1M/1R, "Balanced" → 2S/2M/1R, "Dream Big" → 1S/2M/2R
+ */
 function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = [], weightAdj?: Record<string, number>): any[] {
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
   const studentACT = parseStudentACT(prefs);
   const excludeSet = new Set(excludeColleges.map(n => n.toLowerCase()));
+
+  // Determine distribution from listMode
+  const listMode = (prefs.listMode || "Balanced").toLowerCase();
+  let safetyTarget = 2, matchTarget = 2, reachTarget = 1;
+  if (listMode.includes("safe") || listMode.includes("practical") || listMode.includes("realistic")) {
+    safetyTarget = 3; matchTarget = 1; reachTarget = 1;
+  } else if (listMode.includes("dream") || listMode.includes("ambitious")) {
+    safetyTarget = 1; matchTarget = 2; reachTarget = 2;
+  }
 
   // Score and categorize all colleges
   const scored = rawResults
@@ -684,7 +697,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   const matchPool = realistic.filter(s => s.fitCategory === "Match");
   const reachPool = realistic.filter(s => s.fitCategory === "Reach");
 
-  // Pick 2 Safety, 2 Match, 1 Reach
+  // Pick based on distribution targets
   const picked: typeof scored = [];
   const addFrom = (pool: typeof scored, count: number) => {
     for (const s of pool) {
@@ -696,11 +709,11 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     }
   };
 
-  addFrom(safetyPool, 2);
-  addFrom(matchPool, 2);
-  addFrom(reachPool, 1);
+  addFrom(safetyPool, safetyTarget);
+  addFrom(matchPool, matchTarget);
+  addFrom(reachPool, reachTarget);
 
-  // Pad if needed (skip unrealistic)
+  // Pad if needed
   for (const s of realistic) {
     if (picked.length >= 5) break;
     if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
@@ -717,6 +730,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     const earnings = r["latest.earnings.10_yrs_after_entry.median"];
     const size = r["latest.student.size"];
     const topPrograms = getTopPrograms(r);
+    const realismNote = generateRealismNote(fitCategory, fitScore, r, prefs);
 
     return {
       name: r["school.name"] || "Unknown",
@@ -738,7 +752,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
       avgStartingSalary: earnings ? `$${Number(earnings).toLocaleString()}` : "N/A",
       fitScore,
       fitCategory,
-      // These will be overwritten by AI for top 3
+      realismNote,
       whyFit: `This school matches your search criteria based on Department of Education data. Fit score: ${fitScore}/100.`,
       prosForStudent: ["Meets your stated preferences", "Strong graduation and outcomes data"],
       consForStudent: ["See detailed analysis for more context"],
