@@ -193,6 +193,29 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
     }
   }
 
+  // Region/weather preference → restrict to states in that region
+  const region = (prefs.weatherRegion || "").toLowerCase();
+  if (region && region !== "no preference") {
+    const regionFips: string[] = [];
+    for (const [rName, rStates] of Object.entries(regionStatesMap)) {
+      if (region.includes(rName)) regionFips.push(...rStates);
+    }
+    // If user selected multiple regions (comma-separated), combine
+    if (regionFips.length > 0) {
+      // Merge with any existing state filter from distance
+      const existingStates = p.get("school.state_fips");
+      if (existingStates) {
+        const existing = new Set(existingStates.split(","));
+        const combined = regionFips.filter(f => existing.has(f));
+        if (combined.length > 0) p.set("school.state_fips", combined.join(","));
+        // If intersection is empty, keep region filter (broader match)
+        else p.set("school.state_fips", regionFips.join(","));
+      } else {
+        p.set("school.state_fips", regionFips.join(","));
+      }
+    }
+  }
+
   p.set("sort", "latest.completion.rate_suppressed.overall:desc");
   p.set("per_page", "30");
   return p.toString();
