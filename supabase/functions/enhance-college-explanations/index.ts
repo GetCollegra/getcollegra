@@ -28,6 +28,7 @@ Return a JSON object with this exact structure:
     {
       "name": "Exact college name as given",
       "whyFit": "2-3 sentences — lead with campus culture match, then academics. Quote student's words.",
+      "realismNote": "1-2 sentences about admissions realism. For Reach schools with strong preference fit, say 'Great fit for your preferences, but a reach academically — [specific reason].' For Safety schools, highlight why admission is likely. For Match schools, note the competitive alignment. Always reference the student's GPA/scores vs the school's profile.",
       "prosForStudent": ["Pro 1: culture/vibe match", "Pro 2: academic fit", "Pro 3: practical benefit"],
       "consForStudent": ["Con 1", "Con 2"],
       "challengesForStudent": ["Challenge specific to this student's profile"],
@@ -225,13 +226,13 @@ Write personalized, vivid explanations for each school. The "name" field in each
           enhancedColleges[idx] = {
             ...existing,
             whyFit: aiCollege.whyFit || existing.whyFit,
+            realismNote: aiCollege.realismNote || existing.realismNote,
             prosForStudent: aiPros.length > 0 ? aiPros : ensureArray(existing.prosForStudent),
             consForStudent: aiCons.length > 0 ? aiCons : ensureArray(existing.consForStudent),
             challengesForStudent: aiChallenges.length > 0 ? aiChallenges : ensureArray(existing.challengesForStudent),
             howToGetIn: aiCollege.howToGetIn || existing.howToGetIn,
             campusVibe: aiCollege.campusVibe || existing.campusVibe,
             notableFeature: aiCollege.notableFeature || existing.notableFeature,
-            // Fill in missing data fields from AI knowledge
             studentFacultyRatio: shouldReplace(existing.studentFacultyRatio, aiCollege.studentFacultyRatio)
               ? aiCollege.studentFacultyRatio : existing.studentFacultyRatio,
             campusSize: shouldReplace(existing.campusSize, aiCollege.campusSize)
