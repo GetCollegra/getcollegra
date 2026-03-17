@@ -69,6 +69,7 @@ export type College = {
   howToGetIn: string;
   campusVibe: string;
   notableFeature: string;
+  realismNote: string;
 };
 
 /** Full recommendations payload from college-match edge function */
@@ -99,6 +100,8 @@ export type StudentPreferences = {
   campusLife: string;
   academicImportance: string;
   distanceFromHome: string;
+  weatherRegion: string;
+  listMode: string;
   areaOfStudy: string;
   allResponses?: Record<string, string>;
 };

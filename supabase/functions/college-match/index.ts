@@ -59,6 +59,14 @@ const stateFipsMap: Record<string, string> = {
   "west virginia":"54",wisconsin:"55",wyoming:"56",
 };
 
+// Region → state FIPS codes for weather/region filtering
+const regionStatesMap: Record<string, string[]> = {
+  midwest: ["17","18","19","20","26","27","29","31","38","39","46","55"],
+  northeast: ["9","23","24","25","33","34","36","42","44","50"],
+  south: ["1","5","10","12","13","21","22","28","37","40","45","47","48","51","54"],
+  west: ["2","4","6","8","15","16","30","32","35","41","49","53","56"],
+};
+
 const stateAbbrMap: Record<string, string> = {
   al:"1",ak:"2",az:"4",ar:"5",ca:"6",co:"8",ct:"9",de:"10",fl:"12",ga:"13",
   hi:"15",id:"16",il:"17","in":"18",ia:"19",ks:"20",ky:"21",la:"22",me:"23",
@@ -182,6 +190,29 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
     if (fips.length > 0) {
       const states = getNearbyStates(fips[0], prefs.distanceFromHome || "");
       if (states.length > 0) p.set("school.state_fips", states.join(","));
+    }
+  }
+
+  // Region/weather preference → restrict to states in that region
+  const region = (prefs.weatherRegion || "").toLowerCase();
+  if (region && region !== "no preference") {
+    const regionFips: string[] = [];
+    for (const [rName, rStates] of Object.entries(regionStatesMap)) {
+      if (region.includes(rName)) regionFips.push(...rStates);
+    }
+    // If user selected multiple regions (comma-separated), combine
+    if (regionFips.length > 0) {
+      // Merge with any existing state filter from distance
+      const existingStates = p.get("school.state_fips");
+      if (existingStates) {
+        const existing = new Set(existingStates.split(","));
+        const combined = regionFips.filter(f => existing.has(f));
+        if (combined.length > 0) p.set("school.state_fips", combined.join(","));
+        // If intersection is empty, keep region filter (broader match)
+        else p.set("school.state_fips", regionFips.join(","));
+      } else {
+        p.set("school.state_fips", regionFips.join(","));
+      }
     }
   }
 
@@ -413,6 +444,9 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
  * - Admission Realism (10%)
  * - School Size (8%)
  * - Support Level (5%)
+ *
+ * Academic Realism Multiplier: penalizes schools where student profile
+ * is far below average admitted student.
  */
 function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string, adj?: Record<string, number>): number {
   const a = adj || {};
@@ -447,7 +481,6 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
         if (pct > bestProgramPct) bestProgramPct = pct;
       }
     }
-    // Smoother gradient: 0→5, >2%→10, >5%→15, >10%→20, >15%→25
     if (bestProgramPct > 0.15) academicScore = 25;
     else if (bestProgramPct > 0.10) academicScore = 20;
     else if (bestProgramPct > 0.05) academicScore = 15;
@@ -457,7 +490,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   }
   score += academicScore + (a.academic || 0);
 
-  // 3. Cost & Affordability (15 pts max — increased for realism)
+  // 3. Cost & Affordability (15 pts max)
   const costPref = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
   const netPrice = r["latest.cost.avg_net_price.overall"];
   let costScore = 7;
@@ -479,7 +512,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   const distPref = (prefs.distanceFromHome || "").toLowerCase();
   const cityState = (prefs.cityState || "").toLowerCase();
   const schoolState = (r["school.state"] || "").toLowerCase();
-  let distScore = 6; // default
+  let distScore = 6;
   if (distPref.includes("anywhere") || distPref.includes("no preference")) {
     distScore = 9;
   } else if (distPref.includes("close") || distPref.includes("1 hour") || distPref.includes("under 2")) {
@@ -495,7 +528,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   }
   score += distScore + (a.distance || 0);
 
-  // 5. Admission Realism (10 pts max — doubled for better calibration)
+  // 5. Admission Realism (10 pts max)
   if (fitCategory === "Safety") score += 10 + (a.admission || 0);
   else if (fitCategory === "Match") score += 7 + (a.admission || 0);
   else score += 2; // Reach
@@ -511,16 +544,97 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   else sizeScore = 2;
   score += sizeScore + (a.size || 0);
 
-  // 7. Support Level (5 pts max — NEW: graduation rate + Pell grant rate as proxy)
+  // 7. Support Level (5 pts max)
   const gradRate = r["latest.completion.rate_suppressed.overall"];
   const pellRate = r["latest.aid.pell_grant_rate"];
   let supportScore = 2;
   if (gradRate != null && gradRate > 0.70) supportScore += 2;
   else if (gradRate != null && gradRate > 0.50) supportScore += 1;
-  if (pellRate != null && pellRate > 0.30) supportScore += 1; // schools serving more aid-recipients tend to have stronger support
+  if (pellRate != null && pellRate > 0.30) supportScore += 1;
   score += Math.min(5, supportScore) + (a.support || 0);
 
+  // ── Academic Realism Multiplier ──
+  // Penalize schools where the student's academic profile is significantly
+  // below the average admitted student. This prevents unrealistic schools
+  // from ranking highly even if they match preferences.
+  const realismMultiplier = computeRealismMultiplier(r, prefs, fitCategory);
+  score = Math.round(score * realismMultiplier);
+
   return Math.min(100, Math.max(0, score));
+}
+
+/**
+ * Compute a 0.5–1.0 multiplier based on how realistic admission is.
+ * - Safety/Match at or above 25th percentile → 1.0 (no penalty)
+ * - Below 25th percentile → gradual penalty down to 0.6
+ * - Far below with very low acceptance → 0.5
+ */
+function computeRealismMultiplier(r: any, prefs: Record<string, any>, fitCategory: string): number {
+  if (fitCategory === "Safety") return 1.0; // no penalty for safeties
+
+  const gpa = parseStudentGPA(prefs);
+  const studentSAT = parseStudentSAT(prefs);
+  const studentACT = parseStudentACT(prefs);
+  const admRate = r["latest.admissions.admission_rate.overall"];
+
+  let academicGap = 0; // 0 = no gap, higher = bigger gap
+
+  // SAT gap
+  if (studentSAT) {
+    const sat25 = r["latest.admissions.sat_scores.25th_percentile.critical_reading"] && r["latest.admissions.sat_scores.25th_percentile.math"]
+      ? Number(r["latest.admissions.sat_scores.25th_percentile.critical_reading"]) + Number(r["latest.admissions.sat_scores.25th_percentile.math"])
+      : null;
+    if (sat25 && studentSAT < sat25) {
+      academicGap = Math.max(academicGap, (sat25 - studentSAT) / 400); // 400-pt gap = 1.0
+    }
+  } else if (studentACT) {
+    const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
+    if (act25 && studentACT < Number(act25)) {
+      academicGap = Math.max(academicGap, (Number(act25) - studentACT) / 10); // 10-pt gap = 1.0
+    }
+  }
+
+  // GPA gap (acceptance rate as proxy for average GPA expected)
+  if (admRate != null && admRate < 0.3 && gpa < 3.5) {
+    academicGap = Math.max(academicGap, (3.5 - gpa) * 0.8);
+  } else if (admRate != null && admRate < 0.15 && gpa < 3.8) {
+    academicGap = Math.max(academicGap, (3.8 - gpa) * 0.6);
+  }
+
+  // Convert gap to multiplier: 0 gap → 1.0, gap of 1.0+ → 0.5
+  if (academicGap <= 0) return 1.0;
+  return Math.max(0.5, 1.0 - academicGap * 0.5);
+}
+
+/**
+ * Generate a short realism note for each college explaining fit vs. realism.
+ */
+function generateRealismNote(fitCategory: string, fitScore: number, r: any, prefs: Record<string, any>): string {
+  const admRate = r["latest.admissions.admission_rate.overall"];
+  const gpa = parseStudentGPA(prefs);
+  const studentSAT = parseStudentSAT(prefs);
+  const studentACT = parseStudentACT(prefs);
+
+  if (fitCategory === "Safety") {
+    if (fitScore >= 80) return "Strong fit and you're well-positioned for admission.";
+    return "You're likely to be admitted here based on your academic profile.";
+  }
+
+  if (fitCategory === "Reach") {
+    // Check if it's a good preference fit but academic reach
+    const realismMult = computeRealismMultiplier(r, prefs, fitCategory);
+    if (realismMult < 0.8 && fitScore > 40) {
+      return "Great fit for your preferences, but a reach academically. Consider this as a dream school.";
+    }
+    if (admRate != null && admRate < 0.15) {
+      return `Highly selective (${(admRate * 100).toFixed(0)}% acceptance). A competitive reach — apply with strong essays and extracurriculars.`;
+    }
+    return "This is a reach school — your academic profile is below the typical admitted student.";
+  }
+
+  // Match
+  if (fitScore >= 75) return "Good alignment between your preferences and academic profile.";
+  return "Solid match — your profile is competitive for this school.";
 }
 
 function getTopPrograms(r: any): string[] {
@@ -547,11 +661,24 @@ function getTopPrograms(r: any): string[] {
  * Rule-based engine: score all colleges, pick 2 Safety / 2 Match / 1 Reach.
  * Returns structured college objects WITH placeholder text for AI-generated fields.
  */
+/**
+ * Rule-based engine: score all colleges, distribute by listMode preference.
+ * listMode: "Safe & Practical" → 3S/1M/1R, "Balanced" → 2S/2M/1R, "Dream Big" → 1S/2M/2R
+ */
 function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = [], weightAdj?: Record<string, number>): any[] {
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
   const studentACT = parseStudentACT(prefs);
   const excludeSet = new Set(excludeColleges.map(n => n.toLowerCase()));
+
+  // Determine distribution from listMode
+  const listMode = (prefs.listMode || "Balanced").toLowerCase();
+  let safetyTarget = 2, matchTarget = 2, reachTarget = 1;
+  if (listMode.includes("safe") || listMode.includes("practical") || listMode.includes("realistic")) {
+    safetyTarget = 3; matchTarget = 1; reachTarget = 1;
+  } else if (listMode.includes("dream") || listMode.includes("ambitious")) {
+    safetyTarget = 1; matchTarget = 2; reachTarget = 2;
+  }
 
   // Score and categorize all colleges
   const scored = rawResults
@@ -570,7 +697,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   const matchPool = realistic.filter(s => s.fitCategory === "Match");
   const reachPool = realistic.filter(s => s.fitCategory === "Reach");
 
-  // Pick 2 Safety, 2 Match, 1 Reach
+  // Pick based on distribution targets
   const picked: typeof scored = [];
   const addFrom = (pool: typeof scored, count: number) => {
     for (const s of pool) {
@@ -582,11 +709,11 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     }
   };
 
-  addFrom(safetyPool, 2);
-  addFrom(matchPool, 2);
-  addFrom(reachPool, 1);
+  addFrom(safetyPool, safetyTarget);
+  addFrom(matchPool, matchTarget);
+  addFrom(reachPool, reachTarget);
 
-  // Pad if needed (skip unrealistic)
+  // Pad if needed
   for (const s of realistic) {
     if (picked.length >= 5) break;
     if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
@@ -603,6 +730,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     const earnings = r["latest.earnings.10_yrs_after_entry.median"];
     const size = r["latest.student.size"];
     const topPrograms = getTopPrograms(r);
+    const realismNote = generateRealismNote(fitCategory, fitScore, r, prefs);
 
     return {
       name: r["school.name"] || "Unknown",
@@ -624,7 +752,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
       avgStartingSalary: earnings ? `$${Number(earnings).toLocaleString()}` : "N/A",
       fitScore,
       fitCategory,
-      // These will be overwritten by AI for top 3
+      realismNote,
       whyFit: `This school matches your search criteria based on Department of Education data. Fit score: ${fitScore}/100.`,
       prosForStudent: ["Meets your stated preferences", "Strong graduation and outcomes data"],
       consForStudent: ["See detailed analysis for more context"],
@@ -670,6 +798,7 @@ const preferenceKeyMap: Record<string, string> = {
   academic_importance: "academicImportance",
   distance_from_home: "distanceFromHome",
   weather_region: "weatherRegion",
+  list_mode: "listMode",
   area_of_study: "areaOfStudy",
 };
 
