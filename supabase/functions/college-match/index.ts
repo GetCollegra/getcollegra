@@ -59,6 +59,14 @@ const stateFipsMap: Record<string, string> = {
   "west virginia":"54",wisconsin:"55",wyoming:"56",
 };
 
+// Region → state FIPS codes for weather/region filtering
+const regionStatesMap: Record<string, string[]> = {
+  midwest: ["17","18","19","20","26","27","29","31","38","39","46","55"],
+  northeast: ["9","23","24","25","33","34","36","42","44","50"],
+  south: ["1","5","10","12","13","21","22","28","37","40","45","47","48","51","54"],
+  west: ["2","4","6","8","15","16","30","32","35","41","49","53","56"],
+};
+
 const stateAbbrMap: Record<string, string> = {
   al:"1",ak:"2",az:"4",ar:"5",ca:"6",co:"8",ct:"9",de:"10",fl:"12",ga:"13",
   hi:"15",id:"16",il:"17","in":"18",ia:"19",ks:"20",ky:"21",la:"22",me:"23",
