@@ -798,6 +798,7 @@ const preferenceKeyMap: Record<string, string> = {
   academic_importance: "academicImportance",
   distance_from_home: "distanceFromHome",
   weather_region: "weatherRegion",
+  list_mode: "listMode",
   area_of_study: "areaOfStudy",
 };
 
