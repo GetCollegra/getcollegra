@@ -100,6 +100,8 @@ export type StudentPreferences = {
   campusLife: string;
   academicImportance: string;
   distanceFromHome: string;
+  weatherRegion: string;
+  listMode: string;
   areaOfStudy: string;
   allResponses?: Record<string, string>;
 };
