@@ -743,11 +743,10 @@ serve(async (req) => {
       let authUserId: string | null = null;
       let authUserEmail: string | null = null;
       try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-          authUserId = payload?.sub || null;
-          authUserEmail = payload?.email || null;
+        const { data: userData, error: userError } = await sbAdmin.auth.getUser(token);
+        if (!userError && userData?.user) {
+          authUserId = userData.user.id;
+          authUserEmail = userData.user.email || null;
         }
       } catch { /* ignore */ }
 

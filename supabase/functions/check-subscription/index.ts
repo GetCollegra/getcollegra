@@ -12,19 +12,6 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-/** Decode JWT payload without verification (gateway + service role handle trust) */
-function decodeJwtPayload(token: string): Record<string, any> | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    // Handle base64url encoding
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(atob(base64));
-    return payload;
-  } catch {
-    return null;
-  }
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -48,42 +35,29 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
 
-    // Strategy: decode JWT payload to get user ID, then use admin API for reliability
     let userEmail: string | null = null;
     let userId: string | null = null;
 
-    // First try: decode JWT payload directly
-    const jwtPayload = decodeJwtPayload(token);
-    if (jwtPayload?.sub && jwtPayload?.email) {
-      userId = jwtPayload.sub;
-      userEmail = jwtPayload.email;
-      logStep("User from JWT", { email: userEmail });
-    }
-
-    // If JWT decode didn't give us what we need, try getUser
-    if (!userEmail) {
-      try {
-        const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-        if (userError || !userData.user?.email) {
-          logStep("Auth failed", { message: userError?.message || "No email" });
-          return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 401,
-          });
-        }
-        userEmail = userData.user.email;
-        userId = userData.user.id;
-      } catch (authErr) {
-        logStep("Auth exception", { message: String(authErr) });
+    try {
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+      if (userError || !userData.user?.email) {
+        logStep("Auth failed", { message: userError?.message || "No email" });
         return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 401,
         });
       }
+      userEmail = userData.user.email;
+      userId = userData.user.id;
+    } catch (authErr) {
+      logStep("Auth exception", { message: String(authErr) });
+      return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
 
-    // JWT is cryptographically signed by the auth server — no extra verification needed
-    logStep("JWT decoded successfully", { userId, email: userEmail });
+    logStep("User verified", { userId });
 
     if (!userEmail) {
       return new Response(JSON.stringify({ subscribed: false, error: "Unauthorized" }), {
