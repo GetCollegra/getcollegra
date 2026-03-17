@@ -243,9 +243,10 @@ const Profile = () => {
         return;
       }
       // Generate a printable HTML and trigger print dialog
+      const esc = (s: any) => String(s ?? '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       const rows = data.map(d => {
         const c = d.college_data as any;
-        return `<tr><td>${d.college_name}</td><td>${d.status}</td><td>${c?.location || "—"}</td><td>${c?.acceptanceRate || "—"}</td><td>${c?.tuitionOutOfState || "—"}</td><td>${c?.fitScore || "—"}%</td></tr>`;
+        return `<tr><td>${esc(d.college_name)}</td><td>${esc(d.status)}</td><td>${esc(c?.location)}</td><td>${esc(c?.acceptanceRate)}</td><td>${esc(c?.tuitionOutOfState)}</td><td>${esc(c?.fitScore)}%</td></tr>`;
       }).join("");
       const html = `<html><head><title>Collegra - Saved Colleges</title><style>body{font-family:Arial,sans-serif;padding:24px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px}th{background:#f5f5f5;font-weight:600}h1{font-size:20px;color:#333}</style></head><body><h1>Collegra™ — My Saved Colleges</h1><p>Exported on ${new Date().toLocaleDateString()}</p><table><tr><th>College</th><th>Status</th><th>Location</th><th>Acceptance Rate</th><th>Annual Price</th><th>Fit Score</th></tr>${rows}</table></body></html>`;
       const w = window.open("", "_blank");
