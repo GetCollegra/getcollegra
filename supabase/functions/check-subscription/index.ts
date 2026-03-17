@@ -12,19 +12,6 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-/** Decode JWT payload without verification (gateway + service role handle trust) */
-function decodeJwtPayload(token: string): Record<string, any> | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    // Handle base64url encoding
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(atob(base64));
-    return payload;
-  } catch {
-    return null;
-  }
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
