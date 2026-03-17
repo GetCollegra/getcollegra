@@ -226,13 +226,13 @@ Write personalized, vivid explanations for each school. The "name" field in each
           enhancedColleges[idx] = {
             ...existing,
             whyFit: aiCollege.whyFit || existing.whyFit,
+            realismNote: aiCollege.realismNote || existing.realismNote,
             prosForStudent: aiPros.length > 0 ? aiPros : ensureArray(existing.prosForStudent),
             consForStudent: aiCons.length > 0 ? aiCons : ensureArray(existing.consForStudent),
             challengesForStudent: aiChallenges.length > 0 ? aiChallenges : ensureArray(existing.challengesForStudent),
             howToGetIn: aiCollege.howToGetIn || existing.howToGetIn,
             campusVibe: aiCollege.campusVibe || existing.campusVibe,
             notableFeature: aiCollege.notableFeature || existing.notableFeature,
-            // Fill in missing data fields from AI knowledge
             studentFacultyRatio: shouldReplace(existing.studentFacultyRatio, aiCollege.studentFacultyRatio)
               ? aiCollege.studentFacultyRatio : existing.studentFacultyRatio,
             campusSize: shouldReplace(existing.campusSize, aiCollege.campusSize)
