@@ -180,7 +180,20 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
           </div>
 
           {/* Why Fit */}
-          <p className="text-foreground text-sm sm:text-base leading-relaxed mb-4">{college.whyFit}</p>
+          <p className="text-foreground text-sm sm:text-base leading-relaxed mb-2">{college.whyFit}</p>
+
+          {/* Realism Note */}
+          {college.realismNote && (
+            <p className={`text-xs sm:text-sm font-medium mb-4 px-3 py-2 rounded-lg ${
+              college.fitCategory === "Reach"
+                ? "bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400"
+                : college.fitCategory === "Safety"
+                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                : "bg-primary/5 text-primary"
+            }`}>
+              {college.realismNote}
+            </p>
+          )}
 
           {/* Campus vibe + notable feature */}
           <div className="flex flex-col gap-2.5 sm:gap-3 mb-4">
