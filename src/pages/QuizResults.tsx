@@ -1147,12 +1147,6 @@ const QuizResults = () => {
               firstName={surveyContext.first_name || surveyContext.firstName}
             />
 
-            {/* Share Results */}
-            <ShareResults
-              recommendations={recommendations}
-              personalityName={derivePersonality(surveyContext, recommendations).personality.name}
-              firstName={surveyContext.first_name || surveyContext.firstName}
-            />
 
             {/* AI Insight Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-background">
