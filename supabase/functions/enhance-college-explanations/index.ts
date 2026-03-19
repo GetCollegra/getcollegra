@@ -219,7 +219,7 @@ Write personalized, vivid explanations for each school. The "name" field in each
         const idx = enhancedColleges.findIndex(
           (c: any) => c.name.toLowerCase() === (aiCollege.name || "").toLowerCase()
         );
-        if (idx !== -1 && idx < 3) {
+        if (idx !== -1) {
           const existing = enhancedColleges[idx];
           const aiPros = ensureArray(aiCollege.prosForStudent);
           const aiCons = ensureArray(aiCollege.consForStudent);
