@@ -7,9 +7,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const AI_EXPLANATION_SYSTEM = `You are a college admissions expert writing personalized advice for a student. You will be given the student's preferences and 3 matched colleges with their data.
+const AI_EXPLANATION_SYSTEM = `You are a college admissions expert writing personalized advice for a student. You will be given the student's preferences and their matched colleges with their data.
 
-Your job is to write compelling, personalized explanations for EACH of the 3 colleges plus an overall student profile and comparison.
+Your job is to write compelling, personalized explanations for EACH of the colleges plus an overall student profile and comparison.
 
 TONE: Address the student directly as "you" / "your". If their first name is provided, use it naturally. NEVER use "he/she/they/the student".
 
@@ -98,7 +98,7 @@ serve(async (req) => {
     }
 
     // Build AI prompt
-    const top3 = colleges.slice(0, 3);
+    const top = colleges.slice(0, 5);
     const prefs = preferences;
 
     const sat = prefs.satScore || prefs.sat_score || "";
@@ -136,8 +136,8 @@ serve(async (req) => {
 All survey responses:
 ${extraFields}
 
-These 3 colleges were selected by our matching engine (provide explanations for EACH):
-${top3.map((c: any, i: number) => `
+These ${top.length} colleges were selected by our matching engine (provide explanations for EACH):
+${top.map((c: any, i: number) => `
 ${i + 1}. ${c.name} (${c.location})
    - Fit Category: ${c.fitCategory} | Fit Score: ${c.fitScore}/100
    - Acceptance Rate: ${c.acceptanceRate}
@@ -146,6 +146,7 @@ ${i + 1}. ${c.name} (${c.location})
    - Top Programs: ${(c.topPrograms || []).join(", ")}
    - Setting: ${c.setting}
    - Student Body: ${c.studentBody}
+   - Student:Faculty Ratio: ${c.studentFacultyRatio}
    - Avg Starting Salary: ${c.avgStartingSalary}
 `).join("")}
 
@@ -218,7 +219,7 @@ Write personalized, vivid explanations for each school. The "name" field in each
         const idx = enhancedColleges.findIndex(
           (c: any) => c.name.toLowerCase() === (aiCollege.name || "").toLowerCase()
         );
-        if (idx !== -1 && idx < 3) {
+        if (idx !== -1) {
           const existing = enhancedColleges[idx];
           const aiPros = ensureArray(aiCollege.prosForStudent);
           const aiCons = ensureArray(aiCollege.consForStudent);
