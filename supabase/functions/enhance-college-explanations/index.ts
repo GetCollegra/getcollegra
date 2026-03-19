@@ -98,7 +98,7 @@ serve(async (req) => {
     }
 
     // Build AI prompt
-    const top3 = colleges.slice(0, 3);
+    const top = colleges.slice(0, 5);
     const prefs = preferences;
 
     const sat = prefs.satScore || prefs.sat_score || "";
