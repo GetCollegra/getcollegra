@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Share2, Copy, Check, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import type { College, Recommendations } from "@/types/college";
 
 const PERSONALITIES = [
