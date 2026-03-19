@@ -136,8 +136,8 @@ serve(async (req) => {
 All survey responses:
 ${extraFields}
 
-These 3 colleges were selected by our matching engine (provide explanations for EACH):
-${top3.map((c: any, i: number) => `
+These ${top.length} colleges were selected by our matching engine (provide explanations for EACH):
+${top.map((c: any, i: number) => `
 ${i + 1}. ${c.name} (${c.location})
    - Fit Category: ${c.fitCategory} | Fit Score: ${c.fitScore}/100
    - Acceptance Rate: ${c.acceptanceRate}
@@ -146,6 +146,7 @@ ${i + 1}. ${c.name} (${c.location})
    - Top Programs: ${(c.topPrograms || []).join(", ")}
    - Setting: ${c.setting}
    - Student Body: ${c.studentBody}
+   - Student:Faculty Ratio: ${c.studentFacultyRatio}
    - Avg Starting Salary: ${c.avgStartingSalary}
 `).join("")}
 
