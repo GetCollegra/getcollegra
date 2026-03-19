@@ -7,9 +7,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const AI_EXPLANATION_SYSTEM = `You are a college admissions expert writing personalized advice for a student. You will be given the student's preferences and 3 matched colleges with their data.
+const AI_EXPLANATION_SYSTEM = `You are a college admissions expert writing personalized advice for a student. You will be given the student's preferences and their matched colleges with their data.
 
-Your job is to write compelling, personalized explanations for EACH of the 3 colleges plus an overall student profile and comparison.
+Your job is to write compelling, personalized explanations for EACH of the colleges plus an overall student profile and comparison.
 
 TONE: Address the student directly as "you" / "your". If their first name is provided, use it naturally. NEVER use "he/she/they/the student".
 
