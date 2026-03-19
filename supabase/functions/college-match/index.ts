@@ -747,7 +747,9 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
       topPrograms: topPrograms.length > 0 ? topPrograms : ["General Studies"],
       campusSize: size ? `${Number(size).toLocaleString()} students` : "N/A",
       studentBody: size ? `${Number(size).toLocaleString()} students` : "N/A",
-      studentFacultyRatio: "Not reported",
+      studentFacultyRatio: r["latest.student.demographics.student_faculty_ratio"]
+        ? `${Math.round(Number(r["latest.student.demographics.student_faculty_ratio"]))}:1`
+        : "Not reported",
       setting,
       graduationRate: gradRate != null ? `${(gradRate * 100).toFixed(0)}%` : "N/A",
       avgStartingSalary: earnings ? `$${Number(earnings).toLocaleString()}` : "N/A",
