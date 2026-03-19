@@ -256,6 +256,40 @@ interface CollegePersonalityProps {
 
 const CollegePersonality = ({ surveyContext, recommendations, firstName }: CollegePersonalityProps) => {
   const { personality, traits } = derivePersonality(surveyContext, recommendations);
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const colleges = recommendations.colleges || [];
+  const topNames = colleges.slice(0, 3).map((c) => c.name).join(", ");
+  const shareText = `I got the '${personality.name}' college personality on Collegra 🎓\n\nMy top matches were ${colleges.length >= 3 ? `${colleges[0].name}, ${colleges[1].name}, and ${colleges[2].name}` : topNames}.\n\nTake the quiz and see your results:\nhttps://getcollegra.com`;
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title: "My Collegra College Personality", text: shareText, url: window.location.href }); } catch {}
+    } else { await handleCopy(); }
+  };
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      toast({ title: "Copied!", description: "Your results have been copied to clipboard." });
+      setTimeout(() => setCopied(false), 2500);
+    } catch { toast({ title: "Could not copy", variant: "destructive" }); }
+  };
+  const handleDownload = () => {
+    const lines = [
+      `🎓 Collegra College Personality Results`, ``,
+      firstName ? `Student: ${firstName}` : "", `Personality: ${personality.name}`, ``,
+      `Top College Matches:`,
+      ...colleges.slice(0, 5).map((c, i) => `  ${i + 1}. ${c.name} — ${c.fitScore}% fit (${c.fitCategory})`),
+      ``, `Take the quiz: getcollegra.lovable.app`,
+    ].filter(Boolean);
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "collegra-results.txt"; a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Downloaded!", description: "Your results card has been saved." });
+  };
 
   return (
     <section className="py-10 sm:py-14 md:py-20 bg-gradient-subtle">
