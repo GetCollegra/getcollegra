@@ -116,6 +116,7 @@ const SCORECARD_FIELDS = [
   "id", "school.name", "school.city", "school.state", "school.school_url",
   "school.ownership", "school.locale",
   "latest.student.size",
+  "latest.student.demographics.student_faculty_ratio",
   "latest.admissions.admission_rate.overall",
   "latest.admissions.sat_scores.average.overall",
   "latest.admissions.sat_scores.midpoint.critical_reading",
