@@ -343,9 +343,23 @@ const CollegePersonality = ({ surveyContext, recommendations, firstName }: Colle
                   {firstName ? `${firstName}, you're` : "You're"}{" "}
                   <span className="text-gradient">{personality.name}</span>
                 </h2>
-                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
+                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md mb-5">
                   {personality.description}
                 </p>
+
+                {/* Share buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
+                  <Button onClick={handleShare} size="sm" className="rounded-full gap-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-bold shadow-card">
+                    <Share2 className="w-3.5 h-3.5" /> Share My Personality
+                  </Button>
+                  <Button onClick={handleCopy} size="sm" variant="outline" className="rounded-full gap-2 border-primary/30 text-primary font-semibold">
+                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? "Copied!" : "Copy Results"}
+                  </Button>
+                  <Button onClick={handleDownload} size="sm" variant="outline" className="rounded-full gap-2 border-border text-foreground font-semibold">
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </Button>
+                </div>
               </div>
 
               {/* Trait bars */}
