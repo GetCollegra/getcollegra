@@ -401,19 +401,21 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
   // GPA-based floor: schools more selective than this are excluded entirely
   let realisticFloor = 0;
   if (gpa < 2.5) realisticFloor = 0.50;       // below 2.5 → no schools under 50%
-  else if (gpa < 3.0) realisticFloor = 0.30;   // 2.5-3.0 → no schools under 30%
-  else if (gpa < 3.3) realisticFloor = 0.15;   // 3.0-3.3 → no schools under 15%
-  else if (gpa < 3.5) realisticFloor = 0.10;   // 3.3-3.5 → no schools under 10%
-  else if (gpa < 3.7) realisticFloor = 0.07;   // 3.5-3.7 → no schools under 7%
+  else if (gpa < 3.0) realisticFloor = 0.35;   // 2.5-3.0 → no schools under 35%
+  else if (gpa < 3.3) realisticFloor = 0.20;   // 3.0-3.3 → no schools under 20%
+  else if (gpa < 3.5) realisticFloor = 0.12;   // 3.3-3.5 → no schools under 12%
+  else if (gpa < 3.7) realisticFloor = 0.08;   // 3.5-3.7 → no schools under 8%
   else if (gpa < 3.9) realisticFloor = 0.04;   // 3.7-3.9 → no schools under 4%
   // 3.9+ → any school is fair game
 
-  // Ultra-selective schools (<8% acceptance) are ALWAYS unrealistic unless GPA ≥ 3.7
-  // AND test scores are within range
-  if (admRate != null && admRate < 0.08) {
+  // Ultra-selective schools (<10% acceptance) require exceptional credentials
+  if (admRate != null && admRate < 0.10) {
+    // Must have GPA ≥ 3.7 AND test scores at or above 25th percentile
     if (gpa < 3.7) return "unrealistic";
-    if (scorePosition === "below" && scoreDelta > 0.05) return "unrealistic";
-    // Even with good stats, ultra-selective schools with <8% are Reach
+    if (scorePosition === "below") return "unrealistic";
+    // Even with strong stats, if no test scores provided and GPA < 3.9, exclude
+    if (!studentSAT && !studentACT && gpa < 3.9) return "unrealistic";
+    // Qualified students: still always a Reach (never Match/Likely for <10%)
     return "Reach";
   }
 
@@ -729,13 +731,30 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   const matchPool = realistic.filter(s => s.fitCategory === "Match");
   const reachPool = realistic.filter(s => s.fitCategory === "Reach");
 
+  // ── Ultra-selective cap: max 1 school with <10% acceptance (20% of 5) ──
+  // Only allow if student is an exceptional academic fit (GPA ≥ 3.8 + scores above 25th)
+  const isExceptionalFit = gpa >= 3.8 && (
+    (studentSAT && studentSAT >= 1400) || 
+    (studentACT && studentACT >= 32) ||
+    gpa >= 3.95
+  );
+  const maxUltraSelective = isExceptionalFit ? 1 : 0;
+
   // Pick based on distribution targets — Likely first, then Match, then Reach
   const picked: typeof scored = [];
+  let ultraSelectiveCount = 0;
+
   const addFrom = (pool: typeof scored, count: number) => {
     for (const s of pool) {
       if (picked.length >= 5) break;
       if (count <= 0) break;
       if (picked.find(p => p.raw["school.name"] === s.raw["school.name"])) continue;
+      // Enforce ultra-selective cap
+      const schoolAdmRate = s.raw["latest.admissions.admission_rate.overall"];
+      if (schoolAdmRate != null && schoolAdmRate < 0.10) {
+        if (ultraSelectiveCount >= maxUltraSelective) continue;
+        ultraSelectiveCount++;
+      }
       picked.push(s);
       count--;
     }
@@ -748,11 +767,19 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   // Pad if needed (prefer Likely/Match over Reach)
   for (const s of realistic.filter(x => x.fitCategory !== "Reach")) {
     if (picked.length >= 5) break;
-    if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
+    if (picked.find(p => p.raw["school.name"] === s.raw["school.name"])) continue;
+    const schoolAdmRate = s.raw["latest.admissions.admission_rate.overall"];
+    if (schoolAdmRate != null && schoolAdmRate < 0.10 && ultraSelectiveCount >= maxUltraSelective) continue;
+    if (schoolAdmRate != null && schoolAdmRate < 0.10) ultraSelectiveCount++;
+    picked.push(s);
   }
   for (const s of realistic) {
     if (picked.length >= 5) break;
-    if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
+    if (picked.find(p => p.raw["school.name"] === s.raw["school.name"])) continue;
+    const schoolAdmRate = s.raw["latest.admissions.admission_rate.overall"];
+    if (schoolAdmRate != null && schoolAdmRate < 0.10 && ultraSelectiveCount >= maxUltraSelective) continue;
+    if (schoolAdmRate != null && schoolAdmRate < 0.10) ultraSelectiveCount++;
+    picked.push(s);
   }
 
   // Sort: Likely and Match schools first (by fitScore), Reach schools last
