@@ -544,40 +544,35 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   }
   score += costScore + (a.cost || 0);
 
-  // 4. Distance From Home (12 pts max)
+  // 5. Distance From Home (10 pts max)
   const distPref = (prefs.distanceFromHome || "").toLowerCase();
   const cityState = (prefs.cityState || "").toLowerCase();
   const schoolState = (r["school.state"] || "").toLowerCase();
-  let distScore = 6;
+  let distScore = 5;
   if (distPref.includes("anywhere") || distPref.includes("no preference")) {
-    distScore = 9;
+    distScore = 7;
   } else if (distPref.includes("close") || distPref.includes("1 hour") || distPref.includes("under 2")) {
-    if (cityState.includes(schoolState) || schoolState.length === 2 && cityState.includes(schoolState)) distScore = 12;
+    if (cityState.includes(schoolState) || schoolState.length === 2 && cityState.includes(schoolState)) distScore = 10;
     else distScore = 2;
   } else if (distPref.includes("2-4") || distPref.includes("few hours")) {
     const fips = getStateFips(cityState);
     const schoolFips = getStateFips(r["school.city"] + ", " + r["school.state"]);
     if (fips.length > 0 && schoolFips.length > 0) {
       const nearby = getNearbyStates(fips[0], distPref);
-      distScore = nearby.includes(schoolFips[0]) ? 10 : 4;
+      distScore = nearby.includes(schoolFips[0]) ? 8 : 3;
     }
   }
   score += distScore + (a.distance || 0);
 
-  // 5. Admission Realism (10 pts max)
-  if (fitCategory === "Safety") score += 10 + (a.admission || 0);
-  else if (fitCategory === "Match") score += 7 + (a.admission || 0);
-  else score += 2; // Reach
-
-  // 6. School Size (8 pts max)
+  // 6. School Size (5 pts max)
   const sizePref = (prefs.campusSize || "").toLowerCase();
   const studentSize = Number(r["latest.student.size"] || 0);
-  let sizeScore = 4;
-  if (!sizePref || sizePref.includes("no preference")) sizeScore = 5;
-  else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 8;
-  else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 8;
-  else if (sizePref.includes("large") && studentSize > 15000) sizeScore = 8;
-  else sizeScore = 2;
+  let sizeScore = 2;
+  if (!sizePref || sizePref.includes("no preference")) sizeScore = 3;
+  else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 5;
+  else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 5;
+  else if (sizePref.includes("large") && studentSize > 15000) sizeScore = 5;
+  else sizeScore = 1;
   score += sizeScore + (a.size || 0);
 
   // 7. Support Level (5 pts max)
