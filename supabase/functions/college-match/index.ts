@@ -526,7 +526,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
 
   // (Academic Major Fit already computed above)
 
-  // 3. Cost & Affordability (15 pts max)
+  // 4. Cost & Affordability (15 pts max)
   const costPref = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
   const netPrice = r["latest.cost.avg_net_price.overall"];
   let costScore = 7;
