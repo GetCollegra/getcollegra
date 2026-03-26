@@ -364,7 +364,7 @@ function parseStudentGPA(prefs: Record<string, any>): number {
   return isNaN(gpa) ? 3.0 : Math.min(5.0, Math.max(0, gpa));
 }
 
-function determineFitCategory(r: any, gpa: number, studentSAT: number | null, studentACT: number | null): "Safety" | "Match" | "Reach" | "unrealistic" {
+function determineFitCategory(r: any, gpa: number, studentSAT: number | null, studentACT: number | null): "Likely" | "Match" | "Reach" | "unrealistic" {
   const admRate = r["latest.admissions.admission_rate.overall"];
 
   // Test score comparison
@@ -397,83 +397,98 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
     }
   }
 
-  // ── Realistic Reach thresholds ──
-  // Define the minimum acceptance rate a student can realistically "reach" for
-  // based on GPA. Schools more selective than this are filtered out entirely.
+  // ── Strict Realistic Reach thresholds ──
+  // GPA-based floor: schools more selective than this are excluded entirely
   let realisticFloor = 0;
-  if (gpa < 2.5) realisticFloor = 0.40;       // below 2.5 → no schools under 40%
-  else if (gpa < 3.0) realisticFloor = 0.20;   // 2.5-3.0 → no schools under 20%
-  else if (gpa < 3.5) realisticFloor = 0.10;   // 3.0-3.5 → no schools under 10%
-  else if (gpa < 3.8) realisticFloor = 0.05;   // 3.5-3.8 → no schools under 5%
-  // 3.8+ → any school is fair game
+  if (gpa < 2.5) realisticFloor = 0.50;       // below 2.5 → no schools under 50%
+  else if (gpa < 3.0) realisticFloor = 0.30;   // 2.5-3.0 → no schools under 30%
+  else if (gpa < 3.3) realisticFloor = 0.15;   // 3.0-3.3 → no schools under 15%
+  else if (gpa < 3.5) realisticFloor = 0.10;   // 3.3-3.5 → no schools under 10%
+  else if (gpa < 3.7) realisticFloor = 0.07;   // 3.5-3.7 → no schools under 7%
+  else if (gpa < 3.9) realisticFloor = 0.04;   // 3.7-3.9 → no schools under 4%
+  // 3.9+ → any school is fair game
+
+  // Ultra-selective schools (<8% acceptance) are ALWAYS unrealistic unless GPA ≥ 3.7
+  // AND test scores are within range
+  if (admRate != null && admRate < 0.08) {
+    if (gpa < 3.7) return "unrealistic";
+    if (scorePosition === "below" && scoreDelta > 0.05) return "unrealistic";
+    // Even with good stats, ultra-selective schools with <8% are Reach
+    return "Reach";
+  }
 
   // If scores are far below AND acceptance rate is below the realistic floor, exclude
   if (admRate != null && admRate < realisticFloor) {
-    if (scorePosition === "below" && scoreDelta > 0.10) return "unrealistic";
-    if (scorePosition !== "above" && gpa < 3.0 && admRate < 0.15) return "unrealistic";
+    if (scorePosition === "below" && scoreDelta > 0.05) return "unrealistic";
+    if (scorePosition !== "above") return "unrealistic";
   }
 
-  // ── Safety: scores above 75th percentile + higher acceptance ──
-  if (scorePosition === "above" && admRate != null && admRate > 0.30) return "Safety";
+  // ── Any school with <15% acceptance is at least a Reach for everyone ──
+  if (admRate != null && admRate < 0.15) {
+    // Only exception: scores well above 75th AND GPA ≥ 3.8 → treat as Match
+    if (scorePosition === "above" && scoreDelta > 0.05 && gpa >= 3.8) return "Match";
+    return "Reach";
+  }
 
-  // ── Reach: scores below OR very selective school for this student ──
-  // GPA-calibrated reach threshold (what acceptance rate feels like a "reach")
+  // ── Likely: scores above 75th percentile + higher acceptance ──
+  if (scorePosition === "above" && admRate != null && admRate > 0.35) return "Likely";
+
+  // ── Reach: scores below OR selective school for this student ──
+  // GPA-calibrated reach threshold
   let reachThreshold = 0.5;
-  if (gpa >= 3.9) reachThreshold = 0.15;
-  else if (gpa >= 3.8) reachThreshold = 0.20;
-  else if (gpa >= 3.5) reachThreshold = 0.30;
-  else if (gpa >= 3.0) reachThreshold = 0.40;
+  if (gpa >= 3.9) reachThreshold = 0.20;
+  else if (gpa >= 3.8) reachThreshold = 0.25;
+  else if (gpa >= 3.5) reachThreshold = 0.35;
+  else if (gpa >= 3.0) reachThreshold = 0.45;
 
   // Below 25th percentile on scores = always a reach
-  if (scorePosition === "below" && scoreDelta > 0.05) return "Reach";
+  if (scorePosition === "below" && scoreDelta > 0.03) return "Reach";
   // Low acceptance rate relative to GPA = reach
   if (admRate != null && admRate <= reachThreshold) return "Reach";
 
-  // ── Safety: high acceptance rate schools ──
-  if (admRate != null && admRate > 0.6) return "Safety";
-  if (scorePosition === "above" && admRate != null && admRate > 0.25) return "Safety";
+  // ── Likely: high acceptance rate schools ──
+  if (admRate != null && admRate > 0.65) return "Likely";
+  if (scorePosition === "above" && admRate != null && admRate > 0.30) return "Likely";
 
   return "Match";
 }
 
 /**
  * Compute fitScore (0–100) using weighted factors:
- * - Campus Culture & Personality (25%)
- * - Academic Major Fit (25%)
+ * - Admission Realism (30%) — heavily penalizes academic mismatches
+ * - Academic Major Fit (20%)
+ * - Campus Culture & Personality (15%)
  * - Cost & Affordability (15%)
- * - Distance From Home (12%)
- * - Admission Realism (10%)
- * - School Size (8%)
+ * - Distance From Home (10%)
+ * - School Size (5%)
  * - Support Level (5%)
  *
- * Academic Realism Multiplier: penalizes schools where student profile
- * is far below average admitted student.
+ * Academic Realism Multiplier: further penalizes schools where student
+ * profile is far below average admitted student.
  */
 function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string, adj?: Record<string, number>): number {
   const a = adj || {};
   let score = 0;
 
-  // 1. Campus Culture (25 pts max)
-  const locale = r["school.locale"];
-  const localeDesc = locale <= 13 ? "urban" : locale <= 23 ? "suburban" : locale <= 33 ? "town" : "rural";
-  const prefLoc = (prefs.locationType || "").toLowerCase();
-  let cultureScore = 10; // baseline
-  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 23;
-  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 23;
-  else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 16;
-  else cultureScore = 4; // strong penalty for mismatched locale when user has a clear preference
+  // 1. Admission Realism (30 pts max) — the primary driver
+  const admRate = r["latest.admissions.admission_rate.overall"];
+  const gpa = parseStudentGPA(prefs);
+  const studentSAT = parseStudentSAT(prefs);
+  const studentACT = parseStudentACT(prefs);
+  let admissionScore = 15;
+  if (fitCategory === "Likely") admissionScore = 30;
+  else if (fitCategory === "Match") admissionScore = 22;
+  else if (fitCategory === "Reach") {
+    // Penalize more aggressively for very selective schools
+    if (admRate != null && admRate < 0.15) admissionScore = 5;
+    else if (admRate != null && admRate < 0.25) admissionScore = 8;
+    else admissionScore = 12;
+  }
+  score += admissionScore + (a.admission || 0);
 
-  // Vibe bonus
-  const vibe = (prefs.campusVibe || "").toLowerCase();
-  const size = r["latest.student.size"] || 0;
-  if (vibe.includes("spirited") && size > 15000) cultureScore = Math.min(25, cultureScore + 3);
-  else if (vibe.includes("tight") && size < 5000) cultureScore = Math.min(25, cultureScore + 3);
-  else if (vibe.includes("chill")) cultureScore = Math.min(25, cultureScore + 2);
-  score += Math.min(25, cultureScore) + (a.culture || 0);
-
-  // 2. Academic Major Fit (25 pts max)
+  // 2. Academic Major Fit (20 pts max)
   const study = (prefs.areaOfStudy || "").toLowerCase();
-  let academicScore = 12; // default
+  let academicScore = 10; // default
   if (study && study !== "undecided") {
     let bestProgramPct = 0;
     for (const [keyword, field] of Object.entries(studyProgramMap)) {
@@ -482,16 +497,36 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
         if (pct > bestProgramPct) bestProgramPct = pct;
       }
     }
-    if (bestProgramPct > 0.15) academicScore = 25;
-    else if (bestProgramPct > 0.10) academicScore = 20;
-    else if (bestProgramPct > 0.05) academicScore = 15;
-    else if (bestProgramPct > 0.02) academicScore = 10;
-    else if (bestProgramPct > 0) academicScore = 7;
-    else academicScore = 5;
+    if (bestProgramPct > 0.15) academicScore = 20;
+    else if (bestProgramPct > 0.10) academicScore = 16;
+    else if (bestProgramPct > 0.05) academicScore = 12;
+    else if (bestProgramPct > 0.02) academicScore = 8;
+    else if (bestProgramPct > 0) academicScore = 5;
+    else academicScore = 3;
   }
   score += academicScore + (a.academic || 0);
 
-  // 3. Cost & Affordability (15 pts max)
+  // 3. Campus Culture (15 pts max)
+  const locale = r["school.locale"];
+  const localeDesc = locale <= 13 ? "urban" : locale <= 23 ? "suburban" : locale <= 33 ? "town" : "rural";
+  const prefLoc = (prefs.locationType || "").toLowerCase();
+  let cultureScore = 6; // baseline
+  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 14;
+  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 14;
+  else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 10;
+  else cultureScore = 3; // strong penalty for mismatched locale
+
+  // Vibe bonus
+  const vibe = (prefs.campusVibe || "").toLowerCase();
+  const size = r["latest.student.size"] || 0;
+  if (vibe.includes("spirited") && size > 15000) cultureScore = Math.min(15, cultureScore + 2);
+  else if (vibe.includes("tight") && size < 5000) cultureScore = Math.min(15, cultureScore + 2);
+  else if (vibe.includes("chill")) cultureScore = Math.min(15, cultureScore + 1);
+  score += Math.min(15, cultureScore) + (a.culture || 0);
+
+  // (Academic Major Fit already computed above)
+
+  // 4. Cost & Affordability (15 pts max)
   const costPref = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
   const netPrice = r["latest.cost.avg_net_price.overall"];
   let costScore = 7;
@@ -509,40 +544,35 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   }
   score += costScore + (a.cost || 0);
 
-  // 4. Distance From Home (12 pts max)
+  // 5. Distance From Home (10 pts max)
   const distPref = (prefs.distanceFromHome || "").toLowerCase();
   const cityState = (prefs.cityState || "").toLowerCase();
   const schoolState = (r["school.state"] || "").toLowerCase();
-  let distScore = 6;
+  let distScore = 5;
   if (distPref.includes("anywhere") || distPref.includes("no preference")) {
-    distScore = 9;
+    distScore = 7;
   } else if (distPref.includes("close") || distPref.includes("1 hour") || distPref.includes("under 2")) {
-    if (cityState.includes(schoolState) || schoolState.length === 2 && cityState.includes(schoolState)) distScore = 12;
+    if (cityState.includes(schoolState) || schoolState.length === 2 && cityState.includes(schoolState)) distScore = 10;
     else distScore = 2;
   } else if (distPref.includes("2-4") || distPref.includes("few hours")) {
     const fips = getStateFips(cityState);
     const schoolFips = getStateFips(r["school.city"] + ", " + r["school.state"]);
     if (fips.length > 0 && schoolFips.length > 0) {
       const nearby = getNearbyStates(fips[0], distPref);
-      distScore = nearby.includes(schoolFips[0]) ? 10 : 4;
+      distScore = nearby.includes(schoolFips[0]) ? 8 : 3;
     }
   }
   score += distScore + (a.distance || 0);
 
-  // 5. Admission Realism (10 pts max)
-  if (fitCategory === "Safety") score += 10 + (a.admission || 0);
-  else if (fitCategory === "Match") score += 7 + (a.admission || 0);
-  else score += 2; // Reach
-
-  // 6. School Size (8 pts max)
+  // 6. School Size (5 pts max)
   const sizePref = (prefs.campusSize || "").toLowerCase();
   const studentSize = Number(r["latest.student.size"] || 0);
-  let sizeScore = 4;
-  if (!sizePref || sizePref.includes("no preference")) sizeScore = 5;
-  else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 8;
-  else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 8;
-  else if (sizePref.includes("large") && studentSize > 15000) sizeScore = 8;
-  else sizeScore = 2;
+  let sizeScore = 2;
+  if (!sizePref || sizePref.includes("no preference")) sizeScore = 3;
+  else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 5;
+  else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 5;
+  else if (sizePref.includes("large") && studentSize > 15000) sizeScore = 5;
+  else sizeScore = 1;
   score += sizeScore + (a.size || 0);
 
   // 7. Support Level (5 pts max)
@@ -555,9 +585,8 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   score += Math.min(5, supportScore) + (a.support || 0);
 
   // ── Academic Realism Multiplier ──
-  // Penalize schools where the student's academic profile is significantly
-  // below the average admitted student. This prevents unrealistic schools
-  // from ranking highly even if they match preferences.
+  // Aggressively penalize schools where the student's academic profile is
+  // significantly below the average admitted student.
   const realismMultiplier = computeRealismMultiplier(r, prefs, fitCategory);
   score = Math.round(score * realismMultiplier);
 
@@ -565,13 +594,13 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
 }
 
 /**
- * Compute a 0.5–1.0 multiplier based on how realistic admission is.
- * - Safety/Match at or above 25th percentile → 1.0 (no penalty)
- * - Below 25th percentile → gradual penalty down to 0.6
- * - Far below with very low acceptance → 0.5
+ * Compute a 0.3–1.0 multiplier based on how realistic admission is.
+ * - Likely at or above 25th percentile → 1.0 (no penalty)
+ * - Below 25th percentile → gradual penalty down to 0.4
+ * - Far below with very low acceptance → 0.3
  */
 function computeRealismMultiplier(r: any, prefs: Record<string, any>, fitCategory: string): number {
-  if (fitCategory === "Safety") return 1.0; // no penalty for safeties
+  if (fitCategory === "Likely") return 1.0; // no penalty for likely schools
 
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
@@ -586,25 +615,27 @@ function computeRealismMultiplier(r: any, prefs: Record<string, any>, fitCategor
       ? Number(r["latest.admissions.sat_scores.25th_percentile.critical_reading"]) + Number(r["latest.admissions.sat_scores.25th_percentile.math"])
       : null;
     if (sat25 && studentSAT < sat25) {
-      academicGap = Math.max(academicGap, (sat25 - studentSAT) / 400); // 400-pt gap = 1.0
+      academicGap = Math.max(academicGap, (sat25 - studentSAT) / 300); // 300-pt gap = 1.0 (stricter)
     }
   } else if (studentACT) {
     const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
     if (act25 && studentACT < Number(act25)) {
-      academicGap = Math.max(academicGap, (Number(act25) - studentACT) / 10); // 10-pt gap = 1.0
+      academicGap = Math.max(academicGap, (Number(act25) - studentACT) / 8); // 8-pt gap = 1.0 (stricter)
     }
   }
 
-  // GPA gap (acceptance rate as proxy for average GPA expected)
-  if (admRate != null && admRate < 0.3 && gpa < 3.5) {
-    academicGap = Math.max(academicGap, (3.5 - gpa) * 0.8);
-  } else if (admRate != null && admRate < 0.15 && gpa < 3.8) {
-    academicGap = Math.max(academicGap, (3.8 - gpa) * 0.6);
+  // GPA gap — more aggressive scaling
+  if (admRate != null && admRate < 0.15 && gpa < 3.8) {
+    academicGap = Math.max(academicGap, (3.8 - gpa) * 1.0);
+  } else if (admRate != null && admRate < 0.3 && gpa < 3.5) {
+    academicGap = Math.max(academicGap, (3.5 - gpa) * 0.9);
+  } else if (admRate != null && admRate < 0.5 && gpa < 3.0) {
+    academicGap = Math.max(academicGap, (3.0 - gpa) * 0.7);
   }
 
-  // Convert gap to multiplier: 0 gap → 1.0, gap of 1.0+ → 0.5
+  // Convert gap to multiplier: 0 gap → 1.0, gap of 1.0+ → 0.3
   if (academicGap <= 0) return 1.0;
-  return Math.max(0.5, 1.0 - academicGap * 0.5);
+  return Math.max(0.3, 1.0 - academicGap * 0.7);
 }
 
 /**
@@ -616,26 +647,25 @@ function generateRealismNote(fitCategory: string, fitScore: number, r: any, pref
   const studentSAT = parseStudentSAT(prefs);
   const studentACT = parseStudentACT(prefs);
 
-  if (fitCategory === "Safety") {
-    if (fitScore >= 80) return "Strong fit and you're well-positioned for admission.";
-    return "You're likely to be admitted here based on your academic profile.";
+  if (fitCategory === "Likely") {
+    if (fitScore >= 80) return "Strong fit — you're well-positioned for admission here.";
+    return "You have a strong chance of admission based on your academic profile.";
   }
 
   if (fitCategory === "Reach") {
-    // Check if it's a good preference fit but academic reach
     const realismMult = computeRealismMultiplier(r, prefs, fitCategory);
-    if (realismMult < 0.8 && fitScore > 40) {
-      return "Great fit for your preferences, but a reach academically. Consider this as a dream school.";
+    if (realismMult < 0.7 && fitScore > 30) {
+      return "Matches your preferences but is a significant academic reach. Consider as a dream school.";
     }
     if (admRate != null && admRate < 0.15) {
-      return `Highly selective (${(admRate * 100).toFixed(0)}% acceptance). A competitive reach — apply with strong essays and extracurriculars.`;
+      return `Highly selective (${(admRate * 100).toFixed(0)}% acceptance). This is competitive for almost everyone — apply with strong essays and extracurriculars.`;
     }
-    return "This is a reach school — your academic profile is below the typical admitted student.";
+    return "This is a reach — your academic profile is below the typical admitted student range.";
   }
 
   // Match
-  if (fitScore >= 75) return "Good alignment between your preferences and academic profile.";
-  return "Solid match — your profile is competitive for this school.";
+  if (fitScore >= 75) return "Strong alignment between your preferences and academic profile.";
+  return "Solid match — your profile is competitive and you have a realistic shot here.";
 }
 
 function getTopPrograms(r: any): string[] {
@@ -659,12 +689,13 @@ function getTopPrograms(r: any): string[] {
 }
 
 /**
- * Rule-based engine: score all colleges, pick 2 Safety / 2 Match / 1 Reach.
- * Returns structured college objects WITH placeholder text for AI-generated fields.
- */
-/**
  * Rule-based engine: score all colleges, distribute by listMode preference.
- * listMode: "Safe & Practical" → 3S/1M/1R, "Balanced" → 2S/2M/1R, "Dream Big" → 1S/2M/2R
+ * Default "Balanced" → 2 Likely / 2 Match / 1 Reach
+ * "Safe & Practical" → 3 Likely / 1 Match / 1 Reach
+ * "Dream Big" → 1 Likely / 2 Match / 2 Reach
+ * 
+ * Results are sorted with Likely and Match schools FIRST (top 3),
+ * Reach schools at the bottom, unless the student qualifies.
  */
 function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = [], weightAdj?: Record<string, number>): any[] {
   const gpa = parseStudentGPA(prefs);
@@ -674,11 +705,11 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
 
   // Determine distribution from listMode
   const listMode = (prefs.listMode || "Balanced").toLowerCase();
-  let safetyTarget = 2, matchTarget = 2, reachTarget = 1;
+  let likelyTarget = 2, matchTarget = 2, reachTarget = 1;
   if (listMode.includes("safe") || listMode.includes("practical") || listMode.includes("realistic")) {
-    safetyTarget = 3; matchTarget = 1; reachTarget = 1;
+    likelyTarget = 3; matchTarget = 1; reachTarget = 1;
   } else if (listMode.includes("dream") || listMode.includes("ambitious")) {
-    safetyTarget = 1; matchTarget = 2; reachTarget = 2;
+    likelyTarget = 1; matchTarget = 2; reachTarget = 2;
   }
 
   // Score and categorize all colleges
@@ -694,11 +725,11 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   // Filter out unrealistic schools before pooling
   const realistic = scored.filter(s => s.fitCategory !== "unrealistic");
 
-  const safetyPool = realistic.filter(s => s.fitCategory === "Safety");
+  const likelyPool = realistic.filter(s => s.fitCategory === "Likely");
   const matchPool = realistic.filter(s => s.fitCategory === "Match");
   const reachPool = realistic.filter(s => s.fitCategory === "Reach");
 
-  // Pick based on distribution targets
+  // Pick based on distribution targets — Likely first, then Match, then Reach
   const picked: typeof scored = [];
   const addFrom = (pool: typeof scored, count: number) => {
     for (const s of pool) {
@@ -710,18 +741,27 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     }
   };
 
-  addFrom(safetyPool, safetyTarget);
+  addFrom(likelyPool, likelyTarget);
   addFrom(matchPool, matchTarget);
   addFrom(reachPool, reachTarget);
 
-  // Pad if needed
+  // Pad if needed (prefer Likely/Match over Reach)
+  for (const s of realistic.filter(x => x.fitCategory !== "Reach")) {
+    if (picked.length >= 5) break;
+    if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
+  }
   for (const s of realistic) {
     if (picked.length >= 5) break;
     if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
   }
 
-  // Sort by fitScore descending
-  picked.sort((a, b) => b.fitScore - a.fitScore);
+  // Sort: Likely and Match schools first (by fitScore), Reach schools last
+  const categoryOrder: Record<string, number> = { "Likely": 0, "Match": 1, "Reach": 2 };
+  picked.sort((a, b) => {
+    const catDiff = (categoryOrder[a.fitCategory] ?? 2) - (categoryOrder[b.fitCategory] ?? 2);
+    if (catDiff !== 0) return catDiff;
+    return b.fitScore - a.fitScore;
+  });
 
   return picked.slice(0, 5).map(({ raw: r, fitCategory, fitScore }) => {
     const admRate = r["latest.admissions.admission_rate.overall"];
@@ -1010,7 +1050,7 @@ serve(async (req) => {
       ],
       idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
     };
-    const comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Safety, Match, and Reach schools.`;
+    const comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Likely, Match, and Reach schools.`;
 
     // ── Step 4: Build final result and save as completed (version 1 = rule-based) ──
     console.log("[college-match] Step 4: Building final result...");

@@ -166,7 +166,7 @@ export default function CollegeMap({
   onCollegeSelect,
   selectedCollege,
 }: CollegeMapProps) {
-  const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Safety", "Match", "Reach"]));
+  const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Likely", "Match", "Reach"]));
   const [distanceFilter, setDistanceFilter] = useState<string>("all");
 
   const homePos = useMemo(() => {
@@ -235,9 +235,9 @@ export default function CollegeMap({
             </div>
             <div className="h-6 w-px bg-border hidden sm:block" />
             {/* Fit Category Filters */}
-            {(["Safety", "Match", "Reach"] as const).map(cat => {
+            {(["Likely", "Match", "Reach"] as const).map(cat => {
               const checked = filterCategories.has(cat);
-              const dotColor = cat === "Safety" ? "bg-emerald-500" : cat === "Match" ? "bg-primary" : "bg-orange-500";
+              const dotColor = cat === "Likely" ? "bg-emerald-500" : cat === "Match" ? "bg-primary" : "bg-orange-500";
               return (
                 <label key={cat} className="flex items-center gap-2 cursor-pointer select-none">
                   <Checkbox
@@ -357,7 +357,7 @@ export default function CollegeMap({
                     <Badge
                       variant="secondary"
                       className={`text-[10px] ${
-                        m.college.fitCategory === "Safety"
+                        m.college.fitCategory === "Likely"
                           ? "bg-emerald-100 text-emerald-700"
                           : m.college.fitCategory === "Reach"
                           ? "bg-orange-100 text-orange-700"

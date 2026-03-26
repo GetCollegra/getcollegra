@@ -33,7 +33,7 @@ const mapPins = [
 const notesColleges = [
   { name: "University of Michigan", tags: ["Favorite", "Affordable"], checklist: 3, total: 5, note: "Great engineering program" },
   { name: "Georgia Tech", tags: ["Top Choice"], checklist: 2, total: 5, note: "Strong CS reputation" },
-  { name: "University of Virginia", tags: ["Safety"], checklist: 4, total: 5, note: "Beautiful campus" },
+  { name: "University of Virginia", tags: ["Likely"], checklist: 4, total: 5, note: "Beautiful campus" },
   { name: "Boston University", tags: ["Reach"], checklist: 1, total: 5, note: "Good location" },
   { name: "U of Wisconsin", tags: ["Affordable"], checklist: 0, total: 5, note: "Research opportunities" },
 ];
