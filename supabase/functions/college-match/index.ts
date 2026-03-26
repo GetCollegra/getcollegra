@@ -364,7 +364,7 @@ function parseStudentGPA(prefs: Record<string, any>): number {
   return isNaN(gpa) ? 3.0 : Math.min(5.0, Math.max(0, gpa));
 }
 
-function determineFitCategory(r: any, gpa: number, studentSAT: number | null, studentACT: number | null): "Safety" | "Match" | "Reach" | "unrealistic" {
+function determineFitCategory(r: any, gpa: number, studentSAT: number | null, studentACT: number | null): "Likely" | "Match" | "Reach" | "unrealistic" {
   const admRate = r["latest.admissions.admission_rate.overall"];
 
   // Test score comparison
@@ -397,41 +397,58 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
     }
   }
 
-  // ── Realistic Reach thresholds ──
-  // Define the minimum acceptance rate a student can realistically "reach" for
-  // based on GPA. Schools more selective than this are filtered out entirely.
+  // ── Strict Realistic Reach thresholds ──
+  // GPA-based floor: schools more selective than this are excluded entirely
   let realisticFloor = 0;
-  if (gpa < 2.5) realisticFloor = 0.40;       // below 2.5 → no schools under 40%
-  else if (gpa < 3.0) realisticFloor = 0.20;   // 2.5-3.0 → no schools under 20%
-  else if (gpa < 3.5) realisticFloor = 0.10;   // 3.0-3.5 → no schools under 10%
-  else if (gpa < 3.8) realisticFloor = 0.05;   // 3.5-3.8 → no schools under 5%
-  // 3.8+ → any school is fair game
+  if (gpa < 2.5) realisticFloor = 0.50;       // below 2.5 → no schools under 50%
+  else if (gpa < 3.0) realisticFloor = 0.30;   // 2.5-3.0 → no schools under 30%
+  else if (gpa < 3.3) realisticFloor = 0.15;   // 3.0-3.3 → no schools under 15%
+  else if (gpa < 3.5) realisticFloor = 0.10;   // 3.3-3.5 → no schools under 10%
+  else if (gpa < 3.7) realisticFloor = 0.07;   // 3.5-3.7 → no schools under 7%
+  else if (gpa < 3.9) realisticFloor = 0.04;   // 3.7-3.9 → no schools under 4%
+  // 3.9+ → any school is fair game
+
+  // Ultra-selective schools (<8% acceptance) are ALWAYS unrealistic unless GPA ≥ 3.7
+  // AND test scores are within range
+  if (admRate != null && admRate < 0.08) {
+    if (gpa < 3.7) return "unrealistic";
+    if (scorePosition === "below" && scoreDelta > 0.05) return "unrealistic";
+    // Even with good stats, ultra-selective schools with <8% are Reach
+    return "Reach";
+  }
 
   // If scores are far below AND acceptance rate is below the realistic floor, exclude
   if (admRate != null && admRate < realisticFloor) {
-    if (scorePosition === "below" && scoreDelta > 0.10) return "unrealistic";
-    if (scorePosition !== "above" && gpa < 3.0 && admRate < 0.15) return "unrealistic";
+    if (scorePosition === "below" && scoreDelta > 0.05) return "unrealistic";
+    if (scorePosition !== "above") return "unrealistic";
   }
 
-  // ── Safety: scores above 75th percentile + higher acceptance ──
-  if (scorePosition === "above" && admRate != null && admRate > 0.30) return "Safety";
+  // ── Any school with <15% acceptance is at least a Reach for everyone ──
+  if (admRate != null && admRate < 0.15) {
+    // Only exception: scores well above 75th AND GPA ≥ 3.8 → treat as Match
+    if (scorePosition === "above" && scoreDelta > 0.05 && gpa >= 3.8) return "Match";
+    return "Reach";
+  }
 
-  // ── Reach: scores below OR very selective school for this student ──
-  // GPA-calibrated reach threshold (what acceptance rate feels like a "reach")
+  // ── Likely: scores above 75th percentile + higher acceptance ──
+  if (scorePosition === "above" && admRate != null && admRate > 0.35) return "Likely";
+
+  // ── Reach: scores below OR selective school for this student ──
+  // GPA-calibrated reach threshold
   let reachThreshold = 0.5;
-  if (gpa >= 3.9) reachThreshold = 0.15;
-  else if (gpa >= 3.8) reachThreshold = 0.20;
-  else if (gpa >= 3.5) reachThreshold = 0.30;
-  else if (gpa >= 3.0) reachThreshold = 0.40;
+  if (gpa >= 3.9) reachThreshold = 0.20;
+  else if (gpa >= 3.8) reachThreshold = 0.25;
+  else if (gpa >= 3.5) reachThreshold = 0.35;
+  else if (gpa >= 3.0) reachThreshold = 0.45;
 
   // Below 25th percentile on scores = always a reach
-  if (scorePosition === "below" && scoreDelta > 0.05) return "Reach";
+  if (scorePosition === "below" && scoreDelta > 0.03) return "Reach";
   // Low acceptance rate relative to GPA = reach
   if (admRate != null && admRate <= reachThreshold) return "Reach";
 
-  // ── Safety: high acceptance rate schools ──
-  if (admRate != null && admRate > 0.6) return "Safety";
-  if (scorePosition === "above" && admRate != null && admRate > 0.25) return "Safety";
+  // ── Likely: high acceptance rate schools ──
+  if (admRate != null && admRate > 0.65) return "Likely";
+  if (scorePosition === "above" && admRate != null && admRate > 0.30) return "Likely";
 
   return "Match";
 }
