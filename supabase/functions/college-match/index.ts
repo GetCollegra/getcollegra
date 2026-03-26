@@ -647,26 +647,25 @@ function generateRealismNote(fitCategory: string, fitScore: number, r: any, pref
   const studentSAT = parseStudentSAT(prefs);
   const studentACT = parseStudentACT(prefs);
 
-  if (fitCategory === "Safety") {
-    if (fitScore >= 80) return "Strong fit and you're well-positioned for admission.";
-    return "You're likely to be admitted here based on your academic profile.";
+  if (fitCategory === "Likely") {
+    if (fitScore >= 80) return "Strong fit — you're well-positioned for admission here.";
+    return "You have a strong chance of admission based on your academic profile.";
   }
 
   if (fitCategory === "Reach") {
-    // Check if it's a good preference fit but academic reach
     const realismMult = computeRealismMultiplier(r, prefs, fitCategory);
-    if (realismMult < 0.8 && fitScore > 40) {
-      return "Great fit for your preferences, but a reach academically. Consider this as a dream school.";
+    if (realismMult < 0.7 && fitScore > 30) {
+      return "Matches your preferences but is a significant academic reach. Consider as a dream school.";
     }
     if (admRate != null && admRate < 0.15) {
-      return `Highly selective (${(admRate * 100).toFixed(0)}% acceptance). A competitive reach — apply with strong essays and extracurriculars.`;
+      return `Highly selective (${(admRate * 100).toFixed(0)}% acceptance). This is competitive for almost everyone — apply with strong essays and extracurriculars.`;
     }
-    return "This is a reach school — your academic profile is below the typical admitted student.";
+    return "This is a reach — your academic profile is below the typical admitted student range.";
   }
 
   // Match
-  if (fitScore >= 75) return "Good alignment between your preferences and academic profile.";
-  return "Solid match — your profile is competitive for this school.";
+  if (fitScore >= 75) return "Strong alignment between your preferences and academic profile.";
+  return "Solid match — your profile is competitive and you have a realistic shot here.";
 }
 
 function getTopPrograms(r: any): string[] {
