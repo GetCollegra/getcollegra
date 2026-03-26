@@ -357,7 +357,7 @@ export default function CollegeMap({
                     <Badge
                       variant="secondary"
                       className={`text-[10px] ${
-                        m.college.fitCategory === "Safety"
+                        m.college.fitCategory === "Likely"
                           ? "bg-emerald-100 text-emerald-700"
                           : m.college.fitCategory === "Reach"
                           ? "bg-orange-100 text-orange-700"

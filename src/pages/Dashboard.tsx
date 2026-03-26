@@ -328,8 +328,8 @@ const Dashboard = () => {
       const priceB = parseInt(b.tuitionOutOfState.replace(/[^0-9]/g, "")) || 999999;
       return priceA - priceB;
     })[0];
-    const safetySchools = colleges.filter(c => c.fitCategory === "Safety");
-    return { bestMatch, mostAffordable, safetySchool: safetySchools[0] };
+    const likelySchools = colleges.filter(c => c.fitCategory === "Likely");
+    return { bestMatch, mostAffordable, safetySchool: likelySchools[0] };
   }, [colleges]);
 
   const allKnownCollegeNames = useMemo(() => {
