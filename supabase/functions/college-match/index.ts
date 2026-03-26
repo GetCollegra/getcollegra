@@ -401,19 +401,21 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
   // GPA-based floor: schools more selective than this are excluded entirely
   let realisticFloor = 0;
   if (gpa < 2.5) realisticFloor = 0.50;       // below 2.5 → no schools under 50%
-  else if (gpa < 3.0) realisticFloor = 0.30;   // 2.5-3.0 → no schools under 30%
-  else if (gpa < 3.3) realisticFloor = 0.15;   // 3.0-3.3 → no schools under 15%
-  else if (gpa < 3.5) realisticFloor = 0.10;   // 3.3-3.5 → no schools under 10%
-  else if (gpa < 3.7) realisticFloor = 0.07;   // 3.5-3.7 → no schools under 7%
+  else if (gpa < 3.0) realisticFloor = 0.35;   // 2.5-3.0 → no schools under 35%
+  else if (gpa < 3.3) realisticFloor = 0.20;   // 3.0-3.3 → no schools under 20%
+  else if (gpa < 3.5) realisticFloor = 0.12;   // 3.3-3.5 → no schools under 12%
+  else if (gpa < 3.7) realisticFloor = 0.08;   // 3.5-3.7 → no schools under 8%
   else if (gpa < 3.9) realisticFloor = 0.04;   // 3.7-3.9 → no schools under 4%
   // 3.9+ → any school is fair game
 
-  // Ultra-selective schools (<8% acceptance) are ALWAYS unrealistic unless GPA ≥ 3.7
-  // AND test scores are within range
-  if (admRate != null && admRate < 0.08) {
+  // Ultra-selective schools (<10% acceptance) require exceptional credentials
+  if (admRate != null && admRate < 0.10) {
+    // Must have GPA ≥ 3.7 AND test scores at or above 25th percentile
     if (gpa < 3.7) return "unrealistic";
-    if (scorePosition === "below" && scoreDelta > 0.05) return "unrealistic";
-    // Even with good stats, ultra-selective schools with <8% are Reach
+    if (scorePosition === "below") return "unrealistic";
+    // Even with strong stats, if no test scores provided and GPA < 3.9, exclude
+    if (!studentSAT && !studentACT && gpa < 3.9) return "unrealistic";
+    // Qualified students: still always a Reach (never Match/Likely for <10%)
     return "Reach";
   }
 
