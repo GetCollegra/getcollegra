@@ -594,13 +594,13 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
 }
 
 /**
- * Compute a 0.5–1.0 multiplier based on how realistic admission is.
- * - Safety/Match at or above 25th percentile → 1.0 (no penalty)
- * - Below 25th percentile → gradual penalty down to 0.6
- * - Far below with very low acceptance → 0.5
+ * Compute a 0.3–1.0 multiplier based on how realistic admission is.
+ * - Likely at or above 25th percentile → 1.0 (no penalty)
+ * - Below 25th percentile → gradual penalty down to 0.4
+ * - Far below with very low acceptance → 0.3
  */
 function computeRealismMultiplier(r: any, prefs: Record<string, any>, fitCategory: string): number {
-  if (fitCategory === "Safety") return 1.0; // no penalty for safeties
+  if (fitCategory === "Likely") return 1.0; // no penalty for likely schools
 
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
@@ -615,25 +615,27 @@ function computeRealismMultiplier(r: any, prefs: Record<string, any>, fitCategor
       ? Number(r["latest.admissions.sat_scores.25th_percentile.critical_reading"]) + Number(r["latest.admissions.sat_scores.25th_percentile.math"])
       : null;
     if (sat25 && studentSAT < sat25) {
-      academicGap = Math.max(academicGap, (sat25 - studentSAT) / 400); // 400-pt gap = 1.0
+      academicGap = Math.max(academicGap, (sat25 - studentSAT) / 300); // 300-pt gap = 1.0 (stricter)
     }
   } else if (studentACT) {
     const act25 = r["latest.admissions.act_scores.25th_percentile.cumulative"];
     if (act25 && studentACT < Number(act25)) {
-      academicGap = Math.max(academicGap, (Number(act25) - studentACT) / 10); // 10-pt gap = 1.0
+      academicGap = Math.max(academicGap, (Number(act25) - studentACT) / 8); // 8-pt gap = 1.0 (stricter)
     }
   }
 
-  // GPA gap (acceptance rate as proxy for average GPA expected)
-  if (admRate != null && admRate < 0.3 && gpa < 3.5) {
-    academicGap = Math.max(academicGap, (3.5 - gpa) * 0.8);
-  } else if (admRate != null && admRate < 0.15 && gpa < 3.8) {
-    academicGap = Math.max(academicGap, (3.8 - gpa) * 0.6);
+  // GPA gap — more aggressive scaling
+  if (admRate != null && admRate < 0.15 && gpa < 3.8) {
+    academicGap = Math.max(academicGap, (3.8 - gpa) * 1.0);
+  } else if (admRate != null && admRate < 0.3 && gpa < 3.5) {
+    academicGap = Math.max(academicGap, (3.5 - gpa) * 0.9);
+  } else if (admRate != null && admRate < 0.5 && gpa < 3.0) {
+    academicGap = Math.max(academicGap, (3.0 - gpa) * 0.7);
   }
 
-  // Convert gap to multiplier: 0 gap → 1.0, gap of 1.0+ → 0.5
+  // Convert gap to multiplier: 0 gap → 1.0, gap of 1.0+ → 0.3
   if (academicGap <= 0) return 1.0;
-  return Math.max(0.5, 1.0 - academicGap * 0.5);
+  return Math.max(0.3, 1.0 - academicGap * 0.7);
 }
 
 /**
