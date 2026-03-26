@@ -455,30 +455,66 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
 
 /**
  * Compute fitScore (0–100) using weighted factors:
- * - Campus Culture & Personality (25%)
- * - Academic Major Fit (25%)
+ * - Admission Realism (30%) — heavily penalizes academic mismatches
+ * - Academic Major Fit (20%)
+ * - Campus Culture & Personality (15%)
  * - Cost & Affordability (15%)
- * - Distance From Home (12%)
- * - Admission Realism (10%)
- * - School Size (8%)
+ * - Distance From Home (10%)
+ * - School Size (5%)
  * - Support Level (5%)
  *
- * Academic Realism Multiplier: penalizes schools where student profile
- * is far below average admitted student.
+ * Academic Realism Multiplier: further penalizes schools where student
+ * profile is far below average admitted student.
  */
 function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string, adj?: Record<string, number>): number {
   const a = adj || {};
   let score = 0;
 
-  // 1. Campus Culture (25 pts max)
+  // 1. Admission Realism (30 pts max) — the primary driver
+  const admRate = r["latest.admissions.admission_rate.overall"];
+  const gpa = parseStudentGPA(prefs);
+  const studentSAT = parseStudentSAT(prefs);
+  const studentACT = parseStudentACT(prefs);
+  let admissionScore = 15;
+  if (fitCategory === "Likely") admissionScore = 30;
+  else if (fitCategory === "Match") admissionScore = 22;
+  else if (fitCategory === "Reach") {
+    // Penalize more aggressively for very selective schools
+    if (admRate != null && admRate < 0.15) admissionScore = 5;
+    else if (admRate != null && admRate < 0.25) admissionScore = 8;
+    else admissionScore = 12;
+  }
+  score += admissionScore + (a.admission || 0);
+
+  // 2. Academic Major Fit (20 pts max)
+  const study = (prefs.areaOfStudy || "").toLowerCase();
+  let academicScore = 10; // default
+  if (study && study !== "undecided") {
+    let bestProgramPct = 0;
+    for (const [keyword, field] of Object.entries(studyProgramMap)) {
+      if (study.includes(keyword)) {
+        const pct = Number(r[field] || 0);
+        if (pct > bestProgramPct) bestProgramPct = pct;
+      }
+    }
+    if (bestProgramPct > 0.15) academicScore = 20;
+    else if (bestProgramPct > 0.10) academicScore = 16;
+    else if (bestProgramPct > 0.05) academicScore = 12;
+    else if (bestProgramPct > 0.02) academicScore = 8;
+    else if (bestProgramPct > 0) academicScore = 5;
+    else academicScore = 3;
+  }
+  score += academicScore + (a.academic || 0);
+
+  // 3. Campus Culture (15 pts max)
   const locale = r["school.locale"];
   const localeDesc = locale <= 13 ? "urban" : locale <= 23 ? "suburban" : locale <= 33 ? "town" : "rural";
   const prefLoc = (prefs.locationType || "").toLowerCase();
-  let cultureScore = 10; // baseline
-  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 23;
-  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 23;
-  else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 16;
-  else cultureScore = 4; // strong penalty for mismatched locale when user has a clear preference
+  let cultureScore = 6; // baseline
+  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 14;
+  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 14;
+  else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 10;
+  else cultureScore = 3; // strong penalty for mismatched locale
 
   // Vibe bonus
   const vibe = (prefs.campusVibe || "").toLowerCase();
