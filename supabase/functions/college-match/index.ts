@@ -519,10 +519,10 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   // Vibe bonus
   const vibe = (prefs.campusVibe || "").toLowerCase();
   const size = r["latest.student.size"] || 0;
-  if (vibe.includes("spirited") && size > 15000) cultureScore = Math.min(25, cultureScore + 3);
-  else if (vibe.includes("tight") && size < 5000) cultureScore = Math.min(25, cultureScore + 3);
-  else if (vibe.includes("chill")) cultureScore = Math.min(25, cultureScore + 2);
-  score += Math.min(25, cultureScore) + (a.culture || 0);
+  if (vibe.includes("spirited") && size > 15000) cultureScore = Math.min(15, cultureScore + 2);
+  else if (vibe.includes("tight") && size < 5000) cultureScore = Math.min(15, cultureScore + 2);
+  else if (vibe.includes("chill")) cultureScore = Math.min(15, cultureScore + 1);
+  score += Math.min(15, cultureScore) + (a.culture || 0);
 
   // 2. Academic Major Fit (25 pts max)
   const study = (prefs.areaOfStudy || "").toLowerCase();
