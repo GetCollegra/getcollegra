@@ -585,9 +585,8 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   score += Math.min(5, supportScore) + (a.support || 0);
 
   // ── Academic Realism Multiplier ──
-  // Penalize schools where the student's academic profile is significantly
-  // below the average admitted student. This prevents unrealistic schools
-  // from ranking highly even if they match preferences.
+  // Aggressively penalize schools where the student's academic profile is
+  // significantly below the average admitted student.
   const realismMultiplier = computeRealismMultiplier(r, prefs, fitCategory);
   score = Math.round(score * realismMultiplier);
 
