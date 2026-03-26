@@ -1050,7 +1050,7 @@ serve(async (req) => {
       ],
       idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
     };
-    const comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Safety, Match, and Reach schools.`;
+    const comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Likely, Match, and Reach schools.`;
 
     // ── Step 4: Build final result and save as completed (version 1 = rule-based) ──
     console.log("[college-match] Step 4: Building final result...");
