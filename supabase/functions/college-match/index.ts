@@ -524,25 +524,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   else if (vibe.includes("chill")) cultureScore = Math.min(15, cultureScore + 1);
   score += Math.min(15, cultureScore) + (a.culture || 0);
 
-  // 2. Academic Major Fit (25 pts max)
-  const study = (prefs.areaOfStudy || "").toLowerCase();
-  let academicScore = 12; // default
-  if (study && study !== "undecided") {
-    let bestProgramPct = 0;
-    for (const [keyword, field] of Object.entries(studyProgramMap)) {
-      if (study.includes(keyword)) {
-        const pct = Number(r[field] || 0);
-        if (pct > bestProgramPct) bestProgramPct = pct;
-      }
-    }
-    if (bestProgramPct > 0.15) academicScore = 25;
-    else if (bestProgramPct > 0.10) academicScore = 20;
-    else if (bestProgramPct > 0.05) academicScore = 15;
-    else if (bestProgramPct > 0.02) academicScore = 10;
-    else if (bestProgramPct > 0) academicScore = 7;
-    else academicScore = 5;
-  }
-  score += academicScore + (a.academic || 0);
+  // (Academic Major Fit already computed above)
 
   // 3. Cost & Affordability (15 pts max)
   const costPref = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
