@@ -689,12 +689,13 @@ function getTopPrograms(r: any): string[] {
 }
 
 /**
- * Rule-based engine: score all colleges, pick 2 Safety / 2 Match / 1 Reach.
- * Returns structured college objects WITH placeholder text for AI-generated fields.
- */
-/**
  * Rule-based engine: score all colleges, distribute by listMode preference.
- * listMode: "Safe & Practical" → 3S/1M/1R, "Balanced" → 2S/2M/1R, "Dream Big" → 1S/2M/2R
+ * Default "Balanced" → 2 Likely / 2 Match / 1 Reach
+ * "Safe & Practical" → 3 Likely / 1 Match / 1 Reach
+ * "Dream Big" → 1 Likely / 2 Match / 2 Reach
+ * 
+ * Results are sorted with Likely and Match schools FIRST (top 3),
+ * Reach schools at the bottom, unless the student qualifies.
  */
 function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = [], weightAdj?: Record<string, number>): any[] {
   const gpa = parseStudentGPA(prefs);
@@ -704,11 +705,11 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
 
   // Determine distribution from listMode
   const listMode = (prefs.listMode || "Balanced").toLowerCase();
-  let safetyTarget = 2, matchTarget = 2, reachTarget = 1;
+  let likelyTarget = 2, matchTarget = 2, reachTarget = 1;
   if (listMode.includes("safe") || listMode.includes("practical") || listMode.includes("realistic")) {
-    safetyTarget = 3; matchTarget = 1; reachTarget = 1;
+    likelyTarget = 3; matchTarget = 1; reachTarget = 1;
   } else if (listMode.includes("dream") || listMode.includes("ambitious")) {
-    safetyTarget = 1; matchTarget = 2; reachTarget = 2;
+    likelyTarget = 1; matchTarget = 2; reachTarget = 2;
   }
 
   // Score and categorize all colleges
@@ -724,11 +725,11 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   // Filter out unrealistic schools before pooling
   const realistic = scored.filter(s => s.fitCategory !== "unrealistic");
 
-  const safetyPool = realistic.filter(s => s.fitCategory === "Safety");
+  const likelyPool = realistic.filter(s => s.fitCategory === "Likely");
   const matchPool = realistic.filter(s => s.fitCategory === "Match");
   const reachPool = realistic.filter(s => s.fitCategory === "Reach");
 
-  // Pick based on distribution targets
+  // Pick based on distribution targets — Likely first, then Match, then Reach
   const picked: typeof scored = [];
   const addFrom = (pool: typeof scored, count: number) => {
     for (const s of pool) {
@@ -740,18 +741,27 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     }
   };
 
-  addFrom(safetyPool, safetyTarget);
+  addFrom(likelyPool, likelyTarget);
   addFrom(matchPool, matchTarget);
   addFrom(reachPool, reachTarget);
 
-  // Pad if needed
+  // Pad if needed (prefer Likely/Match over Reach)
+  for (const s of realistic.filter(x => x.fitCategory !== "Reach")) {
+    if (picked.length >= 5) break;
+    if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
+  }
   for (const s of realistic) {
     if (picked.length >= 5) break;
     if (!picked.find(p => p.raw["school.name"] === s.raw["school.name"])) picked.push(s);
   }
 
-  // Sort by fitScore descending
-  picked.sort((a, b) => b.fitScore - a.fitScore);
+  // Sort: Likely and Match schools first (by fitScore), Reach schools last
+  const categoryOrder: Record<string, number> = { "Likely": 0, "Match": 1, "Reach": 2 };
+  picked.sort((a, b) => {
+    const catDiff = (categoryOrder[a.fitCategory] ?? 2) - (categoryOrder[b.fitCategory] ?? 2);
+    if (catDiff !== 0) return catDiff;
+    return b.fitScore - a.fitScore;
+  });
 
   return picked.slice(0, 5).map(({ raw: r, fitCategory, fitScore }) => {
     const admRate = r["latest.admissions.admission_rate.overall"];
