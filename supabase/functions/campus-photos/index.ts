@@ -141,7 +141,7 @@ async function fetchUnsplashPhotos(collegeName: string, city: string) {
   
   const queries = [
     `"${collegeName}" campus building`,
-    city ? `${city} city` : null,
+    city ? `${city} university area neighborhood` : null,
   ].filter(Boolean) as string[];
 
   for (const query of queries) {
