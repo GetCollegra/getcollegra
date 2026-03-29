@@ -22,6 +22,7 @@ serve(async (req) => {
     }
 
     const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY");
+    console.log("UNSPLASH_KEY present:", !!UNSPLASH_KEY, "length:", UNSPLASH_KEY?.length);
     if (!UNSPLASH_KEY) {
       return new Response(JSON.stringify({ error: "Unsplash API key not configured" }), {
         status: 500,
@@ -62,7 +63,8 @@ serve(async (req) => {
             headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
           });
           if (!res.ok) {
-            console.error(`Unsplash error for "${query}": ${res.status}`);
+            const errBody = await res.text();
+            console.error(`Unsplash error for "${query}": ${res.status}`, errBody);
             return;
           }
           const data = await res.json();
