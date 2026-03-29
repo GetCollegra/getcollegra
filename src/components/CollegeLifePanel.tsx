@@ -110,12 +110,25 @@ type Props = {
   college: College;
 };
 
+type UnsplashPhoto = {
+  id: string;
+  url: string;
+  thumbUrl: string;
+  alt: string;
+  photographer: string;
+  photographerUrl: string;
+  query: string;
+};
+
 export default function CollegeLifePanel({ college }: Props) {
   const [data, setData] = useState<CollegeLifeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("photos");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [photos, setPhotos] = useState<UnsplashPhoto[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<UnsplashPhoto | null>(null);
 
   useEffect(() => {
     let cancelled = false;
