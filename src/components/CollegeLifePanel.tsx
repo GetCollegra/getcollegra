@@ -258,10 +258,6 @@ export default function CollegeLifePanel({ college }: Props) {
             )}
           </div>
         </TabsContent>
-              )}
-            </DialogContent>
-          </Dialog>
-        </TabsContent>
 
         {/* Weather & Climate */}
         <TabsContent value="weather" className="mt-4">
