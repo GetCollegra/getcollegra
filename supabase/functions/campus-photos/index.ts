@@ -8,132 +8,140 @@ const corsHeaders = {
 
 const UNSPLASH_KEY = "0RFOIUa03s7zce9GGNz3G-5HP17u0kyybFzk2WQlR0k";
 
-// Extract abbreviation or short name from college name
-function getShortName(name: string): string {
-  // Common patterns: "University of X" → "UofX", acronyms, etc.
+// Well-known abbreviations for US colleges
+const knownAbbreviations: Record<string, string[]> = {
+  "new jersey institute of technology": ["NJIT"],
+  "massachusetts institute of technology": ["MIT"],
+  "university of california los angeles": ["UCLA"],
+  "university of california berkeley": ["UC Berkeley", "Cal"],
+  "university of southern california": ["USC"],
+  "georgia institute of technology": ["Georgia Tech"],
+  "california institute of technology": ["Caltech"],
+  "university of north carolina": ["UNC"],
+  "texas christian university": ["TCU"],
+  "university of colorado boulder": ["CU Boulder", "CU"],
+  "university of illinois urbana-champaign": ["UIUC"],
+  "new york university": ["NYU"],
+  "ohio state university": ["OSU"],
+  "penn state university": ["Penn State"],
+  "virginia polytechnic institute": ["Virginia Tech"],
+  "rensselaer polytechnic institute": ["RPI"],
+};
+
+function getAbbreviations(name: string): string[] {
+  const lower = name.toLowerCase();
+  // Check known abbreviations
+  for (const [key, abbrs] of Object.entries(knownAbbreviations)) {
+    if (lower.includes(key)) return abbrs;
+  }
+  // Generate acronym from significant words
   const words = name.split(/\s+/);
-  if (words.length <= 2) return name;
-  // Try acronym of major words
+  if (words.length <= 2) return [name];
   const acronym = words
     .filter(w => !["of", "the", "and", "at", "in", "for"].includes(w.toLowerCase()))
-    .map(w => w[0])
+    .map(w => w[0].toUpperCase())
     .join("");
-  return acronym.length >= 2 ? acronym : name;
+  return acronym.length >= 3 ? [acronym] : [];
 }
 
-// Check if a string contains any form of the college name
-function matchesCollege(text: string, collegeName: string, shortName: string): boolean {
+function matchesCollege(text: string, collegeName: string, abbreviations: string[]): boolean {
   const lower = text.toLowerCase();
-  const nameLower = collegeName.toLowerCase();
   
-  // Direct match
-  if (lower.includes(nameLower)) return true;
+  if (lower.includes(collegeName.toLowerCase())) return true;
   
-  // Short name / acronym match (only if 3+ chars to avoid false positives)
-  if (shortName.length >= 3 && lower.includes(shortName.toLowerCase())) return true;
-  
-  // Check significant words from the college name (3+ word colleges)
-  const significantWords = collegeName.split(/\s+/)
-    .filter(w => w.length > 3 && !["university", "college", "institute", "the", "and"].includes(w.toLowerCase()));
-  if (significantWords.length >= 2) {
-    const matchCount = significantWords.filter(w => lower.includes(w.toLowerCase())).length;
-    if (matchCount >= 2) return true;
+  for (const abbr of abbreviations) {
+    if (abbr.length >= 2 && lower.includes(abbr.toLowerCase())) return true;
+  }
+
+  // Match on 2+ significant words from the name
+  const sigWords = collegeName.split(/\s+/)
+    .filter(w => w.length > 3 && !["university", "college", "institute", "the", "and", "state"].includes(w.toLowerCase()));
+  if (sigWords.length >= 2) {
+    const matched = sigWords.filter(w => lower.includes(w.toLowerCase())).length;
+    if (matched >= 2) return true;
   }
   
   return false;
 }
 
-// Fetch from Wikimedia Commons — real, verified, properly tagged photos
-async function fetchWikimediaPhotos(collegeName: string, shortName: string): Promise<Array<{
-  id: string; url: string; thumbUrl: string; alt: string;
-  photographer: string; photographerUrl: string; category: string;
-}>> {
-  const photos: Array<any> = [];
+async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]) {
+  const photos: any[] = [];
+  
+  // Search using full name AND abbreviations
+  const searchTerms = [collegeName, ...abbreviations];
+  const searchQuery = searchTerms.map(t => `"${t}"`).join(" OR ");
 
-  // Try multiple search variants
-  const searches = [
-    `"${collegeName}" campus`,
-    `"${shortName}" campus`,
-    `"${collegeName}"`,
-  ];
+  try {
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(searchQuery + " campus OR building OR hall")}&gsrlimit=15&prop=imageinfo&iiprop=url|extmetadata|mime&iiurlwidth=800&format=json`;
+    console.log("Wikimedia search:", searchQuery);
+    const res = await fetch(url);
+    if (!res.ok) { await res.text(); return photos; }
+    const data = await res.json();
+    const pages = data?.query?.pages || {};
+    console.log(`Wikimedia returned ${Object.keys(pages).length} results`);
 
-  for (const search of searches) {
-    if (photos.length >= 8) break;
-    try {
-      const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(search)}&gsrlimit=10&prop=imageinfo&iiprop=url|extmetadata|mime&iiurlwidth=800&format=json`;
-      const res = await fetch(url);
-      if (!res.ok) { await res.text(); continue; }
-      const data = await res.json();
-      const pages = data?.query?.pages || {};
+    for (const page of Object.values(pages) as any[]) {
+      if (photos.length >= 8) break;
+      const title = page.title || "";
+      const ii = (page.imageinfo || [{}])[0];
+      const mime = ii.mime || "";
 
-      for (const page of Object.values(pages) as any[]) {
-        const title = page.title || "";
-        const ii = (page.imageinfo || [{}])[0];
-        const mime = ii.mime || "";
+      if (!mime.startsWith("image/") || mime.includes("svg")) continue;
 
-        // Only accept image files (not SVG logos, PDFs, etc.)
-        if (!mime.startsWith("image/") || mime.includes("svg")) continue;
+      const desc = ii.extmetadata?.ImageDescription?.value || "";
+      const cats = ii.extmetadata?.Categories?.value || "";
+      const artist = ii.extmetadata?.Artist?.value || "";
+      const combined = `${title} ${desc} ${cats}`;
 
-        const desc = ii.extmetadata?.ImageDescription?.value || "";
-        const cats = ii.extmetadata?.Categories?.value || "";
-        const artist = ii.extmetadata?.Artist?.value || "";
-        const license = ii.extmetadata?.LicenseShortName?.value || "";
-
-        // STRICT: must match the college name in title, description, or categories
-        const combined = `${title} ${desc} ${cats}`;
-        if (!matchesCollege(combined, collegeName, shortName)) continue;
-
-        // Skip logos, maps, diagrams
-        const titleLower = title.toLowerCase();
-        if (titleLower.includes("logo") || titleLower.includes("seal") || 
-            titleLower.includes("map") || titleLower.includes("diagram") ||
-            titleLower.includes("chart") || titleLower.includes("icon")) continue;
-
-        // Skip if already seen
-        const photoId = `wiki-${page.pageid}`;
-        if (photos.some(p => p.id === photoId)) continue;
-
-        // Clean artist name (strip HTML)
-        const cleanArtist = artist.replace(/<[^>]*>/g, "").trim() || "Wikimedia Commons";
-
-        // Determine category from title/description
-        let category = "Campus";
-        const cl = combined.toLowerCase();
-        if (cl.includes("hall") || cl.includes("building") || cl.includes("center")) category = "Buildings";
-        else if (cl.includes("aerial") || cl.includes("overview") || cl.includes("panoram")) category = "Overview";
-        else if (cl.includes("entrance") || cl.includes("gate")) category = "Entrance";
-        else if (cl.includes("library")) category = "Library";
-        else if (cl.includes("dorm") || cl.includes("residence")) category = "Housing";
-
-        photos.push({
-          id: photoId,
-          url: ii.url || ii.thumburl,
-          thumbUrl: ii.thumburl || ii.url,
-          alt: desc.replace(/<[^>]*>/g, "").slice(0, 120) || `${collegeName} - ${category}`,
-          photographer: cleanArtist,
-          photographerUrl: ii.descriptionurl || "https://commons.wikimedia.org",
-          category,
-        });
+      if (!matchesCollege(combined, collegeName, abbreviations)) {
+        console.log(`Rejected (no match): ${title}`);
+        continue;
       }
-    } catch (e) {
-      console.error(`Wikimedia search error for "${search}":`, e);
+
+      const titleLower = title.toLowerCase();
+      if (titleLower.includes("logo") || titleLower.includes("seal") || 
+          titleLower.includes("map") || titleLower.includes("diagram") ||
+          titleLower.includes("chart") || titleLower.includes("icon") ||
+          titleLower.includes(".svg")) continue;
+
+      const photoId = `wiki-${page.pageid}`;
+      if (photos.some(p => p.id === photoId)) continue;
+
+      const cleanArtist = artist.replace(/<[^>]*>/g, "").trim() || "Wikimedia Commons";
+      
+      let category = "Campus";
+      const cl = combined.toLowerCase();
+      if (cl.includes("hall") || cl.includes("building") || cl.includes("center")) category = "Buildings";
+      else if (cl.includes("aerial") || cl.includes("panoram")) category = "Overview";
+      else if (cl.includes("library")) category = "Library";
+      else if (cl.includes("dorm") || cl.includes("residence")) category = "Housing";
+      else if (cl.includes("entrance") || cl.includes("gate")) category = "Entrance";
+
+      console.log(`Accepted: ${title} → ${category}`);
+
+      photos.push({
+        id: photoId,
+        url: ii.url || ii.thumburl,
+        thumbUrl: ii.thumburl || ii.url,
+        alt: desc.replace(/<[^>]*>/g, "").slice(0, 150) || `${collegeName} - ${category}`,
+        photographer: cleanArtist,
+        photographerUrl: ii.descriptionurl || "https://commons.wikimedia.org",
+        category,
+      });
     }
+  } catch (e) {
+    console.error("Wikimedia fetch error:", e);
   }
 
   return photos;
 }
 
-// Fetch from Unsplash — supplementary area photos only
-async function fetchUnsplashPhotos(collegeName: string, city: string): Promise<Array<{
-  id: string; url: string; thumbUrl: string; alt: string;
-  photographer: string; photographerUrl: string; category: string;
-}>> {
-  const photos: Array<any> = [];
+async function fetchUnsplashPhotos(collegeName: string, city: string) {
+  const photos: any[] = [];
   
-  // Only search for the specific campus + surrounding city
   const queries = [
-    `${collegeName} campus`,
-    city ? `${city} downtown cityscape` : null,
+    `"${collegeName}" campus building`,
+    city ? `${city} city` : null,
   ].filter(Boolean) as string[];
 
   for (const query of queries) {
@@ -149,27 +157,14 @@ async function fetchUnsplashPhotos(collegeName: string, city: string): Promise<A
         const id = `unsplash-${photo.id}`;
         if (photos.some(p => p.id === id)) continue;
 
-        // For campus queries, verify relevance via tags
-        const tags: string[] = (photo.tags || []).map((t: any) => (t.title || "").toLowerCase());
-        const desc = (photo.description || photo.alt_description || "").toLowerCase();
-        const isAreaQuery = query.includes("downtown") || query.includes("cityscape");
-        
-        if (!isAreaQuery) {
-          // For campus queries, require some campus/university signal
-          const hasSignal = tags.some(t =>
-            t.includes("campus") || t.includes("university") || t.includes("college") ||
-            t.includes("building") || t.includes("education") || t.includes("school")
-          ) || desc.includes("campus") || desc.includes("university") || desc.includes("college");
-          if (!hasSignal) continue;
-        }
-
+        const isAreaQuery = query.includes("city");
         const category = isAreaQuery ? "Surrounding Area" : "Campus";
 
         photos.push({
           id,
           url: photo.urls?.regular || photo.urls?.small,
           thumbUrl: photo.urls?.small || photo.urls?.thumb,
-          alt: photo.alt_description || `${collegeName} area`,
+          alt: photo.alt_description || `${isAreaQuery ? city : collegeName} photo`,
           photographer: photo.user?.name || "Unknown",
           photographerUrl: `${photo.user?.links?.html || "https://unsplash.com"}?utm_source=collegra&utm_medium=referral`,
           category,
@@ -189,7 +184,7 @@ serve(async (req) => {
   }
 
   try {
-    const { collegeName, collegeLocation, searchTerms } = await req.json();
+    const { collegeName, collegeLocation } = await req.json();
 
     if (!collegeName || typeof collegeName !== "string") {
       return new Response(JSON.stringify({ error: "collegeName is required" }), {
@@ -198,21 +193,20 @@ serve(async (req) => {
       });
     }
 
-    const shortName = getShortName(collegeName);
+    const abbreviations = getAbbreviations(collegeName);
     const city = typeof collegeLocation === "string"
       ? collegeLocation.split(",")[0].trim()
       : "";
 
-    // Fetch from both sources in parallel
+    console.log(`Fetching photos for: ${collegeName} (abbrs: ${abbreviations.join(", ")}), city: ${city}`);
+
     const [wikiPhotos, unsplashPhotos] = await Promise.all([
-      fetchWikimediaPhotos(collegeName, shortName),
+      fetchWikimediaPhotos(collegeName, abbreviations),
       fetchUnsplashPhotos(collegeName, city),
     ]);
 
     // Prioritize Wikimedia (verified) then Unsplash (supplementary)
     const allPhotos = [...wikiPhotos, ...unsplashPhotos];
-
-    // Deduplicate by id
     const seen = new Set<string>();
     const unique = allPhotos.filter(p => {
       if (seen.has(p.id)) return false;
@@ -220,14 +214,10 @@ serve(async (req) => {
       return true;
     });
 
+    console.log(`Total: ${unique.length} (wiki: ${wikiPhotos.length}, unsplash: ${unsplashPhotos.length})`);
+
     return new Response(
-      JSON.stringify({
-        photos: unique.slice(0, 12),
-        sources: {
-          wikimedia: wikiPhotos.length,
-          unsplash: unsplashPhotos.length,
-        },
-      }),
+      JSON.stringify({ photos: unique.slice(0, 12) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
