@@ -63,7 +63,8 @@ serve(async (req) => {
             headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
           });
           if (!res.ok) {
-            console.error(`Unsplash error for "${query}": ${res.status}`);
+            const errBody = await res.text();
+            console.error(`Unsplash error for "${query}": ${res.status}`, errBody);
             return;
           }
           const data = await res.json();
