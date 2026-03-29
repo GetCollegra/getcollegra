@@ -580,6 +580,8 @@ const Dashboard = () => {
                 <>
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {filteredColleges.map((college, i) => {
+                      const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
+                      const CatIcon = cat.icon;
                       const isSaved = savedColleges.some(s => s.college_name === college.name);
                       return (
                         <motion.div key={college.name} variants={fadeIn} custom={i + 1}>
