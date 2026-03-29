@@ -632,14 +632,14 @@ const Dashboard = () => {
                   </div>
 
                   {/* Suggested Colleges */}
-                  {suggestedColleges.length > 0 && (
+                  {filteredSuggestions.length > 0 && (
                     <>
                       <div className="flex items-center gap-2 mt-10 mb-6">
                         <Sparkles className="h-5 w-5 text-accent" />
                         <h3 className="text-xl font-bold text-foreground">More Suggestions</h3>
                       </div>
                       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {suggestedColleges.map((college, i) => {
+                        {filteredSuggestions.map((college, i) => {
                           const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
                           const CatIcon = cat.icon;
                           const isSaved = savedColleges.some(s => s.college_name === college.name);
