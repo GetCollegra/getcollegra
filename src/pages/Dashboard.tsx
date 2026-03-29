@@ -345,6 +345,25 @@ const Dashboard = () => {
     return [...new Set([...names, ...savedNames, ...suggestedNames])];
   }, [colleges, savedColleges, suggestedColleges]);
 
+  // Filtered + sorted colleges for the Matches tab
+  const availableMajors = useMemo(() => extractMajors([...colleges, ...suggestedColleges]), [colleges, suggestedColleges]);
+  const filteredColleges = useMemo(() => applySorting(applyFilters(colleges, filters), sort), [colleges, filters, sort]);
+  const filteredSuggestions = useMemo(() => applySorting(applyFilters(suggestedColleges, filters), sort), [suggestedColleges, filters, sort]);
+
+  // Organized saved colleges by category
+  const savedByCategory = useMemo(() => {
+    const likely: SavedCollege[] = [];
+    const match: SavedCollege[] = [];
+    const reach: SavedCollege[] = [];
+    savedColleges.forEach(s => {
+      const cat = s.college_data.fitCategory;
+      if (cat === "Likely") likely.push(s);
+      else if (cat === "Reach") reach.push(s);
+      else match.push(s);
+    });
+    return { likely, match, reach };
+  }, [savedColleges]);
+
   const discoverSuggestions = async () => {
     if (!storedPreferences || loadingSuggestions) return;
     setLoadingSuggestions(true);
