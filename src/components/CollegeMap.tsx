@@ -51,6 +51,7 @@ function createHomeIcon() {
 }
 
 const FIT_COLORS: Record<string, string> = {
+  Likely: "#10b981",
   Safety: "#10b981",
   Match: "#1d6fd3",
   Reach: "#ea580c",
