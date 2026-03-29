@@ -836,6 +836,9 @@ const Dashboard = () => {
                                           <SelectItem value="Accepted">Accepted</SelectItem>
                                         </SelectContent>
                                       </Select>
+                                      <Button variant="outline" size="sm" className="h-8 gap-1 text-xs" onClick={() => navigate(`/college?name=${encodeURIComponent(saved.college_name)}`)}>
+                                        <Eye className="h-3.5 w-3.5" /> Explore
+                                      </Button>
                                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeCollege(saved.id)}>
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
