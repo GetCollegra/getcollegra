@@ -19,7 +19,7 @@ const knownAbbreviations: Record<string, string[]> = {
   "california institute of technology": ["Caltech"],
   "university of north carolina": ["UNC"],
   "texas christian university": ["TCU"],
-  "university of colorado boulder": ["CU Boulder", "UCB"],
+  "university of colorado boulder": ["CU Boulder"],
   "university of illinois urbana-champaign": ["UIUC"],
   "new york university": ["NYU"],
   "ohio state university": ["OSU"],
