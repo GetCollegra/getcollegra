@@ -117,7 +117,7 @@ type UnsplashPhoto = {
   alt: string;
   photographer: string;
   photographerUrl: string;
-  query: string;
+  category: string;
 };
 
 export default function CollegeLifePanel({ college }: Props) {
