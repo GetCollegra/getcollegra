@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Loader2, Sun, Cloud, Snowflake, Droplets, Thermometer, Wind,
   AlertTriangle, Shield, DollarSign, Home, Car, MapPin, TreePine,
   Coffee, ShoppingBag, Utensils, Heart, Eye, Camera, Building,
-  Users, Zap, Waves, Flame, Mountain
+  Users, Zap, Waves, Flame, Mountain, ChevronLeft, ChevronRight, X
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { College } from "@/types/college";
 
 type SeasonData = {
