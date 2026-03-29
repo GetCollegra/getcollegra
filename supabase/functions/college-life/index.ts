@@ -101,7 +101,7 @@ Return a JSON object with EXACTLY this structure (no markdown, no code fences, j
 
 Use REALISTIC data based on the actual location. Risk levels must be one of: "Low", "Moderate", "Higher". Temperatures in Fahrenheit. Make the student perspective warm, honest, and helpful — like advice from a current student.`;
 
-    const res = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
