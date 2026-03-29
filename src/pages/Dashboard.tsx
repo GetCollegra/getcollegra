@@ -533,6 +533,27 @@ const Dashboard = () => {
           {/* 2. College Matches */}
           <TabsContent value="matches">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">Your College Matches</h2>
+              </div>
+
+              {/* Filter/Sort Control Panel */}
+              {colleges.length > 0 && (
+                <div className="mb-6">
+                  <DashboardFilters
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    sort={sort}
+                    onSortChange={setSort}
+                    availableMajors={availableMajors}
+                    totalCount={colleges.length + suggestedColleges.length}
+                    filteredCount={filteredColleges.length + filteredSuggestions.length}
+                  />
+                </div>
+              )}
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <GraduationCap className="h-5 w-5 text-primary" />
