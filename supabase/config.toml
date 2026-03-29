@@ -31,3 +31,5 @@ project_id = "iyaflygbuoghplhykhzd"
     verify_jwt = false
   [functions.compute-weight-adjustments]
     verify_jwt = false
+  [functions.campus-photos]
+    verify_jwt = false
