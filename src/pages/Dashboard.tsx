@@ -615,15 +615,19 @@ const Dashboard = () => {
                               </div>
                               <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
                               <div className="mt-auto pt-3">
-                                <Button
-                                  variant={isSaved ? "secondary" : "default"}
-                                  size="sm"
-                                  className="w-full"
-                                  onClick={() => saveCollege(college)}
-                                  disabled={isSaved}
-                                >
-                                  {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Saved</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
-                                </Button>
+                                {(() => {
+                                  const savedEntry = savedColleges.find(s => s.college_name === college.name);
+                                  return (
+                                    <Button
+                                      variant={isSaved ? "outline" : "default"}
+                                      size="sm"
+                                      className="w-full"
+                                      onClick={() => isSaved && savedEntry ? removeCollege(savedEntry.id) : saveCollege(college)}
+                                    >
+                                      {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Unsave</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
+                                    </Button>
+                                  );
+                                })()}
                               </div>
                             </CardContent>
                           </Card>
@@ -665,15 +669,19 @@ const Dashboard = () => {
                                   </div>
                                   <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
                                   <div className="mt-auto pt-3">
-                                    <Button
-                                      variant={isSaved ? "secondary" : "default"}
-                                      size="sm"
-                                      className="w-full"
-                                      onClick={() => saveCollege(college)}
-                                      disabled={isSaved}
-                                    >
-                                      {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Saved</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
-                                    </Button>
+                                    {(() => {
+                                      const savedEntry = savedColleges.find(s => s.college_name === college.name);
+                                      return (
+                                        <Button
+                                          variant={isSaved ? "outline" : "default"}
+                                          size="sm"
+                                          className="w-full"
+                                          onClick={() => isSaved && savedEntry ? removeCollege(savedEntry.id) : saveCollege(college)}
+                                        >
+                                          {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Unsave</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
+                                        </Button>
+                                      );
+                                    })()}
                                   </div>
                                 </CardContent>
                               </Card>
