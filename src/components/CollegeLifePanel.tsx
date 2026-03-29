@@ -262,18 +262,35 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Weather & Climate */}
         <TabsContent value="weather" className="mt-4">
           <div className="space-y-4">
-            {/* Climate Summary */}
-            <Card className="bg-card border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Thermometer className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-foreground text-sm">Climate Overview</span>
+            {/* Climate Hero */}
+            <Card className="bg-gradient-to-br from-sky-500/10 via-card to-amber-500/10 border-primary/10 overflow-hidden">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2.5 rounded-xl bg-sky-500/10 shrink-0">
+                    <Thermometer className="h-5 w-5 text-sky-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-foreground text-base mb-1">Climate Overview</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{data.weather.climate}</p>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{data.weather.climate}</p>
-                <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Droplets className="h-3 w-3" /> {data.weather.annualRainfall} rain</span>
-                  <span className="flex items-center gap-1"><Snowflake className="h-3 w-3" /> {data.weather.annualSnowfall} snow</span>
-                  <span className="flex items-center gap-1"><Sun className="h-3 w-3" /> {data.weather.sunnyDaysPerYear} sunny days/yr</span>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { icon: Droplets, label: "Annual Rainfall", value: data.weather.annualRainfall, color: "text-blue-500", bg: "bg-blue-500/10" },
+                    { icon: Snowflake, label: "Annual Snowfall", value: data.weather.annualSnowfall, color: "text-indigo-500", bg: "bg-indigo-500/10" },
+                    { icon: Sun, label: "Sunny Days/Year", value: String(data.weather.sunnyDaysPerYear), color: "text-amber-500", bg: "bg-amber-500/10" },
+                  ].map((stat) => {
+                    const Icon = stat.icon;
+                    return (
+                      <div key={stat.label} className="bg-background/60 rounded-xl p-3 border border-border/50 text-center">
+                        <div className={`inline-flex p-1.5 rounded-lg ${stat.bg} mb-2`}>
+                          <Icon className={`h-4 w-4 ${stat.color}`} />
+                        </div>
+                        <p className="text-sm font-bold text-foreground">{stat.value}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{stat.label}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -283,25 +300,34 @@ export default function CollegeLifePanel({ college }: Props) {
               {Object.entries(data.weather.seasons).map(([season, info]) => {
                 const Icon = seasonIcons[season] || Sun;
                 const gradient = seasonColors[season] || seasonColors.spring;
+                const tempRange = info.avgHigh - info.avgLow;
+                const tempPercent = Math.min(100, Math.round((info.avgHigh / 110) * 100));
                 return (
                   <motion.div
                     key={season}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Object.keys(data.weather.seasons).indexOf(season) * 0.1 }}
                   >
-                    <Card className="bg-card border-border overflow-hidden">
-                      <div className={`h-1.5 bg-gradient-to-r ${gradient}`} />
+                    <Card className="bg-card border-border overflow-hidden hover:shadow-md transition-shadow">
+                      <div className={`h-2 bg-gradient-to-r ${gradient}`} />
                       <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Icon className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-semibold text-foreground capitalize">{season}</span>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-bold text-foreground capitalize">{season}</span>
+                          <div className={`p-1.5 rounded-lg bg-gradient-to-br ${gradient} bg-opacity-20`}>
+                            <Icon className="h-4 w-4 text-white" />
+                          </div>
                         </div>
-                        <div className="flex items-baseline gap-1 mb-1">
-                          <span className="text-2xl font-bold text-foreground">{info.avgHigh}°</span>
-                          <span className="text-sm text-muted-foreground">/ {info.avgLow}°F</span>
+                        <div className="flex items-end gap-1 mb-2">
+                          <span className="text-3xl font-extrabold text-foreground leading-none">{info.avgHigh}°</span>
+                          <span className="text-sm text-muted-foreground mb-0.5">/ {info.avgLow}°F</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">{info.description}</p>
+                        {/* Temp bar */}
+                        <div className="w-full h-1.5 rounded-full bg-muted mb-2">
+                          <div className={`h-full rounded-full bg-gradient-to-r ${gradient}`} style={{ width: `${tempPercent}%` }} />
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{info.description}</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">{tempRange}° range</p>
                       </CardContent>
                     </Card>
                   </motion.div>
