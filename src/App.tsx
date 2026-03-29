@@ -19,6 +19,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import CollegeMapPage from "./pages/CollegeMapPage";
+import CollegeDetailPage from "./pages/CollegeDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
