@@ -166,6 +166,7 @@ export default function CollegeLifePanel({ college }: Props) {
         const { data: result, error: fnError } = await supabase.functions.invoke("campus-photos", {
           body: {
             collegeName: college.name,
+            collegeLocation: college.location,
             searchTerms: data.campusPhotos?.searchTerms || [],
           },
         });
