@@ -554,12 +554,6 @@ const Dashboard = () => {
                   />
                 </div>
               )}
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold text-foreground">Your College Matches</h2>
-              </div>
               {loadingMatches ? (
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
