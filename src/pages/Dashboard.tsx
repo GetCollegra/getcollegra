@@ -48,6 +48,7 @@ type SavedCollege = {
 const fitCategoryConfig: Record<string, { color: string; bg: string; icon: typeof Target }> = {
   Reach: { color: "text-orange-600", bg: "bg-orange-50", icon: TrendingUp },
   Match: { color: "text-primary", bg: "bg-primary/5", icon: Target },
+  Likely: { color: "text-emerald-600", bg: "bg-emerald-50", icon: Shield },
   Safety: { color: "text-emerald-600", bg: "bg-emerald-50", icon: Shield },
 };
 
