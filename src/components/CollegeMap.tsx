@@ -51,6 +51,7 @@ function createHomeIcon() {
 }
 
 const FIT_COLORS: Record<string, string> = {
+  Likely: "#10b981",
   Safety: "#10b981",
   Match: "#1d6fd3",
   Reach: "#ea580c",
@@ -166,7 +167,7 @@ export default function CollegeMap({
   onCollegeSelect,
   selectedCollege,
 }: CollegeMapProps) {
-  const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Likely", "Match", "Reach"]));
+  const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Likely", "Safety", "Match", "Reach"]));
   const [distanceFilter, setDistanceFilter] = useState<string>("all");
 
   const homePos = useMemo(() => {

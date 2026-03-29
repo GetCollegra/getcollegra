@@ -342,6 +342,7 @@ const CollegeDetailPage = () => {
                   <CollegeMap
                     matchedColleges={[college]}
                     savedColleges={isSaved ? [{ college_data: college, college_name: college.name }] : []}
+                    homeLocation={homeAddress}
                     homeAddress={homeAddress}
                     onCollegeSelect={() => setShowNeighborhood(true)}
                     selectedCollege={college.name}
