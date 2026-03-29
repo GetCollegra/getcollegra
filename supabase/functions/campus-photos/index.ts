@@ -67,13 +67,17 @@ function matchesCollege(text: string, collegeName: string, abbreviations: string
 async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]) {
   const photos: any[] = [];
   
-  // Search using full name AND abbreviations
-  const searchTerms = [collegeName, ...abbreviations];
-  const searchQuery = searchTerms.map(t => `"${t}"`).join(" OR ");
+  // Search with full name first, then abbreviations — but always with campus context
+  const searches = [
+    `"${collegeName}"`,
+    ...abbreviations.filter(a => a.length >= 4).map(a => `"${a}" campus`),
+  ];
 
-  try {
-    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(searchQuery + " campus OR building OR hall")}&gsrlimit=15&prop=imageinfo&iiprop=url|extmetadata|mime&iiurlwidth=800&format=json`;
-    console.log("Wikimedia search:", searchQuery);
+  for (const searchTerm of searches) {
+    if (photos.length >= 8) break;
+    try {
+      const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(searchTerm + " campus OR building OR hall")}&gsrlimit=12&prop=imageinfo&iiprop=url|extmetadata|mime&iiurlwidth=800&format=json`;
+      console.log("Wikimedia search:", searchTerm);
     const res = await fetch(url);
     if (!res.ok) { await res.text(); return photos; }
     const data = await res.json();
