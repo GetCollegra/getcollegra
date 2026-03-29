@@ -210,10 +210,11 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Campus Photos & Experience */}
         <TabsContent value="photos" className="mt-4">
           <div className="space-y-4">
-            {/* Real campus images using search terms */}
+            {/* Campus highlights with styled cards */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {data.campusPhotos.searchTerms.map((term, i) => {
-                const imgUrl = `https://source.unsplash.com/600x400/?${encodeURIComponent(term)}`;
+              {data.campusPhotos.campusHighlights.map((highlight, i) => {
+                const Icon = highlightIcons[i % highlightIcons.length];
+                const gradient = seasonColors[Object.keys(seasonColors)[i % 4]];
                 return (
                   <motion.div
                     key={i}
@@ -221,83 +222,42 @@ export default function CollegeLifePanel({ college }: Props) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.08 }}
                   >
-                    <div
-                      className="relative rounded-xl overflow-hidden border border-border cursor-pointer group"
-                      onClick={() => setLightboxIndex(i)}
-                    >
-                      <img
-                        src={imgUrl}
-                        alt={term}
-                        className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                        <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Card className="h-full bg-card border-border hover:shadow-card transition-shadow overflow-hidden group">
+                      <div className={`h-28 bg-gradient-to-br ${gradient} relative`}>
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                          <Icon className="h-10 w-10 text-white/70" />
+                        </div>
                       </div>
-                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                        <p className="text-xs text-white font-medium truncate">{term}</p>
-                      </div>
-                    </div>
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold text-foreground text-sm mb-1">{highlight.title}</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{highlight.description}</p>
+                      </CardContent>
+                    </Card>
                   </motion.div>
                 );
               })}
             </div>
 
-            {/* Campus highlights */}
-            {data.campusPhotos.campusHighlights.length > 0 && (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {data.campusPhotos.campusHighlights.map((highlight, i) => {
-                  const Icon = highlightIcons[i % highlightIcons.length];
-                  return (
-                    <Card key={i} className="bg-card border-border">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <Icon className="h-4 w-4 text-primary" />
-                          <h4 className="font-semibold text-foreground text-sm">{highlight.title}</h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{highlight.description}</p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+            {/* Search suggestion */}
+            {data.campusPhotos.searchTerms.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                <p className="text-xs text-muted-foreground">Search for campus photos:</p>
+                {data.campusPhotos.searchTerms.map((term, i) => (
+                  <a
+                    key={i}
+                    href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(term)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-primary/10 transition-colors">
+                      <Camera className="h-3 w-3 mr-1" />{term}
+                    </Badge>
+                  </a>
+                ))}
               </div>
             )}
           </div>
-
-          {/* Lightbox Dialog */}
-          <Dialog open={lightboxIndex !== null} onOpenChange={() => setLightboxIndex(null)}>
-            <DialogContent className="max-w-3xl p-0 bg-black border-none overflow-hidden">
-              {lightboxIndex !== null && (
-                <div className="relative">
-                  <img
-                    src={`https://source.unsplash.com/1200x800/?${encodeURIComponent(data.campusPhotos.searchTerms[lightboxIndex])}`}
-                    alt={data.campusPhotos.searchTerms[lightboxIndex]}
-                    className="w-full max-h-[80vh] object-contain"
-                  />
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                    <p className="text-sm text-white font-medium">{data.campusPhotos.searchTerms[lightboxIndex]}</p>
-                  </div>
-                  {data.campusPhotos.searchTerms.length > 1 && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full"
-                        onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + data.campusPhotos.searchTerms.length) % data.campusPhotos.searchTerms.length); }}
-                      >
-                        <ChevronLeft className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full"
-                        onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % data.campusPhotos.searchTerms.length); }}
-                      >
-                        <ChevronRight className="h-5 w-5" />
-                      </Button>
-                    </>
-                  )}
-                </div>
+        </TabsContent>
               )}
             </DialogContent>
           </Dialog>
