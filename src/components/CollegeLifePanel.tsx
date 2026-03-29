@@ -251,19 +251,51 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Campus Photos & Experience */}
         <TabsContent value="photos" className="mt-4">
           <div className="space-y-4">
-            {/* Campus highlights with styled cards */}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {data.campusPhotos.campusHighlights.map((highlight, i) => {
-                const Icon = highlightIcons[i % highlightIcons.length];
-                const gradient = seasonColors[Object.keys(seasonColors)[i % 4]];
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                  >
-                    <Card className="h-full bg-card border-border hover:shadow-card transition-shadow overflow-hidden group">
+            {/* Real campus photos from Unsplash */}
+            {photosLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-xs text-muted-foreground">Loading real campus photos...</p>
+              </div>
+            ) : photos.length > 0 ? (
+              <>
+                <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {photos.map((photo, i) => (
+                    <motion.div
+                      key={photo.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="cursor-pointer group"
+                      onClick={() => setSelectedPhoto(photo)}
+                    >
+                      <div className="aspect-[4/3] rounded-xl overflow-hidden border border-border bg-muted relative">
+                        <img
+                          src={photo.thumbUrl}
+                          alt={photo.alt}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="text-[10px] text-white truncate">📷 {photo.photographer}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-center text-muted-foreground">
+                  Photos from <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Unsplash</a> — real campus and area photography
+                </p>
+              </>
+            ) : (
+              /* Fallback: campus highlights cards */
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {data.campusPhotos.campusHighlights.map((highlight, i) => {
+                  const Icon = highlightIcons[i % highlightIcons.length];
+                  const gradient = seasonColors[Object.keys(seasonColors)[i % 4]];
+                  return (
+                    <Card key={i} className="h-full bg-card border-border overflow-hidden">
                       <div className={`h-28 bg-gradient-to-br ${gradient} relative`}>
                         <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                           <Icon className="h-10 w-10 text-white/70" />
@@ -274,15 +306,15 @@ export default function CollegeLifePanel({ college }: Props) {
                         <p className="text-xs text-muted-foreground leading-relaxed">{highlight.description}</p>
                       </CardContent>
                     </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Search suggestion */}
             {data.campusPhotos.searchTerms.length > 0 && (
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                <p className="text-xs text-muted-foreground">Search for campus photos:</p>
+                <p className="text-xs text-muted-foreground">Search for more photos:</p>
                 {data.campusPhotos.searchTerms.map((term, i) => (
                   <a
                     key={i}
@@ -297,6 +329,32 @@ export default function CollegeLifePanel({ college }: Props) {
                 ))}
               </div>
             )}
+
+            {/* Lightbox dialog for selected photo */}
+            <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+              <DialogContent className="max-w-3xl p-2 bg-background">
+                {selectedPhoto && (
+                  <div className="space-y-2">
+                    <img
+                      src={selectedPhoto.url}
+                      alt={selectedPhoto.alt}
+                      className="w-full rounded-lg object-contain max-h-[70vh]"
+                    />
+                    <div className="flex items-center justify-between px-2 pb-2">
+                      <p className="text-xs text-muted-foreground">{selectedPhoto.alt}</p>
+                      <a
+                        href={`${selectedPhoto.photographerUrl}?utm_source=collegra&utm_medium=referral`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline"
+                      >
+                        📷 {selectedPhoto.photographer} on Unsplash
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
         </TabsContent>
 
