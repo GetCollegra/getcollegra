@@ -242,7 +242,7 @@ export default function CollegeLifePanel({ college }: Props) {
             <Shield className="h-3.5 w-3.5" /> Safety
           </TabsTrigger>
           <TabsTrigger value="cost" className="gap-1.5 text-xs rounded-lg data-[state=active]:shadow-soft">
-            <DollarSign className="h-3.5 w-3.5" /> Cost
+            <DollarSign className="h-3.5 w-3.5" /> Living Cost
           </TabsTrigger>
           <TabsTrigger value="area" className="gap-1.5 text-xs rounded-lg data-[state=active]:shadow-soft">
             <MapPin className="h-3.5 w-3.5" /> Area
