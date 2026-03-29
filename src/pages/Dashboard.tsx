@@ -71,6 +71,7 @@ const Dashboard = () => {
   const [addingCollege, setAddingCollege] = useState(false);
   const [notesPanelId, setNotesPanelId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("matches");
+  const [mapSelectedCollege, setMapSelectedCollege] = useState<College | null>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
   const [sort, setSort] = useState<SortOption>("fitScore");
 
