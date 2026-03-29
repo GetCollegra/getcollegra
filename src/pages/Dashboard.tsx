@@ -19,6 +19,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import Header from "@/components/Header";
 import CollegeComparison from "@/components/CollegeComparison";
 import CollegeNotesPanel, { parseNotes, type StructuredNotes } from "@/components/CollegeNotesPanel";
+import DashboardFilters, {
+  type FilterState, type SortOption, DEFAULT_FILTER_STATE,
+  applyFilters, applySorting, extractMajors,
+} from "@/components/DashboardFilters";
 import {
   GraduationCap, Star, BookmarkPlus, Bookmark, BarChart3, StickyNote,
   Sparkles, MapPin, DollarSign, Target, Shield, TrendingUp,
