@@ -714,8 +714,8 @@ const Dashboard = () => {
                   <Bookmark className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">Saved Colleges</h2>
-                  <p className="text-sm text-muted-foreground">Track your application progress for each school.</p>
+                  <h2 className="text-2xl font-bold text-foreground">My College List</h2>
+                  <p className="text-sm text-muted-foreground">Organize your saved schools by admission category and track progress.</p>
                 </div>
               </div>
               {loadingSaved ? (
@@ -731,151 +731,185 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="space-y-3">
-                  {savedColleges.map(saved => {
-                    const cat = fitCategoryConfig[saved.college_data.fitCategory] || fitCategoryConfig.Match;
-                    const CatIcon = cat.icon;
-                    const statusColors: Record<string, string> = {
-                      Considering: "bg-muted text-muted-foreground",
-                      Applying: "bg-primary/10 text-primary",
-                      Applied: "bg-accent/10 text-accent",
-                      Accepted: "bg-emerald-50 text-emerald-600",
-                    };
-                    return (
-                      <Collapsible key={saved.id}>
-                        <Card className="bg-card border-border hover:shadow-soft transition-all duration-200 overflow-hidden">
-                          <CardContent className="p-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5">
-                              <CollapsibleTrigger className="flex-1 min-w-0 text-left cursor-pointer group">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{saved.college_name}</h3>
-                                  <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px] shrink-0`}>
-                                    <CatIcon className="h-3 w-3 mr-0.5" />{saved.college_data.fitCategory}
-                                  </Badge>
-                                  <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto shrink-0 transition-transform group-data-[state=open]:rotate-180" />
-                                </div>
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{saved.college_data.location}</span>
-                                  <span className="font-semibold text-primary">{saved.college_data.fitScore}% match</span>
-                                  <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{saved.college_data.netPrice}</span>
-                                  <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{saved.college_data.acceptanceRate}</span>
-                                </div>
-                              </CollapsibleTrigger>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Select value={saved.status} onValueChange={(val) => updateStatus(saved.id, val)}>
-                                  <SelectTrigger className={`h-8 text-xs w-[130px] border-0 font-medium ${statusColors[saved.status] || ""}`}>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Considering">Considering</SelectItem>
-                                    <SelectItem value="Applying">Applying</SelectItem>
-                                    <SelectItem value="Applied">Applied</SelectItem>
-                                    <SelectItem value="Accepted">Accepted</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeCollege(saved.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
+                <div className="space-y-8">
+                  {/* Summary bar */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card className="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
+                      <CardContent className="p-4 text-center">
+                        <Shield className="h-5 w-5 text-emerald-600 mx-auto mb-1" />
+                        <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{savedByCategory.likely.length}</p>
+                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-500">Likely</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-primary/5 border-primary/20">
+                      <CardContent className="p-4 text-center">
+                        <Target className="h-5 w-5 text-primary mx-auto mb-1" />
+                        <p className="text-2xl font-bold text-primary">{savedByCategory.match.length}</p>
+                        <p className="text-xs font-medium text-primary">Match</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
+                      <CardContent className="p-4 text-center">
+                        <TrendingUp className="h-5 w-5 text-orange-600 mx-auto mb-1" />
+                        <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{savedByCategory.reach.length}</p>
+                        <p className="text-xs font-medium text-orange-600 dark:text-orange-500">Reach</p>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-                            <CollapsibleContent>
-                              <div className="border-t border-border bg-muted/20 p-5">
-                                {/* Premium Details Grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-                                  {[
-                                    { label: "In-State Tuition", value: saved.college_data.tuitionInState, icon: DollarSign },
-                                    { label: "Out-of-State Tuition", value: saved.college_data.tuitionOutOfState, icon: DollarSign },
-                                    { label: "Financial Aid", value: saved.college_data.avgFinancialAid, icon: Wallet },
-                                    { label: "Graduation Rate", value: saved.college_data.graduationRate, icon: Award },
-                                    { label: "Student Body", value: saved.college_data.studentBody, icon: Users },
-                                    { label: "Student:Faculty", value: saved.college_data.studentFacultyRatio, icon: BookOpen },
-                                    { label: "Campus Size", value: saved.college_data.campusSize, icon: MapPin },
-                                    { label: "Avg Starting Salary", value: saved.college_data.avgStartingSalary, icon: Briefcase },
-                                  ].filter(item => {
-                                    const v = item.value;
-                                    return v && v !== "Premium" && v !== "N/A" && v !== "See school website" && v !== "—";
-                                  }).map(item => {
-                                    const Icon = item.icon;
-                                    return (
-                                      <div key={item.label} className="bg-card rounded-lg p-3 border border-border/50">
-                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                                          <Icon className="h-3 w-3" />{item.label}
-                                        </div>
-                                        <p className="text-sm font-semibold text-foreground">{item.value}</p>
+                  {/* Categorized sections */}
+                  {([
+                    { label: "Likely Schools", items: savedByCategory.likely, icon: Shield, color: "text-emerald-600", borderColor: "border-l-emerald-500" },
+                    { label: "Match Schools", items: savedByCategory.match, icon: Target, color: "text-primary", borderColor: "border-l-primary" },
+                    { label: "Reach Schools", items: savedByCategory.reach, icon: TrendingUp, color: "text-orange-600", borderColor: "border-l-orange-500" },
+                  ] as const).map(section => section.items.length > 0 && (
+                    <div key={section.label}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <section.icon className={`h-5 w-5 ${section.color}`} />
+                        <h3 className="text-lg font-bold text-foreground">{section.label}</h3>
+                        <Badge variant="secondary" className="text-xs">{section.items.length}</Badge>
+                      </div>
+                      <div className="space-y-3">
+                        {section.items.map(saved => {
+                          const cat = fitCategoryConfig[saved.college_data.fitCategory] || fitCategoryConfig.Match;
+                          const CatIcon = cat.icon;
+                          const statusColors: Record<string, string> = {
+                            Considering: "bg-muted text-muted-foreground",
+                            Applying: "bg-primary/10 text-primary",
+                            Applied: "bg-accent/10 text-accent",
+                            Accepted: "bg-emerald-50 text-emerald-600",
+                          };
+                          return (
+                            <Collapsible key={saved.id}>
+                              <Card className={`bg-card border-border border-l-4 ${section.borderColor} hover:shadow-soft transition-all duration-200 overflow-hidden`}>
+                                <CardContent className="p-0">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5">
+                                    <CollapsibleTrigger className="flex-1 min-w-0 text-left cursor-pointer group">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{saved.college_name}</h3>
+                                        <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px] shrink-0`}>
+                                          <CatIcon className="h-3 w-3 mr-0.5" />{saved.college_data.fitCategory}
+                                        </Badge>
+                                        <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto shrink-0 transition-transform group-data-[state=open]:rotate-180" />
                                       </div>
-                                    );
-                                  })}
-                                </div>
+                                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                        <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{saved.college_data.location}</span>
+                                        <span className="font-semibold text-primary">{saved.college_data.fitScore}% match</span>
+                                        <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{saved.college_data.netPrice}</span>
+                                        <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{saved.college_data.acceptanceRate}</span>
+                                      </div>
+                                    </CollapsibleTrigger>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <Select value={saved.status} onValueChange={(val) => updateStatus(saved.id, val)}>
+                                        <SelectTrigger className={`h-8 text-xs w-[130px] border-0 font-medium ${statusColors[saved.status] || ""}`}>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Considering">Considering</SelectItem>
+                                          <SelectItem value="Applying">Applying</SelectItem>
+                                          <SelectItem value="Applied">Applied</SelectItem>
+                                          <SelectItem value="Accepted">Accepted</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeCollege(saved.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
 
-                                {/* Why It Fits + Campus Vibe + Notable Feature */}
-                                <div className="grid md:grid-cols-3 gap-4 mb-5">
-                                  <div className="bg-card rounded-lg p-4 border border-border/50">
-                                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">Why It's a Good Fit</p>
-                                    <p className="text-sm text-foreground">{saved.college_data.whyFit || "—"}</p>
-                                  </div>
-                                  <div className="bg-card rounded-lg p-4 border border-border/50">
-                                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">Campus Vibe</p>
-                                    <p className="text-sm text-foreground">{saved.college_data.campusVibe || "—"}</p>
-                                  </div>
-                                  <div className="bg-card rounded-lg p-4 border border-border/50">
-                                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">Notable Feature</p>
-                                    <p className="text-sm text-foreground">{saved.college_data.notableFeature || "—"}</p>
-                                  </div>
-                                </div>
-
-                                {/* Top Programs */}
-                                {saved.college_data.topPrograms?.length > 0 && (
-                                  <div className="mb-5">
-                                    <p className="text-xs font-semibold text-muted-foreground mb-2">Top Programs</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {saved.college_data.topPrograms.map((prog, i) => (
-                                        <Badge key={i} variant="secondary" className="text-xs">{prog}</Badge>
-                                      ))}
+                                  <CollapsibleContent>
+                                    <div className="border-t border-border bg-muted/20 p-5">
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                                        {[
+                                          { label: "In-State Tuition", value: saved.college_data.tuitionInState, icon: DollarSign },
+                                          { label: "Out-of-State Tuition", value: saved.college_data.tuitionOutOfState, icon: DollarSign },
+                                          { label: "Financial Aid", value: saved.college_data.avgFinancialAid, icon: Wallet },
+                                          { label: "Graduation Rate", value: saved.college_data.graduationRate, icon: Award },
+                                          { label: "Student Body", value: saved.college_data.studentBody, icon: Users },
+                                          { label: "Student:Faculty", value: saved.college_data.studentFacultyRatio, icon: BookOpen },
+                                          { label: "Campus Size", value: saved.college_data.campusSize, icon: MapPin },
+                                          { label: "Avg Starting Salary", value: saved.college_data.avgStartingSalary, icon: Briefcase },
+                                        ].filter(item => {
+                                          const v = item.value;
+                                          return v && v !== "Premium" && v !== "N/A" && v !== "See school website" && v !== "—";
+                                        }).map(item => {
+                                          const Icon = item.icon;
+                                          return (
+                                            <div key={item.label} className="bg-card rounded-lg p-3 border border-border/50">
+                                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                                                <Icon className="h-3 w-3" />{item.label}
+                                              </div>
+                                              <p className="text-sm font-semibold text-foreground">{item.value}</p>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                      <div className="grid md:grid-cols-3 gap-4 mb-5">
+                                        <div className="bg-card rounded-lg p-4 border border-border/50">
+                                          <p className="text-xs font-semibold text-muted-foreground mb-1.5">Why It's a Good Fit</p>
+                                          <p className="text-sm text-foreground">{saved.college_data.whyFit || "—"}</p>
+                                        </div>
+                                        <div className="bg-card rounded-lg p-4 border border-border/50">
+                                          <p className="text-xs font-semibold text-muted-foreground mb-1.5">Campus Vibe</p>
+                                          <p className="text-sm text-foreground">{saved.college_data.campusVibe || "—"}</p>
+                                        </div>
+                                        <div className="bg-card rounded-lg p-4 border border-border/50">
+                                          <p className="text-xs font-semibold text-muted-foreground mb-1.5">Notable Feature</p>
+                                          <p className="text-sm text-foreground">{saved.college_data.notableFeature || "—"}</p>
+                                        </div>
+                                      </div>
+                                      {saved.college_data.topPrograms?.length > 0 && (
+                                        <div className="mb-5">
+                                          <p className="text-xs font-semibold text-muted-foreground mb-2">Top Programs</p>
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {saved.college_data.topPrograms.map((prog, i) => (
+                                              <Badge key={i} variant="secondary" className="text-xs">{prog}</Badge>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      <div className="grid md:grid-cols-3 gap-4">
+                                        {saved.college_data.prosForStudent?.length > 0 && (
+                                          <div className="bg-secondary/50 rounded-lg p-4 border border-border/50">
+                                            <p className="text-xs font-semibold text-foreground mb-2">✓ Pros</p>
+                                            <ul className="space-y-1">
+                                              {saved.college_data.prosForStudent.map((pro, i) => (
+                                                <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
+                                                  <span className="text-primary mt-0.5">•</span>{pro}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {saved.college_data.consForStudent?.length > 0 && (
+                                          <div className="bg-destructive/5 rounded-lg p-4 border border-destructive/10">
+                                            <p className="text-xs font-semibold text-foreground mb-2">✗ Cons</p>
+                                            <ul className="space-y-1">
+                                              {saved.college_data.consForStudent.map((con, i) => (
+                                                <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
+                                                  <span className="text-destructive mt-0.5">•</span>{con}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {saved.college_data.howToGetIn && saved.college_data.howToGetIn !== "—" && (
+                                          <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
+                                            <p className="text-xs font-semibold text-primary mb-2">How to Get In</p>
+                                            <p className="text-sm text-foreground">{saved.college_data.howToGetIn}</p>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
-
-                                {/* Pros / Cons / How to Get In */}
-                                <div className="grid md:grid-cols-3 gap-4">
-                                  {saved.college_data.prosForStudent?.length > 0 && (
-                                    <div className="bg-secondary/50 rounded-lg p-4 border border-border/50">
-                                      <p className="text-xs font-semibold text-foreground mb-2">✓ Pros</p>
-                                      <ul className="space-y-1">
-                                        {saved.college_data.prosForStudent.map((pro, i) => (
-                                          <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
-                                            <span className="text-primary mt-0.5">•</span>{pro}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                  {saved.college_data.consForStudent?.length > 0 && (
-                                    <div className="bg-destructive/5 rounded-lg p-4 border border-destructive/10">
-                                      <p className="text-xs font-semibold text-foreground mb-2">✗ Cons</p>
-                                      <ul className="space-y-1">
-                                        {saved.college_data.consForStudent.map((con, i) => (
-                                          <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
-                                            <span className="text-destructive mt-0.5">•</span>{con}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                  {saved.college_data.howToGetIn && saved.college_data.howToGetIn !== "—" && (
-                                    <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
-                                      <p className="text-xs font-semibold text-primary mb-2">How to Get In</p>
-                                      <p className="text-sm text-foreground">{saved.college_data.howToGetIn}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </CollapsibleContent>
-                          </CardContent>
-                        </Card>
-                      </Collapsible>
-                    );
-                  })}
+                                  </CollapsibleContent>
+                                </CardContent>
+                              </Card>
+                            </Collapsible>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </motion.div>
