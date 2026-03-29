@@ -21,7 +21,7 @@ serve(async (req) => {
       });
     }
 
-    const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY") || "0RFOIUa03s7zce9GGNz3G-5HP17u0kyybFzk2WQlR0k";
+    const UNSPLASH_KEY = "0RFOIUa03s7zce9GGNz3G-5HP17u0kyybFzk2WQlR0k";
     if (!UNSPLASH_KEY) {
       return new Response(JSON.stringify({ error: "Unsplash API key not configured" }), {
         status: 500,
