@@ -567,12 +567,19 @@ const Dashboard = () => {
                     <Button onClick={() => navigate("/survey")}>Take the Quiz</Button>
                   </CardContent>
                 </Card>
+              ) : filteredColleges.length === 0 && colleges.length > 0 ? (
+                <Card className="bg-card border-border">
+                  <CardContent className="p-10 text-center">
+                    <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No colleges match your filters</h3>
+                    <p className="text-muted-foreground mb-4">Try adjusting your filters or reset them to see all results.</p>
+                    <Button variant="outline" onClick={() => setFilters(DEFAULT_FILTER_STATE)}>Reset Filters</Button>
+                  </CardContent>
+                </Card>
               ) : (
                 <>
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {filteredColleges.map((college, i) => {
-                      const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
-                      const CatIcon = cat.icon;
                       const isSaved = savedColleges.some(s => s.college_name === college.name);
                       return (
                         <motion.div key={college.name} variants={fadeIn} custom={i + 1}>
