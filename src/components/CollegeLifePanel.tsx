@@ -117,7 +117,7 @@ type UnsplashPhoto = {
   alt: string;
   photographer: string;
   photographerUrl: string;
-  query: string;
+  category: string;
 };
 
 export default function CollegeLifePanel({ college }: Props) {
@@ -166,6 +166,7 @@ export default function CollegeLifePanel({ college }: Props) {
         const { data: result, error: fnError } = await supabase.functions.invoke("campus-photos", {
           body: {
             collegeName: college.name,
+            collegeLocation: college.location,
             searchTerms: data.campusPhotos?.searchTerms || [],
           },
         });
@@ -276,6 +277,11 @@ export default function CollegeLifePanel({ college }: Props) {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
                         />
+                        <div className="absolute top-2 left-2">
+                          <span className="text-[9px] font-semibold bg-black/60 text-white px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+                            {photo.category}
+                          </span>
+                        </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <p className="text-[10px] text-white truncate">📷 {photo.photographer}</p>
