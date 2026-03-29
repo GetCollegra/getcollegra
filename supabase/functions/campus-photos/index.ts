@@ -70,6 +70,7 @@ async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]
   // Search with full name first, then abbreviations — but always with campus context
   const searches = [
     `"${collegeName}"`,
+    collegeName,
     ...abbreviations.filter(a => a.length >= 4).map(a => `"${a}" campus`),
   ];
 
