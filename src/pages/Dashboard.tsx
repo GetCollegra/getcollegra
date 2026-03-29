@@ -614,20 +614,28 @@ const Dashboard = () => {
                                 </div>
                               </div>
                               <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
-                              <div className="mt-auto pt-3">
+                              <div className="mt-auto pt-3 flex gap-2">
                                 {(() => {
                                   const savedEntry = savedColleges.find(s => s.college_name === college.name);
                                   return (
                                     <Button
                                       variant={isSaved ? "outline" : "default"}
                                       size="sm"
-                                      className="w-full"
+                                      className="flex-1"
                                       onClick={() => isSaved && savedEntry ? removeCollege(savedEntry.id) : saveCollege(college)}
                                     >
                                       {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Unsave</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
                                     </Button>
                                   );
                                 })()}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => navigate(`/college?name=${encodeURIComponent(college.name)}`)}
+                                  className="gap-1"
+                                >
+                                  <Eye className="h-4 w-4" /> Explore
+                                </Button>
                               </div>
                             </CardContent>
                           </Card>
@@ -668,20 +676,28 @@ const Dashboard = () => {
                                     <span className="text-xs text-muted-foreground">match</span>
                                   </div>
                                   <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
-                                  <div className="mt-auto pt-3">
+                                  <div className="mt-auto pt-3 flex gap-2">
                                     {(() => {
                                       const savedEntry = savedColleges.find(s => s.college_name === college.name);
                                       return (
                                         <Button
                                           variant={isSaved ? "outline" : "default"}
                                           size="sm"
-                                          className="w-full"
+                                          className="flex-1"
                                           onClick={() => isSaved && savedEntry ? removeCollege(savedEntry.id) : saveCollege(college)}
                                         >
                                           {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Unsave</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
                                         </Button>
                                       );
                                     })()}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => navigate(`/college?name=${encodeURIComponent(college.name)}`)}
+                                      className="gap-1"
+                                    >
+                                      <Eye className="h-4 w-4" /> Explore
+                                    </Button>
                                   </div>
                                 </CardContent>
                               </Card>
