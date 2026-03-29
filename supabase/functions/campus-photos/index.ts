@@ -78,63 +78,72 @@ async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]
     try {
       const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(searchTerm + " campus OR building OR hall")}&gsrlimit=12&prop=imageinfo&iiprop=url|extmetadata|mime&iiurlwidth=800&format=json`;
       console.log("Wikimedia search:", searchTerm);
-    const res = await fetch(url);
-    if (!res.ok) { await res.text(); return photos; }
-    const data = await res.json();
-    const pages = data?.query?.pages || {};
-    console.log(`Wikimedia returned ${Object.keys(pages).length} results`);
+      const res = await fetch(url);
+      if (!res.ok) { await res.text(); continue; }
+      const data = await res.json();
+      const pages = data?.query?.pages || {};
+      console.log(`Wikimedia returned ${Object.keys(pages).length} results for "${searchTerm}"`);
 
-    for (const page of Object.values(pages) as any[]) {
-      if (photos.length >= 8) break;
-      const title = page.title || "";
-      const ii = (page.imageinfo || [{}])[0];
-      const mime = ii.mime || "";
+      for (const page of Object.values(pages) as any[]) {
+        if (photos.length >= 8) break;
+        const title = page.title || "";
+        const ii = (page.imageinfo || [{}])[0];
+        const mime = ii.mime || "";
 
-      if (!mime.startsWith("image/") || mime.includes("svg")) continue;
+        if (!mime.startsWith("image/") || mime.includes("svg")) continue;
 
-      const desc = ii.extmetadata?.ImageDescription?.value || "";
-      const cats = ii.extmetadata?.Categories?.value || "";
-      const artist = ii.extmetadata?.Artist?.value || "";
-      const combined = `${title} ${desc} ${cats}`;
+        const desc = ii.extmetadata?.ImageDescription?.value || "";
+        const cats = ii.extmetadata?.Categories?.value || "";
+        const artist = ii.extmetadata?.Artist?.value || "";
+        const combined = `${title} ${desc} ${cats}`;
 
-      if (!matchesCollege(combined, collegeName, abbreviations)) {
-        console.log(`Rejected (no match): ${title}`);
-        continue;
+        // STRICT US check: reject if it mentions non-US locations
+        const combinedLower = combined.toLowerCase();
+        const nonUSSignals = ["lyon", "france", "germany", "japan", "china", "india", "brazil", "uk", "england", "australia", "canada"];
+        if (nonUSSignals.some(s => combinedLower.includes(s))) {
+          console.log(`Rejected (non-US): ${title}`);
+          continue;
+        }
+
+        if (!matchesCollege(combined, collegeName, abbreviations)) {
+          console.log(`Rejected (no match): ${title}`);
+          continue;
+        }
+
+        const titleLower = title.toLowerCase();
+        if (titleLower.includes("logo") || titleLower.includes("seal") || 
+            titleLower.includes("map") || titleLower.includes("diagram") ||
+            titleLower.includes("chart") || titleLower.includes("icon") ||
+            titleLower.includes(".svg")) continue;
+
+        const photoId = `wiki-${page.pageid}`;
+        if (photos.some(p => p.id === photoId)) continue;
+
+        const cleanArtist = artist.replace(/<[^>]*>/g, "").trim() || "Wikimedia Commons";
+        
+        let category = "Campus";
+        const cl = combined.toLowerCase();
+        if (cl.includes("hall") || cl.includes("building") || cl.includes("center")) category = "Buildings";
+        else if (cl.includes("aerial") || cl.includes("panoram")) category = "Overview";
+        else if (cl.includes("library")) category = "Library";
+        else if (cl.includes("dorm") || cl.includes("residence")) category = "Housing";
+        else if (cl.includes("entrance") || cl.includes("gate")) category = "Entrance";
+
+        console.log(`Accepted: ${title} → ${category}`);
+
+        photos.push({
+          id: photoId,
+          url: ii.url || ii.thumburl,
+          thumbUrl: ii.thumburl || ii.url,
+          alt: desc.replace(/<[^>]*>/g, "").slice(0, 150) || `${collegeName} - ${category}`,
+          photographer: cleanArtist,
+          photographerUrl: ii.descriptionurl || "https://commons.wikimedia.org",
+          category,
+        });
       }
-
-      const titleLower = title.toLowerCase();
-      if (titleLower.includes("logo") || titleLower.includes("seal") || 
-          titleLower.includes("map") || titleLower.includes("diagram") ||
-          titleLower.includes("chart") || titleLower.includes("icon") ||
-          titleLower.includes(".svg")) continue;
-
-      const photoId = `wiki-${page.pageid}`;
-      if (photos.some(p => p.id === photoId)) continue;
-
-      const cleanArtist = artist.replace(/<[^>]*>/g, "").trim() || "Wikimedia Commons";
-      
-      let category = "Campus";
-      const cl = combined.toLowerCase();
-      if (cl.includes("hall") || cl.includes("building") || cl.includes("center")) category = "Buildings";
-      else if (cl.includes("aerial") || cl.includes("panoram")) category = "Overview";
-      else if (cl.includes("library")) category = "Library";
-      else if (cl.includes("dorm") || cl.includes("residence")) category = "Housing";
-      else if (cl.includes("entrance") || cl.includes("gate")) category = "Entrance";
-
-      console.log(`Accepted: ${title} → ${category}`);
-
-      photos.push({
-        id: photoId,
-        url: ii.url || ii.thumburl,
-        thumbUrl: ii.thumburl || ii.url,
-        alt: desc.replace(/<[^>]*>/g, "").slice(0, 150) || `${collegeName} - ${category}`,
-        photographer: cleanArtist,
-        photographerUrl: ii.descriptionurl || "https://commons.wikimedia.org",
-        category,
-      });
+    } catch (e) {
+      console.error("Wikimedia fetch error:", e);
     }
-  } catch (e) {
-    console.error("Wikimedia fetch error:", e);
   }
 
   return photos;
