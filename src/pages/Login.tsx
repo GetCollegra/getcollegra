@@ -36,13 +36,30 @@ const Login = () => {
       // Fail open — don't block login if rate limiter is down
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
 
     if (error) {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
     } else {
       capture("login_completed");
+      // Check if user has completed the survey; if not, send to quiz
+      const userId = authData.user?.id;
+      if (userId) {
+        const { data: surveyData } = await supabase
+          .from("survey_submissions")
+          .select("id")
+          .limit(1);
+        const { data: quizData } = await supabase
+          .from("quiz_answers")
+          .select("id")
+          .eq("user_id", userId)
+          .limit(1);
+        if ((!surveyData || surveyData.length === 0) && (!quizData || quizData.length === 0)) {
+          navigate("/survey");
+          return;
+        }
+      }
       navigate(from);
     }
   };
