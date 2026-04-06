@@ -45,7 +45,7 @@ const Signup = () => {
       password,
       options: {
         data: { first_name: firstName },
-        emailRedirectTo: window.location.origin + "/dashboard",
+        emailRedirectTo: window.location.origin + "/survey",
       },
     });
     setLoading(false);
