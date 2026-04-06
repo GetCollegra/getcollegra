@@ -82,29 +82,47 @@ function generatePdf(recommendations: Recommendations, personalityName: string, 
       };
 
       colleges.forEach((college, idx) => {
-        // Check if we need a new page
-        if (y > 680) {
+        // Pre-calculate card height
+        const whyLines = college.whyFit ? doc.splitTextToSize(`"${college.whyFit}"`, contentW - 28) : [];
+        const stats = [
+          { label: "Acceptance", value: college.acceptanceRate },
+          { label: "Net Price", value: college.netPrice },
+          { label: "Setting", value: college.setting },
+          { label: "Students", value: college.studentBody },
+        ].filter(s => s.value && s.value !== "Premium");
+        
+        let cardH = 52; // header area
+        if (stats.length) cardH += 28;
+        if (whyLines.length) cardH += whyLines.length * 12 + 6;
+        if (college.topPrograms?.length) cardH += 14;
+        cardH += 8; // bottom padding
+
+        if (y + cardH > 720) {
           doc.addPage();
           y = margin;
         }
 
         const cardTop = y;
 
-        // Card background
+        // Card background first
         doc.setFillColor(248, 250, 252);
-        doc.roundedRect(margin, cardTop, contentW, 0, 6, 6, "F"); // placeholder height, will adjust
-
-        // Rank badge
+        doc.roundedRect(margin, cardTop, contentW, cardH, 6, 6, "F");
+        
+        // Left accent bar
         const badgeColor = fitColors[college.fitCategory] || [100, 100, 100];
         doc.setFillColor(...badgeColor);
-        doc.circle(margin + 18, cardTop + 22, 14, "F");
+        doc.roundedRect(margin, cardTop, 4, cardH, 2, 2, "F");
+
+        // Rank badge
+        doc.setFillColor(...badgeColor);
+        doc.circle(margin + 24, cardTop + 22, 14, "F");
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
-        doc.text(`${idx + 1}`, margin + 18, cardTop + 27, { align: "center" });
+        doc.text(`${idx + 1}`, margin + 24, cardTop + 27, { align: "center" });
 
         // College name
-        const nameX = margin + 40;
+        const nameX = margin + 46;
         doc.setTextColor(30, 58, 95);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
@@ -119,33 +137,27 @@ function generatePdf(recommendations: Recommendations, personalityName: string, 
         let innerY = cardTop + 52;
 
         // Stats row
-        const stats = [
-          { label: "Acceptance", value: college.acceptanceRate },
-          { label: "Net Price", value: college.netPrice },
-          { label: "Setting", value: college.setting },
-          { label: "Students", value: college.studentBody },
-        ].filter(s => s.value && s.value !== "Premium");
-
-        doc.setFontSize(8);
-        const statW = contentW / stats.length;
-        stats.forEach((stat, si) => {
-          const sx = margin + si * statW + 12;
-          doc.setTextColor(100, 100, 100);
-          doc.setFont("helvetica", "normal");
-          doc.text(stat.label, sx, innerY);
-          doc.setTextColor(30, 58, 95);
-          doc.setFont("helvetica", "bold");
-          doc.text(stat.value, sx, innerY + 11);
-        });
-        innerY += 28;
+        if (stats.length) {
+          doc.setFontSize(8);
+          const statW = contentW / stats.length;
+          stats.forEach((stat, si) => {
+            const sx = margin + si * statW + 16;
+            doc.setTextColor(130, 130, 130);
+            doc.setFont("helvetica", "normal");
+            doc.text(stat.label, sx, innerY);
+            doc.setTextColor(30, 58, 95);
+            doc.setFont("helvetica", "bold");
+            doc.text(stat.value, sx, innerY + 11);
+          });
+          innerY += 28;
+        }
 
         // Why it's a good fit
-        if (college.whyFit) {
+        if (whyLines.length) {
           doc.setFont("helvetica", "italic");
           doc.setFontSize(9);
           doc.setTextColor(80, 80, 80);
-          const whyLines = doc.splitTextToSize(`"${college.whyFit}"`, contentW - 28);
-          doc.text(whyLines, margin + 14, innerY);
+          doc.text(whyLines, margin + 16, innerY);
           innerY += whyLines.length * 12 + 6;
         }
 
@@ -154,20 +166,10 @@ function generatePdf(recommendations: Recommendations, personalityName: string, 
           doc.setFont("helvetica", "normal");
           doc.setFontSize(8);
           doc.setTextColor(59, 130, 246);
-          doc.text(`Programs: ${college.topPrograms.slice(0, 4).join(" · ")}`, margin + 14, innerY);
-          innerY += 14;
+          doc.text(`Programs: ${college.topPrograms.slice(0, 4).join(" · ")}`, margin + 16, innerY);
         }
 
-        const cardH = innerY - cardTop + 8;
-        // Redraw card bg with correct height
-        doc.setFillColor(248, 250, 252);
-        doc.roundedRect(margin, cardTop, contentW, cardH, 6, 6, "F");
-
-        // Re-draw all content on top (jsPDF draws in order, so we re-render)
-        // Actually jsPDF doesn't support z-ordering well, so let's draw bg first then content
-        // We need to restructure — draw bg, then content. Let me fix this.
-
-        y = innerY + 18;
+        y = cardTop + cardH + 12;
       });
 
       // --- Footer ---
