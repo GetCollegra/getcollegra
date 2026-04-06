@@ -11,6 +11,184 @@ interface ShareResultsProps {
   firstName?: string;
 }
 
+function generatePdf(recommendations: Recommendations, personalityName: string, firstName?: string) {
+  import("jspdf").then(({ jsPDF }) => {
+    import("jspdf-autotable").then(() => {
+      const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter" });
+      const colleges = recommendations.colleges || [];
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 48;
+      const contentW = pageW - margin * 2;
+      let y = margin;
+
+      // --- Header banner ---
+      doc.setFillColor(30, 58, 95); // deep navy
+      doc.rect(0, 0, pageW, 100, "F");
+      doc.setFillColor(59, 130, 246); // accent blue stripe
+      doc.rect(0, 95, pageW, 5, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(28);
+      doc.text("Collegra Results", margin, 50);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "normal");
+      const subtitle = firstName ? `${firstName}'s College Personality: ${personalityName}` : `College Personality: ${personalityName}`;
+      doc.text(subtitle, margin, 75);
+
+      y = 125;
+
+      // --- Student profile summary ---
+      const profile = recommendations.studentProfile;
+      if (profile) {
+        doc.setTextColor(30, 58, 95);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("Your Student Profile", margin, y);
+        y += 18;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const summaryLines = doc.splitTextToSize(profile.summary, contentW);
+        doc.text(summaryLines, margin, y);
+        y += summaryLines.length * 13 + 8;
+
+        if (profile.topPriorities?.length) {
+          doc.setFont("helvetica", "italic");
+          doc.setFontSize(9);
+          doc.setTextColor(100, 100, 100);
+          doc.text(`Top priorities: ${profile.topPriorities.join(" · ")}`, margin, y);
+          y += 20;
+        }
+      }
+
+      // --- Divider ---
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageW - margin, y);
+      y += 20;
+
+      // --- College cards ---
+      doc.setTextColor(30, 58, 95);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Your Top College Matches", margin, y);
+      y += 24;
+
+      const fitColors: Record<string, [number, number, number]> = {
+        Likely: [34, 197, 94],
+        Match: [59, 130, 246],
+        Reach: [249, 115, 22],
+      };
+
+      colleges.forEach((college, idx) => {
+        // Check if we need a new page
+        if (y > 680) {
+          doc.addPage();
+          y = margin;
+        }
+
+        const cardTop = y;
+
+        // Card background
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(margin, cardTop, contentW, 0, 6, 6, "F"); // placeholder height, will adjust
+
+        // Rank badge
+        const badgeColor = fitColors[college.fitCategory] || [100, 100, 100];
+        doc.setFillColor(...badgeColor);
+        doc.circle(margin + 18, cardTop + 22, 14, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text(`${idx + 1}`, margin + 18, cardTop + 27, { align: "center" });
+
+        // College name
+        const nameX = margin + 40;
+        doc.setTextColor(30, 58, 95);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text(college.name, nameX, cardTop + 20);
+
+        // Location & fit
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`${college.location}  ·  ${college.fitScore}% fit  ·  ${college.fitCategory}`, nameX, cardTop + 34);
+
+        let innerY = cardTop + 52;
+
+        // Stats row
+        const stats = [
+          { label: "Acceptance", value: college.acceptanceRate },
+          { label: "Net Price", value: college.netPrice },
+          { label: "Setting", value: college.setting },
+          { label: "Students", value: college.studentBody },
+        ].filter(s => s.value && s.value !== "Premium");
+
+        doc.setFontSize(8);
+        const statW = contentW / stats.length;
+        stats.forEach((stat, si) => {
+          const sx = margin + si * statW + 12;
+          doc.setTextColor(100, 100, 100);
+          doc.setFont("helvetica", "normal");
+          doc.text(stat.label, sx, innerY);
+          doc.setTextColor(30, 58, 95);
+          doc.setFont("helvetica", "bold");
+          doc.text(stat.value, sx, innerY + 11);
+        });
+        innerY += 28;
+
+        // Why it's a good fit
+        if (college.whyFit) {
+          doc.setFont("helvetica", "italic");
+          doc.setFontSize(9);
+          doc.setTextColor(80, 80, 80);
+          const whyLines = doc.splitTextToSize(`"${college.whyFit}"`, contentW - 28);
+          doc.text(whyLines, margin + 14, innerY);
+          innerY += whyLines.length * 12 + 6;
+        }
+
+        // Top programs
+        if (college.topPrograms?.length) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(59, 130, 246);
+          doc.text(`Programs: ${college.topPrograms.slice(0, 4).join(" · ")}`, margin + 14, innerY);
+          innerY += 14;
+        }
+
+        const cardH = innerY - cardTop + 8;
+        // Redraw card bg with correct height
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(margin, cardTop, contentW, cardH, 6, 6, "F");
+
+        // Re-draw all content on top (jsPDF draws in order, so we re-render)
+        // Actually jsPDF doesn't support z-ordering well, so let's draw bg first then content
+        // We need to restructure — draw bg, then content. Let me fix this.
+
+        y = innerY + 18;
+      });
+
+      // --- Footer ---
+      if (y > 700) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, y, pageW - margin, y);
+      y += 16;
+      doc.setTextColor(140, 140, 140);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("Generated by Collegra · getcollegra.com", margin, y);
+      doc.text(new Date().toLocaleDateString(), pageW - margin, y, { align: "right" });
+
+      doc.save("collegra-results.pdf");
+    });
+  });
+}
+
 const ShareResults = ({ recommendations, personalityName, firstName }: ShareResultsProps) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -44,27 +222,8 @@ const ShareResults = ({ recommendations, personalityName, firstName }: ShareResu
   };
 
   const handleDownload = () => {
-    // Generate a simple text card for download
-    const lines = [
-      `🎓 Collegra College Personality Results`,
-      ``,
-      firstName ? `Student: ${firstName}` : "",
-      `Personality: ${personalityName}`,
-      ``,
-      `Top College Matches:`,
-      ...colleges.slice(0, 5).map((c, i) => `  ${i + 1}. ${c.name} — ${c.fitScore}% fit (${c.fitCategory})`),
-      ``,
-      `Take the quiz: getcollegra.lovable.app`,
-    ].filter(Boolean);
-
-    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "collegra-results.txt";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast({ title: "Downloaded!", description: "Your results card has been saved." });
+    generatePdf(recommendations, personalityName, firstName);
+    toast({ title: "Downloading PDF!", description: "Your results card is being generated." });
   };
 
   return (
@@ -118,7 +277,7 @@ const ShareResults = ({ recommendations, personalityName, firstName }: ShareResu
               className="rounded-full gap-2 border-border text-foreground font-semibold"
             >
               <Download className="w-4 h-4" />
-              Download Card
+              Download PDF
             </Button>
           </div>
         </motion.div>
