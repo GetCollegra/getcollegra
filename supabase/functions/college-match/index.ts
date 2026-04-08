@@ -573,7 +573,10 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   if (!sizePref || sizePref.includes("no preference")) sizeScore = 3;
   else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 5;
   else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 5;
-  else if (sizePref.includes("large") && studentSize > 15000) sizeScore = 5;
+  else if ((sizePref.includes("very large") || sizePref.includes("30,000") || sizePref.includes("30000")) && studentSize > 30000) sizeScore = 5;
+  else if (sizePref.includes("very large") || sizePref.includes("30,000") || sizePref.includes("30000")) sizeScore = 3; // very large pref but large school — partial match
+  else if (sizePref.includes("large") && studentSize > 15000 && studentSize <= 30000) sizeScore = 5;
+  else if (sizePref.includes("large") && studentSize > 30000) sizeScore = 3; // large pref but very large school — partial match
   else sizeScore = 1;
   score += sizeScore + (a.size || 0);
 
