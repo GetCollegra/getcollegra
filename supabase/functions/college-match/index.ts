@@ -157,10 +157,11 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
   p.set("latest.admissions.admission_rate.overall__range", "0..1");
 
   const size = (prefs.campusSize || "").toLowerCase();
-  if (size.includes("small")) p.set("latest.student.size__range", "..5000");
+  if (size.includes("small")) p.set("latest.student.size__range", "1000..5000");
   else if (size.includes("medium")) p.set("latest.student.size__range", "5000..15000");
   else if (size.includes("very large") || size.includes("30,000")) p.set("latest.student.size__range", "30000..");
   else if (size.includes("large")) p.set("latest.student.size__range", "15000..30000");
+  else p.set("latest.student.size__range", "2000.."); // default: exclude very small unknown schools
 
   const loc = (prefs.locationType || "").toLowerCase();
   if (loc.includes("suburban")) p.set("school.locale__range", "21..23");
@@ -217,8 +218,8 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
     }
   }
 
-  p.set("sort", "latest.completion.rate_suppressed.overall:desc");
-  p.set("per_page", "30");
+  p.set("sort", "latest.student.size:desc");
+  p.set("per_page", "50");
   return p.toString();
 }
 
@@ -580,13 +581,17 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   else sizeScore = 1;
   score += sizeScore + (a.size || 0);
 
-  // 7. Support Level (5 pts max)
+  // 7. Support & Recognition (5 pts max)
+  // Favor well-known, established institutions over obscure small schools
   const gradRate = r["latest.completion.rate_suppressed.overall"];
   const pellRate = r["latest.aid.pell_grant_rate"];
-  let supportScore = 2;
-  if (gradRate != null && gradRate > 0.70) supportScore += 2;
+  let supportScore = 1;
+  if (gradRate != null && gradRate > 0.70) supportScore += 1;
   else if (gradRate != null && gradRate > 0.50) supportScore += 1;
   if (pellRate != null && pellRate > 0.30) supportScore += 1;
+  // Recognition bonus: larger schools are more recognizable
+  if (studentSize > 20000) supportScore += 2;
+  else if (studentSize > 10000) supportScore += 1;
   score += Math.min(5, supportScore) + (a.support || 0);
 
   // ── Academic Realism Multiplier ──
