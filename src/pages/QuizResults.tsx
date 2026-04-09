@@ -670,7 +670,7 @@ const QuizResults = () => {
           ai_status: "pending",
           college_data: [],
           student_profile: {},
-        })
+        } as any)
         .select("id")
         .maybeSingle();
 
