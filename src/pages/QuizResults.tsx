@@ -115,6 +115,25 @@ const buildRetryPreferences = (rawPrefs: unknown): Record<string, unknown> | nul
   };
 };
 
+const LATEST_MATCH_ID_KEY = "latest_college_match_id";
+
+const getStoredMatchId = () => {
+  try {
+    const stored = sessionStorage.getItem(LATEST_MATCH_ID_KEY)?.trim();
+    return stored || null;
+  } catch {
+    return null;
+  }
+};
+
+const setStoredMatchId = (matchId: string) => {
+  try {
+    sessionStorage.setItem(LATEST_MATCH_ID_KEY, matchId);
+  } catch {
+    // Ignore storage failures
+  }
+};
+
 const CollegeCard = ({ college, index }: { college: College; index: number }) => {
   const [expanded, setExpanded] = useState(false);
   const [challengesExpanded, setChallengesExpanded] = useState(false);
@@ -402,7 +421,7 @@ const QuizResults = () => {
   const [aiEnhancing, setAiEnhancing] = useState(false);
   const aiEnhancementTriggered = useRef(false);
   const { toast } = useToast();
-  const { isSubscribed } = useAuth();
+  const { user, loading: authLoading, isSubscribed } = useAuth();
 
   // Fire results_viewed when recommendations load
   useEffect(() => {
@@ -444,6 +463,11 @@ const QuizResults = () => {
       return {} as Record<string, string>;
     }
   }, []);
+
+  const requestedMatchId = useMemo(() => {
+    const matchIdFromUrl = searchParams.get("match_id");
+    return matchIdFromUrl || getStoredMatchId();
+  }, [searchParams]);
 
   const surveyContext = useMemo(() => {
     // Priority 1: DB context from match record
@@ -547,186 +571,278 @@ const QuizResults = () => {
   };
 
   useEffect(() => {
-    const matchId = searchParams.get("match_id");
+    if (authLoading) return;
 
-    // ── Priority 1: Load from DB by match_id (production flow) ──
-    if (matchId) {
-      let cancelled = false;
-      let pollCount = 0;
-      let recoveryTriggered = false;
-      const MAX_POLLS = 60;
-
-      const loadMatch = async () => {
-        try {
-          const { data: match, error: fetchErr } = await supabase
-            .from("college_matches")
-            .select("*")
-            .eq("id", matchId)
-            .maybeSingle();
-
-          if (fetchErr || !match) {
-            if (!cancelled) {
-              setError("Could not find your results. Please try the quiz again.");
-              setLoading(false);
-            }
-            return;
-          }
-
-          extractSurveyContext((match as any).raw_preferences);
-          const status = (match as any).ai_status || "completed";
-          const version = (match as any).results_version || 1;
-
-          if (status === "completed" || status === "failed") {
-            const recs = buildRecommendations(match);
-            if (!recs) {
-              setError(status === "failed"
-                ? `Results generation encountered an issue: ${(match as any).ai_error || "Unknown error"}. Please try the quiz again.`
-                : "No results were generated. Please try the quiz again.");
-            } else {
-              setRecommendations(recs);
-              // If rule-based only (version 1), trigger AI enhancement in background
-              if (version < 2 && !cancelled) {
-                triggerAIEnhancement(matchId, recs, (match as any).raw_preferences);
-              }
-            }
-            setLoading(false);
-            return;
-          }
-
-          // Recover stuck pending rows — retry at 8s and again at 30s
-          if (status === "pending") {
-            const createdAt = Date.parse(String((match as any).created_at || ""));
-            const ageMs = Number.isFinite(createdAt) ? Date.now() - createdAt : 0;
-            if (!recoveryTriggered && ageMs > 8000) {
-              const retryPreferences = buildRetryPreferences((match as any).raw_preferences);
-              if (retryPreferences) {
-                recoveryTriggered = true;
-                supabase.functions.invoke("college-match", {
-                  body: { preferences: retryPreferences, matchId },
-                }).catch(err => console.error("[QuizResults] Recovery failed:", err));
-              }
-            }
-          }
-
-          pollCount++;
-          if (pollCount >= MAX_POLLS && !cancelled) {
-            setError("Results are taking longer than expected. Please refresh the page or try the quiz again.");
-            setLoading(false);
-            return;
-          }
-          if (!cancelled) setTimeout(loadMatch, pollCount < 10 ? 2000 : 3000);
-        } catch {
-          if (!cancelled) {
-            setError("Failed to load results. Please try again.");
-            setLoading(false);
-          }
-        }
-      };
-
-      loadMatch();
-      return () => { cancelled = true; };
-    }
-
-    // ── Priority 2: Legacy router state ──
-    if (routerState?.recommendations) {
+    // ── Priority 1: Legacy router state ──
+    if (!requestedMatchId && routerState?.recommendations) {
       setRecommendations(routerState.recommendations);
       setLoading(false);
       return;
     }
 
-    // ── Priority 3: Load latest match from DB for current user ──
-    let cancelledLatest = false;
-    let latestPollCount = 0;
-    let latestRecoveryTriggered = false;
-    const MAX_LATEST_POLLS = 60;
+    let cancelled = false;
+    let pollCount = 0;
+    let recoveryTriggered = false;
+    let activeMatchId = requestedMatchId;
+    const MAX_POLLS = 90;
 
-    const loadLatest = async () => {
+    const scheduleRetry = (delayMs: number) => {
+      if (!cancelled) {
+        setTimeout(loadResults, delayMs);
+      }
+    };
+
+    const getRecoveryPreferences = async () => {
+      const fromContext = buildRetryPreferences(surveyContext);
+      if (fromContext) return fromContext;
+
+      if (!user) return null;
+
+      const { data: latestAnswers, error } = await supabase
+        .from("quiz_answers")
+        .select("answers, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error("[QuizResults] Failed to load quiz answers for recovery:", error);
+        return null;
+      }
+
+      const latest = latestAnswers?.[0] as { answers?: unknown } | undefined;
+      return latest ? buildRetryPreferences(latest.answers) : null;
+    };
+
+    const ensureMatchExists = async () => {
+      if (!user) return null;
+
+      const recoveryPreferences = await getRecoveryPreferences();
+      if (!recoveryPreferences) return null;
+
+      const { data: latestMatches, error: latestMatchesError } = await supabase
+        .from("college_matches")
+        .select("id, ai_status, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (latestMatchesError) {
+        console.error("[QuizResults] Failed to check latest match for recovery:", latestMatchesError);
+      }
+
+      const latestMatch = latestMatches?.[0] as { id: string; ai_status?: string; created_at?: string } | undefined;
+      const latestAgeMs = latestMatch?.created_at
+        ? Date.now() - Date.parse(String(latestMatch.created_at))
+        : Number.POSITIVE_INFINITY;
+
+      if (latestMatch && latestAgeMs < 1000 * 60 * 30) {
+        setStoredMatchId(latestMatch.id);
+
+        if ((latestMatch.ai_status === "pending" || latestMatch.ai_status === "processing") && !recoveryTriggered) {
+          recoveryTriggered = true;
+          supabase.functions.invoke("college-match", {
+            body: { preferences: recoveryPreferences, matchId: latestMatch.id },
+          }).catch((err) => console.error("[QuizResults] Recovery invoke failed:", err));
+        }
+
+        return latestMatch.id;
+      }
+
+      const rawPreferences = (() => {
+        const allResponses = recoveryPreferences.allResponses;
+        if (allResponses && typeof allResponses === "object" && !Array.isArray(allResponses)) {
+          return allResponses;
+        }
+
+        return Object.fromEntries(
+          Object.entries(recoveryPreferences).filter(
+            ([key, value]) => key !== "allResponses" && typeof value === "string" && value.trim()
+          )
+        );
+      })();
+
+      const { data: createdMatch, error: createError } = await supabase
+        .from("college_matches")
+        .insert({
+          user_id: user.id,
+          raw_preferences: rawPreferences,
+          ai_status: "pending",
+          college_data: [],
+          student_profile: {},
+        })
+        .select("id")
+        .maybeSingle();
+
+      if (createError || !createdMatch?.id) {
+        console.error("[QuizResults] Failed to create recovery match:", createError);
+        return null;
+      }
+
+      setStoredMatchId(createdMatch.id);
+      supabase.functions.invoke("college-match", {
+        body: { preferences: recoveryPreferences, matchId: createdMatch.id },
+      }).catch((err) => console.error("[QuizResults] Recovery invoke failed:", err));
+
+      return createdMatch.id;
+    };
+
+    const loadResults = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
+        if (!activeMatchId) {
+          if (!user) {
+            setError("Please log in to view your results.");
+            setLoading(false);
+            return;
+          }
+
+          const { data: latestMatches, error: latestError } = await supabase
+            .from("college_matches")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+          if (latestError) throw latestError;
+
+          if (latestMatches && latestMatches.length > 0) {
+            activeMatchId = (latestMatches[0] as any).id;
+            setStoredMatchId(activeMatchId);
+            scheduleRetry(0);
+            return;
+          }
+
+          const recoveredMatchId = await ensureMatchExists();
+          if (recoveredMatchId) {
+            activeMatchId = recoveredMatchId;
+            pollCount = 0;
+            scheduleRetry(1000);
+            return;
+          }
+
+          setError("No quiz submission was found yet. Please go back and submit the quiz.");
+          setLoading(false);
+          return;
+        }
+
+        if (!user) {
           setError("Please log in to view your results.");
           setLoading(false);
           return;
         }
 
-        const { data: matches } = await supabase
+        const { data: match, error: fetchErr } = await supabase
           .from("college_matches")
           .select("*")
-          .eq("user_id", session.user.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
+          .eq("id", activeMatchId)
+          .maybeSingle();
 
-        if (matches && matches.length > 0) {
-          const match = matches[0];
-          const status = (match as any).ai_status || "completed";
-          const version = (match as any).results_version || 1;
+        if (fetchErr) throw fetchErr;
 
-          if (status === "completed" || status === "failed") {
-            const recs = buildRecommendations(match);
-            if (recs) {
-              setRecommendations(recs);
-              extractSurveyContext((match as any).raw_preferences);
-              if (version < 2) {
-                triggerAIEnhancement(match.id, recs, (match as any).raw_preferences);
-              }
-            } else {
-              // completed but empty — trigger recovery
-              const retryPreferences = buildRetryPreferences((match as any).raw_preferences);
-              if (retryPreferences && !latestRecoveryTriggered) {
-                latestRecoveryTriggered = true;
-                console.log("[QuizResults] Completed but empty, triggering recovery for:", match.id);
-                supabase.functions.invoke("college-match", {
-                  body: { preferences: retryPreferences, matchId: match.id },
-                }).catch(err => console.error("[QuizResults] Recovery failed:", err));
-                // Continue polling
-                latestPollCount++;
-                if (latestPollCount < MAX_LATEST_POLLS && !cancelledLatest) {
-                  setTimeout(loadLatest, 3000);
-                  return;
-                }
-              }
-              setError("No results found. Please take the quiz first.");
+        if (!match) {
+          pollCount++;
+
+          if (pollCount <= 10) {
+            scheduleRetry(1500);
+            return;
+          }
+
+          const recoveredMatchId = await ensureMatchExists();
+          if (recoveredMatchId && recoveredMatchId !== activeMatchId) {
+            activeMatchId = recoveredMatchId;
+            pollCount = 0;
+            scheduleRetry(1000);
+            return;
+          }
+
+          setError("We couldn't find your results yet. Please stay on this page while we finish processing your quiz.");
+          setLoading(false);
+          return;
+        }
+
+        setStoredMatchId(match.id);
+        extractSurveyContext((match as any).raw_preferences);
+
+        const status = (match as any).ai_status || "completed";
+        const version = (match as any).results_version || 1;
+
+        if (status === "completed" || status === "failed") {
+          const recs = buildRecommendations(match);
+
+          if (!recs) {
+            const retryPreferences = buildRetryPreferences((match as any).raw_preferences) || await getRecoveryPreferences();
+            if (retryPreferences && !recoveryTriggered) {
+              recoveryTriggered = true;
+              supabase.functions.invoke("college-match", {
+                body: { preferences: retryPreferences, matchId: match.id },
+              }).catch((err) => console.error("[QuizResults] Recovery failed:", err));
+              pollCount++;
+              scheduleRetry(pollCount < 10 ? 2000 : 3000);
+              return;
             }
+
+            setError(status === "failed"
+              ? `Results generation encountered an issue: ${(match as any).ai_error || "Unknown error"}. Please try again.`
+              : "No results were generated yet. Please stay on this page while we retry your quiz.");
           } else {
-            // Still pending/processing — trigger recovery and poll
-            if (!latestRecoveryTriggered) {
-              const createdAt = Date.parse(String((match as any).created_at || ""));
-              const ageMs = Number.isFinite(createdAt) ? Date.now() - createdAt : 0;
-              if (ageMs > 5000) {
-                const retryPreferences = buildRetryPreferences((match as any).raw_preferences);
-                if (retryPreferences) {
-                  latestRecoveryTriggered = true;
-                  console.log("[QuizResults] Pending match, triggering recovery for:", match.id);
-                  supabase.functions.invoke("college-match", {
-                    body: { preferences: retryPreferences, matchId: match.id },
-                  }).catch(err => console.error("[QuizResults] Recovery failed:", err));
-                }
-              }
-            }
-
-            latestPollCount++;
-            if (latestPollCount >= MAX_LATEST_POLLS && !cancelledLatest) {
-              setError("Results are taking longer than expected. Please refresh the page or try the quiz again.");
-              setLoading(false);
-              return;
-            }
-            if (!cancelledLatest) {
-              setTimeout(loadLatest, latestPollCount < 10 ? 2000 : 3000);
-              return;
+            setRecommendations(recs);
+            if (version < 2 && !cancelled) {
+              triggerAIEnhancement(match.id, recs, (match as any).raw_preferences);
             }
           }
-        } else {
-          setError("No results found. Please take the quiz first.");
+
+          setLoading(false);
+          return;
         }
-      } catch {
-        setError("Failed to load results.");
+
+        const createdAt = Date.parse(String((match as any).created_at || ""));
+        const ageMs = Number.isFinite(createdAt) ? Date.now() - createdAt : 0;
+
+        if (!recoveryTriggered && ((status === "pending" && ageMs > 8000) || (status === "processing" && ageMs > 20000))) {
+          const retryPreferences = buildRetryPreferences((match as any).raw_preferences) || await getRecoveryPreferences();
+          if (retryPreferences) {
+            recoveryTriggered = true;
+            supabase.functions.invoke("college-match", {
+              body: { preferences: retryPreferences, matchId: match.id },
+            }).catch((err) => console.error("[QuizResults] Recovery failed:", err));
+          }
+        }
+
+        pollCount++;
+        if (pollCount >= MAX_POLLS) {
+          const recoveredMatchId = await ensureMatchExists();
+          if (recoveredMatchId && recoveredMatchId !== activeMatchId) {
+            activeMatchId = recoveredMatchId;
+            pollCount = 0;
+            scheduleRetry(1000);
+            return;
+          }
+
+          setError("Results are taking longer than expected. Please refresh the page or try the quiz again.");
+          setLoading(false);
+          return;
+        }
+
+        scheduleRetry(pollCount < 10 ? 2000 : 3000);
+      } catch (err) {
+        console.error("[QuizResults] Failed while loading results:", err);
+        pollCount++;
+
+        if (pollCount < 5) {
+          scheduleRetry(1500);
+          return;
+        }
+
+        setError("Failed to load results. Please refresh and try again.");
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    loadLatest();
-    return () => { cancelledLatest = true; };
-  }, [routerState, searchParams]);
+    loadResults();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, requestedMatchId, routerState, surveyContext, user]);
 
   // Results are now persisted by the edge function — no client-side save needed
 

@@ -38,7 +38,12 @@ const Survey = () => {
         const match = data[0] as any;
         const hasResults = match.ai_status === "completed" && Array.isArray(match.college_data) && match.college_data.length > 0;
         if (hasResults) {
-          navigate("/quiz-results", { replace: true });
+          try {
+            sessionStorage.setItem("latest_college_match_id", match.id);
+          } catch {
+            // Ignore storage failures
+          }
+          navigate(`/quiz-results?match_id=${match.id}`, { replace: true });
         }
       }
     };
@@ -333,6 +338,11 @@ const Survey = () => {
             const recent = recentMatches[0] as any;
             if (recent.ai_status === "pending" || recent.ai_status === "processing") {
               console.log("[Survey] Found recent pending match, redirecting:", recent.id);
+              try {
+                sessionStorage.setItem("latest_college_match_id", recent.id);
+              } catch {
+                // Ignore storage failures
+              }
               hasNavigatedToResultsRef.current = true;
               navigate(`/quiz-results?match_id=${recent.id}`, { replace: true });
               return;
@@ -362,6 +372,11 @@ const Survey = () => {
 
         const matchId = matchRow.id;
         console.log("[Survey] Created match record:", matchId);
+        try {
+          sessionStorage.setItem("latest_college_match_id", matchId);
+        } catch {
+          // Ignore storage failures
+        }
 
         // Fire edge function in background — QuizResults will poll for completion
         supabase.functions.invoke("college-match", {
