@@ -30,11 +30,16 @@ const Survey = () => {
     const checkExisting = async () => {
       const { data } = await supabase
         .from("college_matches")
-        .select("id")
+        .select("id, ai_status, college_data")
         .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
         .limit(1);
       if (data && data.length > 0) {
-        navigate("/quiz-results", { replace: true });
+        const match = data[0] as any;
+        const hasResults = match.ai_status === "completed" && Array.isArray(match.college_data) && match.college_data.length > 0;
+        if (hasResults) {
+          navigate("/quiz-results", { replace: true });
+        }
       }
     };
     checkExisting();

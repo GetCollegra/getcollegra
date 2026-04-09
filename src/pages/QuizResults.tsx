@@ -909,7 +909,12 @@ const QuizResults = () => {
               </div>
               <p className="text-foreground font-semibold text-lg mb-2">Something went wrong</p>
               <p className="text-muted-foreground mb-6 text-sm sm:text-base">{error}</p>
-              <Button onClick={() => window.location.reload()} variant="outline" className="rounded-full px-8">Try Again</Button>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={() => { setError(null); setLoading(true); window.location.reload(); }} variant="outline" className="rounded-full px-6">Refresh</Button>
+                <Link to="/survey">
+                  <Button className="rounded-full px-6 bg-gradient-to-r from-primary to-accent text-white">Retake Quiz</Button>
+                </Link>
+              </div>
             </motion.div>
           </section>
         )}
