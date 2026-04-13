@@ -1330,7 +1330,10 @@ const Dashboard = () => {
                     <CollegeMap
                       matchedColleges={colleges}
                       savedColleges={savedColleges.map(s => ({ college_data: s.college_data, college_name: s.college_name }))}
+                      homeLocation={homeAddress}
                       homeAddress={homeAddress}
+                      savedCollegeNames={new Set(savedColleges.map(s => s.college_name))}
+                      onSaveCollege={saveCollege}
                       onCollegeSelect={(c) => setMapSelectedCollege(c)}
                       selectedCollege={mapSelectedCollege?.name || null}
                     />
