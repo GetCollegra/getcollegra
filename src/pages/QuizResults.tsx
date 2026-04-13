@@ -134,7 +134,75 @@ const setStoredMatchId = (matchId: string) => {
   }
 };
 
-const CollegeCard = ({ college, index }: { college: College; index: number }) => {
+const LockedCollegeCard = ({ college, index, onUnlock }: { college: College; index: number; onUnlock: () => void }) => {
+  const catConfig = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
+  const CatIcon = catConfig.icon;
+
+  return (
+    <motion.div
+      custom={index}
+      variants={fadeInUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-40px" }}
+      className="group relative"
+    >
+      <div className="relative bg-card border rounded-2xl lg:rounded-3xl overflow-hidden shadow-soft border-border">
+        {/* Rank badge */}
+        <div className={`absolute top-0 left-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${catConfig.gradient} flex items-end justify-end rounded-br-2xl z-10`}>
+          <span className="text-white font-bold text-base sm:text-lg mr-2 mb-0.5 sm:mr-2.5 sm:mb-1">{index + 1}</span>
+        </div>
+
+        {/* Visible: name + basic info */}
+        <div className="p-5 sm:p-6 md:p-8 pl-14 sm:pl-16 md:pl-20">
+          <div className="flex flex-col gap-3 mb-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-lg sm:text-xl md:text-2xl font-bold text-foreground mb-1.5 leading-tight">{college.name}</h3>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-xs sm:text-sm">
+                <span className="flex items-center gap-1"><MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> {college.location}</span>
+                <span className="hidden sm:inline w-1 h-1 rounded-full bg-border" />
+                <span className="flex items-center gap-1"><Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> {college.setting}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold ${catConfig.bg} ${catConfig.color} ${catConfig.border} border`}>
+                <CatIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                {college.fitCategory}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Blurred overlay */}
+        <div className="relative">
+          <div className="p-5 sm:p-6 md:p-8 pt-0 blur-[6px] opacity-40 select-none pointer-events-none" aria-hidden="true">
+            <p className="text-foreground text-sm sm:text-base leading-relaxed mb-3">{college.whyFit}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-muted/30 rounded-xl h-16" />
+              <div className="p-3 bg-muted/30 rounded-xl h-16" />
+            </div>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent flex items-center justify-center">
+            <div className="text-center px-4">
+              <Lock className="w-5 h-5 text-primary mx-auto mb-2" />
+              <p className="text-foreground text-sm font-semibold mb-1">Full match details locked</p>
+              <p className="text-muted-foreground text-xs mb-3">See why this school fits you, stats, and insights</p>
+              <Button
+                size="sm"
+                onClick={onUnlock}
+                className="rounded-full px-5 gap-1.5 bg-gradient-to-r from-primary to-accent text-white text-xs font-semibold"
+              >
+                Unlock All Matches <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const CollegeCard = ({ college, index, onSave, isSaved }: { college: College; index: number; onSave?: (name: string) => void; isSaved?: boolean }) => {
   const [expanded, setExpanded] = useState(false);
   const [challengesExpanded, setChallengesExpanded] = useState(false);
   const { toast } = useToast();
@@ -193,13 +261,16 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
                 className={`flex items-center gap-1 sm:gap-1.5 font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm bg-card border-2 border-border ring-4 ${fitScoreRing(college.fitScore)}`}
               >
                 <Star className={`w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current ${fitScoreColor(college.fitScore)}`} />
-                <span className={fitScoreColor(college.fitScore)}>{college.fitScore}%</span>
+                <span className={fitScoreColor(college.fitScore)}>{college.fitScore}% fit</span>
               </motion.div>
             </div>
           </div>
 
-          {/* Why Fit */}
-          <p className="text-foreground text-sm sm:text-base leading-relaxed mb-2">{college.whyFit}</p>
+          {/* Why Fit - personalized match reason */}
+          <div className="flex items-start gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-primary/5 border border-primary/10 rounded-xl mb-3">
+            <Target className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+            <p className="text-foreground text-xs sm:text-sm"><span className="font-semibold">Why this fits you:</span> {college.whyFit}</p>
+          </div>
 
           {/* Realism Note */}
           {college.realismNote && (
@@ -311,6 +382,25 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
               </AnimatePresence>
             </div>
           )}
+
+          {/* Save & Compare actions */}
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+            <Button
+              size="sm"
+              variant={isSaved ? "secondary" : "outline"}
+              className="rounded-full px-4 gap-1.5 text-xs"
+              onClick={() => onSave?.(college.name)}
+            >
+              {isSaved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Star className="w-3.5 h-3.5" />}
+              {isSaved ? "Saved" : "Save School"}
+            </Button>
+            <Link to="/dashboard">
+              <Button size="sm" variant="ghost" className="rounded-full px-4 gap-1.5 text-xs text-muted-foreground">
+                <BarChart3 className="w-3.5 h-3.5" />
+                Compare
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid - responsive */}
