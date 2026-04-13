@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link, useSearchParams, useLocation } from "react-router-dom";
 import {
   CheckCircle2, MapPin, DollarSign, GraduationCap, Users, Loader2,
   Star, ArrowRight, TrendingUp, Sparkles,
-  BarChart3, Target, Shield, Zap, Award, BookOpen, Globe, Lock, ChevronDown
+  BarChart3, Target, Shield, Zap, Award, BookOpen, Globe, Lock, ChevronDown,
+  Heart, Bookmark
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
