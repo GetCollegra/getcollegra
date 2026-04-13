@@ -171,32 +171,39 @@ const Dashboard = () => {
     })();
   }, [user]);
 
-  // Load college matches
-  useEffect(() => {
+  // Load college matches — and re-check periodically for updates
+  const loadMatches = useCallback(async () => {
     if (!user) return;
-    const load = async () => {
-      const { data } = await supabase
-        .from("college_matches")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
+    const { data } = await supabase
+      .from("college_matches")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-      if (data && data.length > 0) {
-        const match = data[0];
-        const collegeData = match.college_data as unknown;
-        if (Array.isArray(collegeData)) {
-          setColleges(collegeData as College[]);
-        }
-        const profile = match.student_profile as unknown;
-        if (profile && typeof profile === "object") {
-          setStudentProfile(profile as { summary: string; topPriorities: string[]; idealSchoolType: string });
-        }
+    if (data && data.length > 0) {
+      const match = data[0];
+      const collegeData = match.college_data as unknown;
+      if (Array.isArray(collegeData) && (collegeData as College[]).length > 0) {
+        setColleges(prev => {
+          const prevNames = prev.map(c => c.name).sort().join(",");
+          const newNames = (collegeData as College[]).map(c => c.name).sort().join(",");
+          // Only update if colleges actually changed
+          if (prevNames !== newNames) return collegeData as College[];
+          return prev;
+        });
       }
-      setLoadingMatches(false);
-    };
-    load();
+      const profile = match.student_profile as unknown;
+      if (profile && typeof profile === "object") {
+        setStudentProfile(profile as { summary: string; topPriorities: string[]; idealSchoolType: string });
+      }
+    }
+    setLoadingMatches(false);
   }, [user]);
+
+  useEffect(() => {
+    loadMatches();
+  }, [loadMatches]);
 
   // Load stored survey preferences from sessionStorage
   useEffect(() => {
