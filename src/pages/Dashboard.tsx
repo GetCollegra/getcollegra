@@ -762,8 +762,8 @@ const Dashboard = () => {
                     <Card className="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
                       <CardContent className="p-4 text-center">
                         <Shield className="h-5 w-5 text-emerald-600 mx-auto mb-1" />
-                        <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{savedByCategory.likely.length}</p>
-                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-500">Likely</p>
+                        <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{savedByCategory.safety.length}</p>
+                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-500">Safety</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-primary/5 border-primary/20">
@@ -784,7 +784,7 @@ const Dashboard = () => {
 
                   {/* Categorized sections */}
                   {([
-                    { label: "Likely Schools", items: savedByCategory.likely, icon: Shield, color: "text-emerald-600", borderColor: "border-l-emerald-500" },
+                    { label: "Safety Schools", items: savedByCategory.safety, icon: Shield, color: "text-emerald-600", borderColor: "border-l-emerald-500" },
                     { label: "Match Schools", items: savedByCategory.match, icon: Target, color: "text-primary", borderColor: "border-l-primary" },
                     { label: "Reach Schools", items: savedByCategory.reach, icon: TrendingUp, color: "text-orange-600", borderColor: "border-l-orange-500" },
                   ] as const).map(section => section.items.length > 0 && (
