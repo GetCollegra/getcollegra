@@ -335,8 +335,8 @@ const Dashboard = () => {
       const priceB = parseInt(b.tuitionOutOfState.replace(/[^0-9]/g, "")) || 999999;
       return priceA - priceB;
     })[0];
-    const likelySchools = colleges.filter(c => c.fitCategory === "Likely");
-    return { bestMatch, mostAffordable, safetySchool: likelySchools[0] };
+    const safetySchools = colleges.filter(c => c.fitCategory === "Safety");
+    return { bestMatch, mostAffordable, safetySchool: safetySchools[0] };
   }, [colleges]);
 
   const allKnownCollegeNames = useMemo(() => {
@@ -353,16 +353,16 @@ const Dashboard = () => {
 
   // Organized saved colleges by category
   const savedByCategory = useMemo(() => {
-    const likely: SavedCollege[] = [];
+    const safety: SavedCollege[] = [];
     const match: SavedCollege[] = [];
     const reach: SavedCollege[] = [];
     savedColleges.forEach(s => {
       const cat = s.college_data.fitCategory;
-      if (cat === "Likely") likely.push(s);
+      if (cat === "Safety" || cat === "Likely") safety.push(s);
       else if (cat === "Reach") reach.push(s);
       else match.push(s);
     });
-    return { likely, match, reach };
+    return { safety, match, reach };
   }, [savedColleges]);
 
   const discoverSuggestions = async () => {

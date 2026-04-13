@@ -236,9 +236,9 @@ export default function CollegeMap({
             </div>
             <div className="h-6 w-px bg-border hidden sm:block" />
             {/* Fit Category Filters */}
-            {(["Likely", "Match", "Reach"] as const).map(cat => {
+            {(["Safety", "Match", "Reach"] as const).map(cat => {
               const checked = filterCategories.has(cat);
-              const dotColor = cat === "Likely" ? "bg-emerald-500" : cat === "Match" ? "bg-primary" : "bg-orange-500";
+              const dotColor = cat === "Safety" ? "bg-emerald-500" : cat === "Match" ? "bg-primary" : "bg-orange-500";
               return (
                 <label key={cat} className="flex items-center gap-2 cursor-pointer select-none">
                   <Checkbox
