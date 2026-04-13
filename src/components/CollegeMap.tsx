@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 // leaflet CSS loaded via index.html CDN link
-import { MapPin, BookmarkPlus, Loader2, Filter, Navigation } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MapPin, Filter, Navigation } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import TravelFromHome from "@/components/TravelFromHome";
 import type { College } from "@/types/college";
 
 // Fix default marker icons
@@ -23,13 +21,14 @@ function createColorIcon(color: string) {
   return L.divIcon({
     className: "custom-marker",
     html: `<div style="
-      width: 30px; height: 30px; border-radius: 50% 50% 50% 0;
+      width: 32px; height: 32px; border-radius: 50% 50% 50% 0;
       background: ${color}; transform: rotate(-45deg);
       border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      cursor: pointer; transition: transform 0.15s ease;
     "></div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 30],
-    popupAnchor: [0, -30],
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
   });
 }
 
@@ -38,15 +37,15 @@ function createHomeIcon() {
   return L.divIcon({
     className: "home-marker",
     html: `<div style="
-      width: 32px; height: 32px; border-radius: 50%;
+      width: 34px; height: 34px; border-radius: 50%;
       background: hsl(var(--destructive)); 
       border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.35);
       display: flex; align-items: center; justify-content: center;
       color: white; font-size: 16px;
     ">🏠</div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -16],
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -17],
   });
 }
 
@@ -103,7 +102,6 @@ export function geocodeLocation(location: string): [number, number] | null {
   const abbr = stateStr ? resolveStateAbbr(stateStr) : null;
   if (abbr && STATE_COORDS[abbr]) {
     const [lat, lng] = STATE_COORDS[abbr];
-    // Deterministic offset based on city name to avoid random repositioning
     const cityHash = parts[0] ? [...parts[0]].reduce((a, c) => a + c.charCodeAt(0), 0) : 0;
     const offset1 = ((cityHash % 100) / 100 - 0.5) * 1.2;
     const offset2 = (((cityHash * 7) % 100) / 100 - 0.5) * 1.2;
@@ -115,7 +113,7 @@ export function geocodeLocation(location: string): [number, number] | null {
 /** Calculate distance in miles between two [lat, lng] points */
 function haversineDistance(a: [number, number], b: [number, number]): number {
   const toRad = (x: number) => (x * Math.PI) / 180;
-  const R = 3959; // Earth radius in miles
+  const R = 3959;
   const dLat = toRad(b[0] - a[0]);
   const dLon = toRad(b[1] - a[1]);
   const lat1 = toRad(a[0]);
@@ -124,29 +122,46 @@ function haversineDistance(a: [number, number], b: [number, number]): number {
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
 
-// Auto-fit bounds component
+// Auto-fit bounds with smooth animation
 function FitBounds({ positions }: { positions: [number, number][] }) {
   const map = useMap();
+  const initialRef = useRef(true);
   useEffect(() => {
     if (positions.length > 0) {
       const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 });
+      if (initialRef.current) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 });
+        initialRef.current = false;
+      } else {
+        map.flyToBounds(bounds, { padding: [50, 50], maxZoom: 7, duration: 0.8 });
+      }
     }
   }, [positions, map]);
+  return null;
+}
+
+// Smooth pan to marker on click
+function SmoothPanTo({ position }: { position: [number, number] | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (position) {
+      map.flyTo(position, Math.max(map.getZoom(), 6), { duration: 0.6 });
+    }
+  }, [position, map]);
   return null;
 }
 
 export type MarkerData = {
   pos: [number, number];
   college: College;
-  distance: number | null; // miles from home
+  distance: number | null;
 };
 
 type CollegeMapProps = {
   matchedColleges: College[];
   savedColleges: { college_data: College; college_name: string }[];
-  homeLocation?: string; // e.g. "Dallas, TX"
-  homeAddress?: string; // full address for travel estimation
+  homeLocation?: string;
+  homeAddress?: string;
   savedCollegeNames?: Set<string>;
   onSaveCollege?: (college: College) => void;
   savingCollege?: string | null;
@@ -169,6 +184,7 @@ export default function CollegeMap({
 }: CollegeMapProps) {
   const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Safety", "Match", "Reach"]));
   const [distanceFilter, setDistanceFilter] = useState<string>("all");
+  const [panTarget, setPanTarget] = useState<[number, number] | null>(null);
 
   const homePos = useMemo(() => {
     if (!homeLocation) return null;
@@ -235,23 +251,18 @@ export default function CollegeMap({
               <span>Filters</span>
             </div>
             <div className="h-6 w-px bg-border hidden sm:block" />
-            {/* Fit Category Filters */}
             {(["Safety", "Match", "Reach"] as const).map(cat => {
               const checked = filterCategories.has(cat);
               const dotColor = cat === "Safety" ? "bg-emerald-500" : cat === "Match" ? "bg-primary" : "bg-orange-500";
               return (
                 <label key={cat} className="flex items-center gap-2 cursor-pointer select-none">
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={() => toggleCategory(cat)}
-                  />
+                  <Checkbox checked={checked} onCheckedChange={() => toggleCategory(cat)} />
                   <span className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
                   <span className="text-sm text-foreground">{cat}</span>
                 </label>
               );
             })}
             <div className="h-6 w-px bg-border hidden sm:block" />
-            {/* Distance Filter */}
             <div className="flex items-center gap-2">
               <Navigation className="h-4 w-4 text-muted-foreground" />
               <Select value={distanceFilter} onValueChange={setDistanceFilter}>
@@ -267,7 +278,6 @@ export default function CollegeMap({
                 </SelectContent>
               </Select>
             </div>
-            {/* Count */}
             <Badge variant="secondary" className="ml-auto text-xs">
               {filteredMarkers.length} of {markers.length} colleges
             </Badge>
@@ -299,16 +309,21 @@ export default function CollegeMap({
           center={[39.8, -98.6]}
           zoom={4}
           style={{ height: "100%", width: "100%" }}
-          scrollWheelZoom={true}
+          scrollWheelZoom={false}
           maxBounds={[[24, -130], [50, -65]]}
           maxBoundsViscosity={1.0}
           minZoom={3}
+          zoomControl={true}
+          doubleClickZoom={true}
+          dragging={true}
+          touchZoom={true}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <FitBounds positions={[...filteredMarkers.map(m => m.pos), ...(homePos ? [homePos] : [])]} />
+          <SmoothPanTo position={panTarget} />
 
           {/* Home marker */}
           {homePos && (
@@ -324,8 +339,7 @@ export default function CollegeMap({
 
           {/* College markers */}
           {filteredMarkers.map((m, i) => {
-            const isSaved = savedCollegeNames?.has(m.college.name);
-            const isSaving = savingCollege === m.college.name;
+            const isSelected = selectedCollege === m.college.name;
             return (
               <Marker
                 key={`${m.college.name}-${i}`}
@@ -333,6 +347,7 @@ export default function CollegeMap({
                 icon={createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match)}
                 eventHandlers={{
                   click: () => {
+                    setPanTarget(m.pos);
                     if (onCollegeSelect) onCollegeSelect(m.college);
                   },
                 }}
