@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog"; // kept for potential future use
 import {
   Loader2, Sun, Cloud, Snowflake, Droplets, Thermometer, Wind,
   AlertTriangle, Shield, DollarSign, Home, Car, MapPin, TreePine,
