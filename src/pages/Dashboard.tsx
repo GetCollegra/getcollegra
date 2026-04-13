@@ -171,32 +171,48 @@ const Dashboard = () => {
     })();
   }, [user]);
 
-  // Load college matches
-  useEffect(() => {
+  // Load college matches — and re-check periodically for updates
+  const loadMatches = useCallback(async () => {
     if (!user) return;
-    const load = async () => {
-      const { data } = await supabase
-        .from("college_matches")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
+    const { data } = await supabase
+      .from("college_matches")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-      if (data && data.length > 0) {
-        const match = data[0];
-        const collegeData = match.college_data as unknown;
-        if (Array.isArray(collegeData)) {
-          setColleges(collegeData as College[]);
-        }
-        const profile = match.student_profile as unknown;
-        if (profile && typeof profile === "object") {
-          setStudentProfile(profile as { summary: string; topPriorities: string[]; idealSchoolType: string });
-        }
+    if (data && data.length > 0) {
+      const match = data[0];
+      const collegeData = match.college_data as unknown;
+      if (Array.isArray(collegeData) && (collegeData as College[]).length > 0) {
+        setColleges(prev => {
+          const prevNames = prev.map(c => c.name).sort().join(",");
+          const newNames = (collegeData as College[]).map(c => c.name).sort().join(",");
+          // Only update if colleges actually changed
+          if (prevNames !== newNames) return collegeData as College[];
+          return prev;
+        });
       }
-      setLoadingMatches(false);
-    };
-    load();
+      const profile = match.student_profile as unknown;
+      if (profile && typeof profile === "object") {
+        setStudentProfile(profile as { summary: string; topPriorities: string[]; idealSchoolType: string });
+      }
+    }
+    setLoadingMatches(false);
   }, [user]);
+
+  useEffect(() => {
+    loadMatches();
+  }, [loadMatches]);
+
+  // Re-fetch matches when the page regains focus (e.g. after retaking the quiz)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") loadMatches();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [loadMatches]);
 
   // Load stored survey preferences from sessionStorage
   useEffect(() => {
@@ -210,6 +226,7 @@ const Dashboard = () => {
   }, []);
 
   // Load saved colleges — and unmask premium fields using college_matches data
+  // Also sync saved college_data with latest match data when matches change
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -242,21 +259,42 @@ const Dashboard = () => {
           }
         }
 
-        setSavedColleges(data.map(d => {
+        const updatedSaved = data.map(d => {
           const saved = d.college_data as unknown as College;
           const unmasked = unmaskedLookup.get(d.college_name);
-          // Replace "Premium" values with real data from college_matches
+          // Merge: update saved college_data with latest match data (scores, labels, etc.)
           if (unmasked) {
             const merged = { ...saved };
-            for (const key of Object.keys(merged) as (keyof College)[]) {
-              if ((merged as any)[key] === "Premium" && (unmasked as any)[key] !== undefined) {
-                (merged as any)[key] = (unmasked as any)[key];
+            for (const key of Object.keys(unmasked) as (keyof College)[]) {
+              const savedVal = (merged as any)[key];
+              const freshVal = (unmasked as any)[key];
+              // Always update from match data if the saved value is stale/masked
+              if (savedVal === "Premium" || freshVal !== undefined) {
+                (merged as any)[key] = freshVal;
               }
             }
             return { ...d, college_data: merged, notes: d.notes || "" };
           }
           return { ...d, college_data: saved, notes: d.notes || "" };
-        }));
+        });
+
+        setSavedColleges(updatedSaved);
+
+        // Also update the saved_colleges records in DB if match data changed
+        // (async, fire-and-forget — keeps DB in sync for next load)
+        for (const s of updatedSaved) {
+          const original = data.find(d => d.id === s.id);
+          if (original) {
+            const origData = JSON.stringify(original.college_data);
+            const newData = JSON.stringify(s.college_data);
+            if (origData !== newData) {
+              supabase.from("saved_colleges")
+                .update({ college_data: s.college_data as any })
+                .eq("id", s.id)
+                .then(() => {});
+            }
+          }
+        }
       }
       setLoadingSaved(false);
     };
@@ -305,6 +343,13 @@ const Dashboard = () => {
   const removeCollege = async (id: string) => {
     await supabase.from("saved_colleges").delete().eq("id", id);
     setSavedColleges(prev => prev.filter(s => s.id !== id));
+    // Clean up compareIds so stale IDs don't linger
+    setCompareIds(prev => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     toast({ title: "Removed from saved list" });
   };
 
