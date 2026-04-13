@@ -365,7 +365,7 @@ function parseStudentGPA(prefs: Record<string, any>): number {
   return isNaN(gpa) ? 3.0 : Math.min(5.0, Math.max(0, gpa));
 }
 
-function determineFitCategory(r: any, gpa: number, studentSAT: number | null, studentACT: number | null): "Likely" | "Match" | "Reach" | "unrealistic" {
+function determineFitCategory(r: any, gpa: number, studentSAT: number | null, studentACT: number | null): "Safety" | "Match" | "Reach" | "unrealistic" {
   const admRate = r["latest.admissions.admission_rate.overall"];
 
   // Test score comparison
@@ -399,59 +399,49 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
   }
 
   // ── Strict Realistic Reach thresholds ──
-  // GPA-based floor: schools more selective than this are excluded entirely
   let realisticFloor = 0;
-  if (gpa < 2.5) realisticFloor = 0.50;       // below 2.5 → no schools under 50%
-  else if (gpa < 3.0) realisticFloor = 0.35;   // 2.5-3.0 → no schools under 35%
-  else if (gpa < 3.3) realisticFloor = 0.20;   // 3.0-3.3 → no schools under 20%
-  else if (gpa < 3.5) realisticFloor = 0.12;   // 3.3-3.5 → no schools under 12%
-  else if (gpa < 3.7) realisticFloor = 0.08;   // 3.5-3.7 → no schools under 8%
-  else if (gpa < 3.9) realisticFloor = 0.04;   // 3.7-3.9 → no schools under 4%
-  // 3.9+ → any school is fair game
+  if (gpa < 2.5) realisticFloor = 0.50;
+  else if (gpa < 3.0) realisticFloor = 0.35;
+  else if (gpa < 3.3) realisticFloor = 0.20;
+  else if (gpa < 3.5) realisticFloor = 0.12;
+  else if (gpa < 3.7) realisticFloor = 0.08;
+  else if (gpa < 3.9) realisticFloor = 0.04;
 
   // Ultra-selective schools (<10% acceptance) require exceptional credentials
   if (admRate != null && admRate < 0.10) {
-    // Must have GPA ≥ 3.7 AND test scores at or above 25th percentile
     if (gpa < 3.7) return "unrealistic";
     if (scorePosition === "below") return "unrealistic";
-    // Even with strong stats, if no test scores provided and GPA < 3.9, exclude
     if (!studentSAT && !studentACT && gpa < 3.9) return "unrealistic";
-    // Qualified students: still always a Reach (never Match/Likely for <10%)
     return "Reach";
   }
 
-  // If scores are far below AND acceptance rate is below the realistic floor, exclude
   if (admRate != null && admRate < realisticFloor) {
     if (scorePosition === "below" && scoreDelta > 0.05) return "unrealistic";
     if (scorePosition !== "above") return "unrealistic";
   }
 
-  // ── Any school with <15% acceptance is at least a Reach for everyone ──
+  // Any school with <15% acceptance is at least a Reach
   if (admRate != null && admRate < 0.15) {
-    // Only exception: scores well above 75th AND GPA ≥ 3.8 → treat as Match
     if (scorePosition === "above" && scoreDelta > 0.05 && gpa >= 3.8) return "Match";
     return "Reach";
   }
 
-  // ── Likely: scores above 75th percentile + higher acceptance ──
-  if (scorePosition === "above" && admRate != null && admRate > 0.35) return "Likely";
+  // ── Safety: scores above 75th percentile + higher acceptance ──
+  if (scorePosition === "above" && admRate != null && admRate > 0.35) return "Safety";
 
-  // ── Reach: scores below OR selective school for this student ──
-  // GPA-calibrated reach threshold
+  // ── Reach: scores below OR selective school ──
   let reachThreshold = 0.5;
   if (gpa >= 3.9) reachThreshold = 0.20;
   else if (gpa >= 3.8) reachThreshold = 0.25;
   else if (gpa >= 3.5) reachThreshold = 0.35;
   else if (gpa >= 3.0) reachThreshold = 0.45;
 
-  // Below 25th percentile on scores = always a reach
   if (scorePosition === "below" && scoreDelta > 0.03) return "Reach";
-  // Low acceptance rate relative to GPA = reach
   if (admRate != null && admRate <= reachThreshold) return "Reach";
 
-  // ── Likely: high acceptance rate schools ──
-  if (admRate != null && admRate > 0.65) return "Likely";
-  if (scorePosition === "above" && admRate != null && admRate > 0.30) return "Likely";
+  // ── Safety: high acceptance rate schools ──
+  if (admRate != null && admRate > 0.65) return "Safety";
+  if (scorePosition === "above" && admRate != null && admRate > 0.30) return "Safety";
 
   return "Match";
 }
