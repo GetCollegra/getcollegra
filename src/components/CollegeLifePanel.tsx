@@ -200,10 +200,7 @@ export default function CollegeLifePanel({ college }: Props) {
 
       {/* Section Tabs */}
       <Tabs value={activeSection} onValueChange={setActiveSection}>
-        <TabsList className="grid w-full grid-cols-5 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
-          <TabsTrigger value="photos" className="gap-1.5 text-xs rounded-lg data-[state=active]:shadow-soft">
-            <Camera className="h-3.5 w-3.5" /> Campus
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl">
           <TabsTrigger value="weather" className="gap-1.5 text-xs rounded-lg data-[state=active]:shadow-soft">
             <Sun className="h-3.5 w-3.5" /> Weather
           </TabsTrigger>
@@ -217,121 +214,6 @@ export default function CollegeLifePanel({ college }: Props) {
             <MapPin className="h-3.5 w-3.5" /> Area
           </TabsTrigger>
         </TabsList>
-
-        {/* Campus Photos & Experience */}
-        <TabsContent value="photos" className="mt-4">
-          <div className="space-y-4">
-            {/* Real campus photos from Unsplash */}
-            {photosLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <p className="text-xs text-muted-foreground">Loading real campus photos...</p>
-              </div>
-            ) : photos.length > 0 ? (
-              <>
-                <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {photos.map((photo, i) => (
-                    <motion.div
-                      key={photo.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="cursor-pointer group"
-                      onClick={() => setSelectedPhoto(photo)}
-                    >
-                      <div className="aspect-[4/3] rounded-xl overflow-hidden border border-border bg-muted relative">
-                        <img
-                          src={photo.thumbUrl}
-                          alt={photo.alt}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                        <div className="absolute top-2 left-2">
-                          <span className="text-[9px] font-semibold bg-black/60 text-white px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-                            {photo.category}
-                          </span>
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <p className="text-[10px] text-white truncate">📷 {photo.photographer}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-                <p className="text-[10px] text-center text-muted-foreground">
-                  Photos from <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Unsplash</a> — real campus and area photography
-                </p>
-              </>
-            ) : (
-              /* Fallback: campus highlights cards */
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {data.campusPhotos.campusHighlights.map((highlight, i) => {
-                  const Icon = highlightIcons[i % highlightIcons.length];
-                  const gradient = seasonColors[Object.keys(seasonColors)[i % 4]];
-                  return (
-                    <Card key={i} className="h-full bg-card border-border overflow-hidden">
-                      <div className={`h-28 bg-gradient-to-br ${gradient} relative`}>
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                          <Icon className="h-10 w-10 text-white/70" />
-                        </div>
-                      </div>
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold text-foreground text-sm mb-1">{highlight.title}</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{highlight.description}</p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Search suggestion */}
-            {data.campusPhotos.searchTerms.length > 0 && (
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                <p className="text-xs text-muted-foreground">Search for more photos:</p>
-                {data.campusPhotos.searchTerms.map((term, i) => (
-                  <a
-                    key={i}
-                    href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(term)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-primary/10 transition-colors">
-                      <Camera className="h-3 w-3 mr-1" />{term}
-                    </Badge>
-                  </a>
-                ))}
-              </div>
-            )}
-
-            {/* Lightbox dialog for selected photo */}
-            <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-              <DialogContent className="max-w-3xl p-2 bg-background">
-                {selectedPhoto && (
-                  <div className="space-y-2">
-                    <img
-                      src={selectedPhoto.url}
-                      alt={selectedPhoto.alt}
-                      className="w-full rounded-lg object-contain max-h-[70vh]"
-                    />
-                    <div className="flex items-center justify-between px-2 pb-2">
-                      <p className="text-xs text-muted-foreground">{selectedPhoto.alt}</p>
-                      <a
-                        href={`${selectedPhoto.photographerUrl}?utm_source=collegra&utm_medium=referral`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline"
-                      >
-                        📷 {selectedPhoto.photographer} on Unsplash
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </DialogContent>
-            </Dialog>
-          </div>
-        </TabsContent>
 
         {/* Weather & Climate */}
         <TabsContent value="weather" className="mt-4">
