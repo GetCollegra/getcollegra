@@ -707,12 +707,12 @@ function getTopPrograms(r: any): string[] {
 
 /**
  * Rule-based engine: score all colleges, distribute by listMode preference.
- * Default "Balanced" → 2 Likely / 2 Match / 1 Reach
- * "Safe & Practical" → 3 Likely / 1 Match / 1 Reach
- * "Dream Big" → 1 Likely / 2 Match / 2 Reach
+ * Default "Balanced" → 1 Safety / 3 Match / 1 Reach
+ * "Safe & Practical" → 2 Safety / 2 Match / 1 Reach
+ * "Dream Big" → 1 Safety / 2 Match / 2 Reach
  * 
- * Results are sorted with Likely and Match schools FIRST (top 3),
- * Reach schools at the bottom, unless the student qualifies.
+ * Match schools are prioritized as the most important category.
+ * Within each pool, schools are sorted by fitScore (which includes recognition bonus).
  */
 function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = [], weightAdj?: Record<string, number>): any[] {
   const gpa = parseStudentGPA(prefs);
@@ -720,13 +720,13 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   const studentACT = parseStudentACT(prefs);
   const excludeSet = new Set(excludeColleges.map(n => n.toLowerCase()));
 
-  // Determine distribution from listMode
+  // Determine distribution — Match is always the biggest bucket
   const listMode = (prefs.listMode || "Balanced").toLowerCase();
-  let likelyTarget = 2, matchTarget = 2, reachTarget = 1;
+  let safetyTarget = 1, matchTarget = 3, reachTarget = 1;
   if (listMode.includes("safe") || listMode.includes("practical") || listMode.includes("realistic")) {
-    likelyTarget = 3; matchTarget = 1; reachTarget = 1;
+    safetyTarget = 2; matchTarget = 2; reachTarget = 1;
   } else if (listMode.includes("dream") || listMode.includes("ambitious")) {
-    likelyTarget = 1; matchTarget = 2; reachTarget = 2;
+    safetyTarget = 1; matchTarget = 2; reachTarget = 2;
   }
 
   // Score and categorize all colleges
@@ -739,15 +739,14 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     })
     .sort((a, b) => b.fitScore - a.fitScore);
 
-  // Filter out unrealistic schools before pooling
+  // Filter out unrealistic schools
   const realistic = scored.filter(s => s.fitCategory !== "unrealistic");
 
-  const likelyPool = realistic.filter(s => s.fitCategory === "Likely");
+  const safetyPool = realistic.filter(s => s.fitCategory === "Safety");
   const matchPool = realistic.filter(s => s.fitCategory === "Match");
   const reachPool = realistic.filter(s => s.fitCategory === "Reach");
 
-  // ── Ultra-selective cap: max 1 school with <10% acceptance (20% of 5) ──
-  // Only allow if student is an exceptional academic fit (GPA ≥ 3.8 + scores above 25th)
+  // ── Ultra-selective cap: max 1 school with <10% acceptance ──
   const isExceptionalFit = gpa >= 3.8 && (
     (studentSAT && studentSAT >= 1400) || 
     (studentACT && studentACT >= 32) ||
@@ -755,7 +754,6 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
   );
   const maxUltraSelective = isExceptionalFit ? 1 : 0;
 
-  // Pick based on distribution targets — Likely first, then Match, then Reach
   const picked: typeof scored = [];
   let ultraSelectiveCount = 0;
 
@@ -764,7 +762,6 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
       if (picked.length >= 5) break;
       if (count <= 0) break;
       if (picked.find(p => p.raw["school.name"] === s.raw["school.name"])) continue;
-      // Enforce ultra-selective cap
       const schoolAdmRate = s.raw["latest.admissions.admission_rate.overall"];
       if (schoolAdmRate != null && schoolAdmRate < 0.10) {
         if (ultraSelectiveCount >= maxUltraSelective) continue;
@@ -775,30 +772,25 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     }
   };
 
-  addFrom(likelyPool, likelyTarget);
+  // Fill Match first (most important), then Safety, then Reach
   addFrom(matchPool, matchTarget);
+  addFrom(safetyPool, safetyTarget);
   addFrom(reachPool, reachTarget);
 
-  // Pad if needed (prefer Likely/Match over Reach)
-  for (const s of realistic.filter(x => x.fitCategory !== "Reach")) {
-    if (picked.length >= 5) break;
-    if (picked.find(p => p.raw["school.name"] === s.raw["school.name"])) continue;
-    const schoolAdmRate = s.raw["latest.admissions.admission_rate.overall"];
-    if (schoolAdmRate != null && schoolAdmRate < 0.10 && ultraSelectiveCount >= maxUltraSelective) continue;
-    if (schoolAdmRate != null && schoolAdmRate < 0.10) ultraSelectiveCount++;
-    picked.push(s);
-  }
-  for (const s of realistic) {
-    if (picked.length >= 5) break;
-    if (picked.find(p => p.raw["school.name"] === s.raw["school.name"])) continue;
-    const schoolAdmRate = s.raw["latest.admissions.admission_rate.overall"];
-    if (schoolAdmRate != null && schoolAdmRate < 0.10 && ultraSelectiveCount >= maxUltraSelective) continue;
-    if (schoolAdmRate != null && schoolAdmRate < 0.10) ultraSelectiveCount++;
-    picked.push(s);
+  // Pad if needed — prefer Match > Safety > Reach
+  for (const pool of [matchPool, safetyPool, reachPool]) {
+    for (const s of pool) {
+      if (picked.length >= 5) break;
+      if (picked.find(p => p.raw["school.name"] === s.raw["school.name"])) continue;
+      const schoolAdmRate = s.raw["latest.admissions.admission_rate.overall"];
+      if (schoolAdmRate != null && schoolAdmRate < 0.10 && ultraSelectiveCount >= maxUltraSelective) continue;
+      if (schoolAdmRate != null && schoolAdmRate < 0.10) ultraSelectiveCount++;
+      picked.push(s);
+    }
   }
 
-  // Sort: Likely and Match schools first (by fitScore), Reach schools last
-  const categoryOrder: Record<string, number> = { "Likely": 0, "Match": 1, "Reach": 2 };
+  // Sort: Match first, then Safety, then Reach (by fitScore within each)
+  const categoryOrder: Record<string, number> = { "Match": 0, "Safety": 1, "Reach": 2 };
   picked.sort((a, b) => {
     const catDiff = (categoryOrder[a.fitCategory] ?? 2) - (categoryOrder[b.fitCategory] ?? 2);
     if (catDiff !== 0) return catDiff;
@@ -814,9 +806,28 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     const size = r["latest.student.size"];
     const topPrograms = getTopPrograms(r);
     const realismNote = generateRealismNote(fitCategory, fitScore, r, prefs);
+    const schoolName = r["school.name"] || "Unknown";
+
+    // Build personalized whyFit explanation
+    const whyFitParts: string[] = [];
+    whyFitParts.push(`${schoolName} is a ${fitCategory} school for you.`);
+    if (fitCategory === "Safety") {
+      whyFitParts.push("Your academic profile is above the typical admitted student, giving you a very strong chance of acceptance.");
+    } else if (fitCategory === "Match") {
+      whyFitParts.push("Your academics are competitive here, making this a realistic and exciting option.");
+    } else {
+      whyFitParts.push("This is a stretch, but worth applying if this school excites you.");
+    }
+    // Add preference-based reasons
+    const study = (prefs.areaOfStudy || "").toLowerCase();
+    if (study && study !== "undecided" && topPrograms.length > 0) {
+      whyFitParts.push(`Strong programs in ${topPrograms.slice(0, 2).join(" and ")}.`);
+    }
+    if (admRate != null) whyFitParts.push(`Acceptance rate: ${(admRate * 100).toFixed(0)}%.`);
+    if (gradRate != null && gradRate > 0.65) whyFitParts.push(`Solid ${(gradRate * 100).toFixed(0)}% graduation rate.`);
 
     return {
-      name: r["school.name"] || "Unknown",
+      name: schoolName,
       location: `${r["school.city"] || ""}, ${r["school.state"] || ""}`,
       acceptanceRate: admRate != null ? `${(admRate * 100).toFixed(0)}%` : "N/A",
       ranking: "Based on U.S. Dept. of Education data",
@@ -838,7 +849,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
       fitScore,
       fitCategory,
       realismNote,
-      whyFit: `This school matches your search criteria based on Department of Education data. Fit score: ${fitScore}/100.`,
+      whyFit: whyFitParts.join(" "),
       prosForStudent: ["Meets your stated preferences", "Strong graduation and outcomes data"],
       consForStudent: ["See detailed analysis for more context"],
       challengesForStudent: [],
