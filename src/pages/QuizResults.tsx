@@ -206,7 +206,7 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
             <p className={`text-xs sm:text-sm font-medium mb-4 px-3 py-2 rounded-lg ${
               college.fitCategory === "Reach"
                 ? "bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400"
-                : college.fitCategory === "Likely"
+                : college.fitCategory === "Safety"
                 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
                 : "bg-primary/5 text-primary"
             }`}>

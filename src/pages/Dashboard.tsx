@@ -48,7 +48,7 @@ type SavedCollege = {
 const fitCategoryConfig: Record<string, { color: string; bg: string; icon: typeof Target }> = {
   Reach: { color: "text-orange-600", bg: "bg-orange-50", icon: TrendingUp },
   Match: { color: "text-primary", bg: "bg-primary/5", icon: Target },
-  Likely: { color: "text-emerald-600", bg: "bg-emerald-50", icon: Shield },
+  Likely: { color: "text-emerald-600", bg: "bg-emerald-50", icon: Shield }, // legacy support
   Safety: { color: "text-emerald-600", bg: "bg-emerald-50", icon: Shield },
 };
 
@@ -335,8 +335,8 @@ const Dashboard = () => {
       const priceB = parseInt(b.tuitionOutOfState.replace(/[^0-9]/g, "")) || 999999;
       return priceA - priceB;
     })[0];
-    const likelySchools = colleges.filter(c => c.fitCategory === "Likely");
-    return { bestMatch, mostAffordable, safetySchool: likelySchools[0] };
+    const safetySchools = colleges.filter(c => c.fitCategory === "Safety");
+    return { bestMatch, mostAffordable, safetySchool: safetySchools[0] };
   }, [colleges]);
 
   const allKnownCollegeNames = useMemo(() => {
@@ -353,16 +353,16 @@ const Dashboard = () => {
 
   // Organized saved colleges by category
   const savedByCategory = useMemo(() => {
-    const likely: SavedCollege[] = [];
+    const safety: SavedCollege[] = [];
     const match: SavedCollege[] = [];
     const reach: SavedCollege[] = [];
     savedColleges.forEach(s => {
-      const cat = s.college_data.fitCategory;
-      if (cat === "Likely") likely.push(s);
+      const cat = (s.college_data as any).fitCategory as string;
+      if (cat === "Safety" || cat === "Likely") safety.push(s);
       else if (cat === "Reach") reach.push(s);
       else match.push(s);
     });
-    return { likely, match, reach };
+    return { safety, match, reach };
   }, [savedColleges]);
 
   const discoverSuggestions = async () => {
@@ -762,8 +762,8 @@ const Dashboard = () => {
                     <Card className="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
                       <CardContent className="p-4 text-center">
                         <Shield className="h-5 w-5 text-emerald-600 mx-auto mb-1" />
-                        <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{savedByCategory.likely.length}</p>
-                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-500">Likely</p>
+                        <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{savedByCategory.safety.length}</p>
+                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-500">Safety</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-primary/5 border-primary/20">
@@ -784,7 +784,7 @@ const Dashboard = () => {
 
                   {/* Categorized sections */}
                   {([
-                    { label: "Likely Schools", items: savedByCategory.likely, icon: Shield, color: "text-emerald-600", borderColor: "border-l-emerald-500" },
+                    { label: "Safety Schools", items: savedByCategory.safety, icon: Shield, color: "text-emerald-600", borderColor: "border-l-emerald-500" },
                     { label: "Match Schools", items: savedByCategory.match, icon: Target, color: "text-primary", borderColor: "border-l-primary" },
                     { label: "Reach Schools", items: savedByCategory.reach, icon: TrendingUp, color: "text-orange-600", borderColor: "border-l-orange-500" },
                   ] as const).map(section => section.items.length > 0 && (

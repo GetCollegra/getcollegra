@@ -76,7 +76,7 @@ function generatePdf(recommendations: Recommendations, personalityName: string, 
       y += 24;
 
       const fitColors: Record<string, [number, number, number]> = {
-        Likely: [34, 197, 94],
+        Safety: [34, 197, 94],
         Match: [59, 130, 246],
         Reach: [249, 115, 22],
       };
