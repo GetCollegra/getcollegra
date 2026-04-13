@@ -448,13 +448,13 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
 
 /**
  * Compute fitScore (0–100) using weighted factors:
- * - Admission Realism (30%) — heavily penalizes academic mismatches
- * - Academic Major Fit (20%)
- * - Campus Culture & Personality (15%)
+ * - Admission Realism (25%) — heavily penalizes academic mismatches
+ * - Academic Major Fit (18%)
+ * - Campus Culture & Personality (12%)
  * - Cost & Affordability (15%)
- * - Distance From Home (10%)
- * - School Size (5%)
- * - Support Level (5%)
+ * - Distance From Home (8%)
+ * - School Size (7%)
+ * - Recognition & Desirability (15%) — favors well-known, strong-outcome schools
  *
  * Academic Realism Multiplier: further penalizes schools where student
  * profile is far below average admitted student.
@@ -463,25 +463,22 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   const a = adj || {};
   let score = 0;
 
-  // 1. Admission Realism (30 pts max) — the primary driver
+  // 1. Admission Realism (25 pts max)
   const admRate = r["latest.admissions.admission_rate.overall"];
   const gpa = parseStudentGPA(prefs);
-  const studentSAT = parseStudentSAT(prefs);
-  const studentACT = parseStudentACT(prefs);
-  let admissionScore = 15;
-  if (fitCategory === "Likely") admissionScore = 30;
-  else if (fitCategory === "Match") admissionScore = 22;
+  let admissionScore = 12;
+  if (fitCategory === "Safety") admissionScore = 25;
+  else if (fitCategory === "Match") admissionScore = 20;
   else if (fitCategory === "Reach") {
-    // Penalize more aggressively for very selective schools
     if (admRate != null && admRate < 0.15) admissionScore = 5;
     else if (admRate != null && admRate < 0.25) admissionScore = 8;
     else admissionScore = 12;
   }
   score += admissionScore + (a.admission || 0);
 
-  // 2. Academic Major Fit (20 pts max)
+  // 2. Academic Major Fit (18 pts max)
   const study = (prefs.areaOfStudy || "").toLowerCase();
-  let academicScore = 10; // default
+  let academicScore = 9;
   if (study && study !== "undecided") {
     let bestProgramPct = 0;
     for (const [keyword, field] of Object.entries(studyProgramMap)) {
@@ -490,34 +487,31 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
         if (pct > bestProgramPct) bestProgramPct = pct;
       }
     }
-    if (bestProgramPct > 0.15) academicScore = 20;
-    else if (bestProgramPct > 0.10) academicScore = 16;
-    else if (bestProgramPct > 0.05) academicScore = 12;
-    else if (bestProgramPct > 0.02) academicScore = 8;
-    else if (bestProgramPct > 0) academicScore = 5;
+    if (bestProgramPct > 0.15) academicScore = 18;
+    else if (bestProgramPct > 0.10) academicScore = 14;
+    else if (bestProgramPct > 0.05) academicScore = 10;
+    else if (bestProgramPct > 0.02) academicScore = 7;
+    else if (bestProgramPct > 0) academicScore = 4;
     else academicScore = 3;
   }
   score += academicScore + (a.academic || 0);
 
-  // 3. Campus Culture (15 pts max)
+  // 3. Campus Culture (12 pts max)
   const locale = r["school.locale"];
   const localeDesc = locale <= 13 ? "urban" : locale <= 23 ? "suburban" : locale <= 33 ? "town" : "rural";
   const prefLoc = (prefs.locationType || "").toLowerCase();
-  let cultureScore = 6; // baseline
-  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 14;
-  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 14;
-  else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 10;
-  else cultureScore = 3; // strong penalty for mismatched locale
+  let cultureScore = 5;
+  if (prefLoc && localeDesc.includes(prefLoc.split(/\s/)[0])) cultureScore = 12;
+  else if (prefLoc.includes("city") && localeDesc === "urban") cultureScore = 12;
+  else if (!prefLoc || prefLoc.includes("no preference")) cultureScore = 8;
+  else cultureScore = 2;
 
-  // Vibe bonus
   const vibe = (prefs.campusVibe || "").toLowerCase();
   const size = r["latest.student.size"] || 0;
-  if (vibe.includes("spirited") && size > 15000) cultureScore = Math.min(15, cultureScore + 2);
-  else if (vibe.includes("tight") && size < 5000) cultureScore = Math.min(15, cultureScore + 2);
-  else if (vibe.includes("chill")) cultureScore = Math.min(15, cultureScore + 1);
-  score += Math.min(15, cultureScore) + (a.culture || 0);
-
-  // (Academic Major Fit already computed above)
+  if (vibe.includes("spirited") && size > 15000) cultureScore = Math.min(12, cultureScore + 2);
+  else if (vibe.includes("tight") && size < 5000) cultureScore = Math.min(12, cultureScore + 2);
+  else if (vibe.includes("chill")) cultureScore = Math.min(12, cultureScore + 1);
+  score += Math.min(12, cultureScore) + (a.culture || 0);
 
   // 4. Cost & Affordability (15 pts max)
   const costPref = (prefs.maxCost || "").toLowerCase().replace(/[,$]/g, "");
@@ -537,56 +531,72 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   }
   score += costScore + (a.cost || 0);
 
-  // 5. Distance From Home (10 pts max)
+  // 5. Distance From Home (8 pts max)
   const distPref = (prefs.distanceFromHome || "").toLowerCase();
   const cityState = (prefs.cityState || "").toLowerCase();
   const schoolState = (r["school.state"] || "").toLowerCase();
-  let distScore = 5;
+  let distScore = 4;
   if (distPref.includes("anywhere") || distPref.includes("no preference")) {
-    distScore = 7;
+    distScore = 6;
   } else if (distPref.includes("close") || distPref.includes("1 hour") || distPref.includes("under 2")) {
-    if (cityState.includes(schoolState) || schoolState.length === 2 && cityState.includes(schoolState)) distScore = 10;
-    else distScore = 2;
+    if (cityState.includes(schoolState) || schoolState.length === 2 && cityState.includes(schoolState)) distScore = 8;
+    else distScore = 1;
   } else if (distPref.includes("2-4") || distPref.includes("few hours")) {
     const fips = getStateFips(cityState);
     const schoolFips = getStateFips(r["school.city"] + ", " + r["school.state"]);
     if (fips.length > 0 && schoolFips.length > 0) {
       const nearby = getNearbyStates(fips[0], distPref);
-      distScore = nearby.includes(schoolFips[0]) ? 8 : 3;
+      distScore = nearby.includes(schoolFips[0]) ? 7 : 2;
     }
   }
   score += distScore + (a.distance || 0);
 
-  // 6. School Size (5 pts max)
+  // 6. School Size (7 pts max)
   const sizePref = (prefs.campusSize || "").toLowerCase();
   const studentSize = Number(r["latest.student.size"] || 0);
   let sizeScore = 2;
-  if (!sizePref || sizePref.includes("no preference")) sizeScore = 3;
-  else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 5;
-  else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 5;
-  else if ((sizePref.includes("very large") || sizePref.includes("30,000") || sizePref.includes("30000")) && studentSize > 30000) sizeScore = 5;
-  else if (sizePref.includes("very large") || sizePref.includes("30,000") || sizePref.includes("30000")) sizeScore = 3; // very large pref but large school — partial match
-  else if (sizePref.includes("large") && studentSize > 15000 && studentSize <= 30000) sizeScore = 5;
-  else if (sizePref.includes("large") && studentSize > 30000) sizeScore = 3; // large pref but very large school — partial match
+  if (!sizePref || sizePref.includes("no preference")) sizeScore = 4;
+  else if (sizePref.includes("small") && studentSize <= 5000) sizeScore = 7;
+  else if (sizePref.includes("medium") && studentSize > 5000 && studentSize <= 15000) sizeScore = 7;
+  else if ((sizePref.includes("very large") || sizePref.includes("30,000") || sizePref.includes("30000")) && studentSize > 30000) sizeScore = 7;
+  else if (sizePref.includes("very large") && studentSize > 15000) sizeScore = 4;
+  else if (sizePref.includes("large") && studentSize > 15000 && studentSize <= 30000) sizeScore = 7;
+  else if (sizePref.includes("large") && studentSize > 30000) sizeScore = 4;
+  // Adjacent-size partial credit
+  else if (sizePref.includes("small") && studentSize <= 8000) sizeScore = 4;
+  else if (sizePref.includes("medium") && (studentSize <= 20000 || studentSize >= 3000)) sizeScore = 4;
   else sizeScore = 1;
   score += sizeScore + (a.size || 0);
 
-  // 7. Support & Recognition (5 pts max)
-  // Favor well-known, established institutions over obscure small schools
+  // 7. Recognition & Desirability (15 pts max)
+  // Strongly favors well-known schools with good outcomes
   const gradRate = r["latest.completion.rate_suppressed.overall"];
+  const earnings = r["latest.earnings.10_yrs_after_entry.median"];
   const pellRate = r["latest.aid.pell_grant_rate"];
-  let supportScore = 1;
-  if (gradRate != null && gradRate > 0.70) supportScore += 1;
-  else if (gradRate != null && gradRate > 0.50) supportScore += 1;
-  if (pellRate != null && pellRate > 0.30) supportScore += 1;
-  // Recognition bonus: larger schools are more recognizable
-  if (studentSize > 20000) supportScore += 2;
-  else if (studentSize > 10000) supportScore += 1;
-  score += Math.min(5, supportScore) + (a.support || 0);
+  let recognitionScore = 3; // baseline
+
+  // Student body size → recognition proxy (bigger = more well-known generally)
+  if (studentSize > 30000) recognitionScore += 5;
+  else if (studentSize > 20000) recognitionScore += 4;
+  else if (studentSize > 10000) recognitionScore += 3;
+  else if (studentSize > 5000) recognitionScore += 2;
+  else if (studentSize > 3000) recognitionScore += 1;
+
+  // Graduation rate → quality signal
+  if (gradRate != null && gradRate > 0.75) recognitionScore += 3;
+  else if (gradRate != null && gradRate > 0.60) recognitionScore += 2;
+  else if (gradRate != null && gradRate > 0.45) recognitionScore += 1;
+
+  // Earnings → desirability signal
+  if (earnings != null && earnings > 60000) recognitionScore += 2;
+  else if (earnings != null && earnings > 45000) recognitionScore += 1;
+
+  // Pell rate bonus (accessible / diverse)
+  if (pellRate != null && pellRate > 0.30) recognitionScore += 1;
+
+  score += Math.min(15, recognitionScore) + (a.support || 0);
 
   // ── Academic Realism Multiplier ──
-  // Aggressively penalize schools where the student's academic profile is
-  // significantly below the average admitted student.
   const realismMultiplier = computeRealismMultiplier(r, prefs, fitCategory);
   score = Math.round(score * realismMultiplier);
 
