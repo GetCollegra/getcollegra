@@ -61,7 +61,7 @@ export type College = {
   graduationRate: string;       // Premium
   avgStartingSalary: string;    // Premium
   fitScore: number;
-  fitCategory: "Likely" | "Match" | "Reach";
+  fitCategory: "Safety" | "Match" | "Reach";
   whyFit: string;
   prosForStudent: string[];
   consForStudent: string[];
