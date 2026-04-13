@@ -124,11 +124,8 @@ export default function CollegeLifePanel({ college }: Props) {
   const [data, setData] = useState<CollegeLifeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState("photos");
+  const [activeSection, setActiveSection] = useState("weather");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [photos, setPhotos] = useState<UnsplashPhoto[]>([]);
-  const [photosLoading, setPhotosLoading] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<UnsplashPhoto | null>(null);
 
   useEffect(() => {
     let cancelled = false;
