@@ -1256,6 +1256,35 @@ const QuizResults = () => {
               </div>
             </section>
 
+            {/* Progress Indicator */}
+            <div className="container px-4 py-4 sm:py-6">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="max-w-5xl mx-auto"
+              >
+                <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
+                  <span className="text-muted-foreground font-medium">Your college plan progress</span>
+                  <span className="text-primary font-bold">{progressPercent}% complete</span>
+                </div>
+                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${progressPercent}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+                    className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                  />
+                </div>
+                <p className="text-muted-foreground text-[10px] sm:text-xs mt-1.5">
+                  {savedColleges.size === 0 ? "Save your top schools to continue building your plan" : 
+                   savedColleges.size < 3 ? "Save a few more schools to unlock deeper comparisons" :
+                   "Unlock Premium to complete your full college plan"}
+                </p>
+              </motion.div>
+            </div>
+
             {/* College Matches Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-background">
               <div className="container px-4">
@@ -1273,12 +1302,26 @@ const QuizResults = () => {
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-semibold mb-3 sm:mb-4"
                   >
                     <Award className="w-4 h-4" />
-                    Top 5 Matches
+                    Top {recommendations.colleges.length} Matches
                   </motion.div>
                   <h2 className="font-display text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 sm:mb-4">
                     Colleges picked for <span className="text-gradient">you</span>
                   </h2>
-                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-2">
+
+                  {/* Personalization Summary */}
+                  {personalizationSummary && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 }}
+                      className="text-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-2 mb-2"
+                    >
+                      Based on your preferences for <span className="font-semibold text-primary">{personalizationSummary}</span>, these are your best matches.
+                    </motion.p>
+                  )}
+
+                  <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto px-2">
                     Each school is scored based on how well it aligns with your unique goals, budget, and preferences.
                   </p>
                 </motion.div>
@@ -1310,9 +1353,36 @@ const QuizResults = () => {
                 </AnimatePresence>
 
                 <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
-                  {recommendations.colleges.map((college, i) => (
-                    <CollegeCard key={college.name} college={college} index={i} />
+                  {/* Top 3 fully visible */}
+                  {recommendations.colleges.slice(0, 3).map((college, i) => (
+                    <CollegeCard key={college.name} college={college} index={i} onSave={handleSaveCollege} isSaved={savedColleges.has(college.name)} />
                   ))}
+
+                  {/* Locked cards for colleges 4+ */}
+                  {recommendations.colleges.length > 3 && (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className="text-center py-4"
+                      >
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-xs sm:text-sm font-semibold">
+                          <Lock className="w-3.5 h-3.5" />
+                          +{recommendations.colleges.length - 3} more personalized matches waiting
+                        </div>
+                      </motion.div>
+
+                      {recommendations.colleges.slice(3).map((college, i) => (
+                        <LockedCollegeCard
+                          key={college.name}
+                          college={college}
+                          index={i + 3}
+                          onUnlock={() => { trackClick("Unlock Locked Card", "QuizResults"); startCheckout(toast); }}
+                        />
+                      ))}
+                    </>
+                  )}
 
                   {/* Additional discovered colleges */}
                   {additionalColleges.length > 0 && (
@@ -1332,7 +1402,7 @@ const QuizResults = () => {
                         </h3>
                       </motion.div>
                       {additionalColleges.map((college, i) => (
-                        <CollegeCard key={college.name} college={college} index={i + recommendations.colleges.length} />
+                        <CollegeCard key={college.name} college={college} index={i + recommendations.colleges.length} onSave={handleSaveCollege} isSaved={savedColleges.has(college.name)} />
                       ))}
                     </>
                   )}
