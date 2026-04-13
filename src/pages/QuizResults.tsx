@@ -511,6 +511,7 @@ const QuizResults = () => {
   const [dbSurveyContext, setDbSurveyContext] = useState<Record<string, string>>({});
   const [aiEnhancing, setAiEnhancing] = useState(false);
   const aiEnhancementTriggered = useRef(false);
+  const [savedColleges, setSavedColleges] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { user, loading: authLoading, isSubscribed } = useAuth();
 
