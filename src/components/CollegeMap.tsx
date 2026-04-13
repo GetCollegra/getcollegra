@@ -167,7 +167,7 @@ export default function CollegeMap({
   onCollegeSelect,
   selectedCollege,
 }: CollegeMapProps) {
-  const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Likely", "Safety", "Match", "Reach"]));
+  const [filterCategories, setFilterCategories] = useState<Set<string>>(new Set(["Safety", "Match", "Reach"]));
   const [distanceFilter, setDistanceFilter] = useState<string>("all");
 
   const homePos = useMemo(() => {

@@ -44,7 +44,7 @@ class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
 const fitCategoryConfig: Record<string, { color: string; bg: string }> = {
   Reach: { color: "text-orange-600", bg: "bg-orange-50" },
   Match: { color: "text-primary", bg: "bg-primary/5" },
-  Likely: { color: "text-emerald-600", bg: "bg-emerald-50" },
+  Likely: { color: "text-emerald-600", bg: "bg-emerald-50" }, // legacy support
   Safety: { color: "text-emerald-600", bg: "bg-emerald-50" },
 };
 
