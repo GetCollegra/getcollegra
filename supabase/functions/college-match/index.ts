@@ -656,26 +656,33 @@ function generateRealismNote(fitCategory: string, fitScore: number, r: any, pref
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
   const studentACT = parseStudentACT(prefs);
+  const schoolName = r["school.name"] || "This school";
+  const admPct = admRate != null ? `${(admRate * 100).toFixed(0)}%` : null;
 
-  if (fitCategory === "Likely") {
-    if (fitScore >= 80) return "Strong fit — you're well-positioned for admission here.";
-    return "You have a strong chance of admission based on your academic profile.";
+  if (fitCategory === "Safety") {
+    if (studentSAT || studentACT) {
+      const scoreDesc = studentSAT ? `SAT of ${studentSAT}` : `ACT of ${studentACT}`;
+      return `Safety — Your ${scoreDesc} and ${gpa.toFixed(1)} GPA put you above the typical admitted student here. You have a very strong chance of admission.`;
+    }
+    return `Safety — With a ${gpa.toFixed(1)} GPA${admPct ? ` and a ${admPct} acceptance rate` : ""}, you're well above the bar for admission here.`;
   }
 
   if (fitCategory === "Reach") {
     const realismMult = computeRealismMultiplier(r, prefs, fitCategory);
-    if (realismMult < 0.7 && fitScore > 30) {
-      return "Matches your preferences but is a significant academic reach. Consider as a dream school.";
-    }
     if (admRate != null && admRate < 0.15) {
-      return `Highly selective (${(admRate * 100).toFixed(0)}% acceptance). This is competitive for almost everyone — apply with strong essays and extracurriculars.`;
+      return `Reach — ${schoolName} is highly selective at ${admPct} acceptance. This is competitive for almost everyone — apply with strong essays and extracurriculars.`;
     }
-    return "This is a reach — your academic profile is below the typical admitted student range.";
+    if (realismMult < 0.7) {
+      return `Reach — Your academic profile is below the typical admitted student. This is aspirational but worth pursuing if ${schoolName} excites you.`;
+    }
+    return `Reach — ${admPct ? `With a ${admPct} acceptance rate, this` : "This"} is a stretch for your profile, but still possible with a strong application.`;
   }
 
   // Match
-  if (fitScore >= 75) return "Strong alignment between your preferences and academic profile.";
-  return "Solid match — your profile is competitive and you have a realistic shot here.";
+  if (fitScore >= 75) {
+    return `Match — Strong alignment between your profile and ${schoolName}. Your academics are competitive and this is a realistic, exciting option.`;
+  }
+  return `Match — Your profile is within the competitive range here. You have a realistic shot at admission and this school fits your preferences well.`;
 }
 
 function getTopPrograms(r: any): string[] {
