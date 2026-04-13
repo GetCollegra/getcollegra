@@ -343,6 +343,13 @@ const Dashboard = () => {
   const removeCollege = async (id: string) => {
     await supabase.from("saved_colleges").delete().eq("id", id);
     setSavedColleges(prev => prev.filter(s => s.id !== id));
+    // Clean up compareIds so stale IDs don't linger
+    setCompareIds(prev => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     toast({ title: "Removed from saved list" });
   };
 
