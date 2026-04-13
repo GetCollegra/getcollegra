@@ -610,7 +610,7 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
  * - Far below with very low acceptance → 0.3
  */
 function computeRealismMultiplier(r: any, prefs: Record<string, any>, fitCategory: string): number {
-  if (fitCategory === "Likely") return 1.0; // no penalty for likely schools
+  if (fitCategory === "Safety") return 1.0; // no penalty for safety schools
 
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
