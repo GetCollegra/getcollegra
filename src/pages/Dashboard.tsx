@@ -357,7 +357,7 @@ const Dashboard = () => {
     const match: SavedCollege[] = [];
     const reach: SavedCollege[] = [];
     savedColleges.forEach(s => {
-      const cat = s.college_data.fitCategory;
+      const cat = (s.college_data as any).fitCategory as string;
       if (cat === "Safety" || cat === "Likely") safety.push(s);
       else if (cat === "Reach") reach.push(s);
       else match.push(s);
