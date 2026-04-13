@@ -161,7 +161,7 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
   else if (size.includes("medium")) p.set("latest.student.size__range", "5000..15000");
   else if (size.includes("very large") || size.includes("30,000")) p.set("latest.student.size__range", "30000..");
   else if (size.includes("large")) p.set("latest.student.size__range", "15000..30000");
-  else p.set("latest.student.size__range", "2000.."); // default: exclude very small unknown schools
+  else p.set("latest.student.size__range", "3000.."); // default: exclude small obscure schools
 
   const loc = (prefs.locationType || "").toLowerCase();
   if (loc.includes("suburban")) p.set("school.locale__range", "21..23");
