@@ -936,7 +936,73 @@ const QuizResults = () => {
     };
   }, [authLoading, requestedMatchId, routerState, surveyContext, user]);
 
-  // Results are now persisted by the edge function — no client-side save needed
+  // Load saved colleges on mount
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("saved_colleges").select("college_name").eq("user_id", user.id).then(({ data }) => {
+      if (data) setSavedColleges(new Set(data.map((r: any) => r.college_name)));
+    });
+  }, [user]);
+
+  const handleSaveCollege = useCallback(async (collegeName: string) => {
+    if (!user) {
+      toast({ title: "Sign in to save schools", description: "Create an account to save and compare colleges." });
+      return;
+    }
+    const college = recommendations?.colleges?.find(c => c.name === collegeName)
+      || additionalColleges.find(c => c.name === collegeName);
+    if (!college) return;
+
+    if (savedColleges.has(collegeName)) {
+      // Already saved
+      toast({ title: "Already saved", description: `${collegeName} is in your dashboard.` });
+      return;
+    }
+
+    const { error: saveErr } = await supabase.from("saved_colleges").insert({
+      user_id: user.id,
+      college_name: collegeName,
+      college_data: college as any,
+      status: "Considering",
+    });
+
+    if (!saveErr) {
+      setSavedColleges(prev => new Set(prev).add(collegeName));
+      toast({ title: "School saved! ✨", description: `${collegeName} added to your dashboard.` });
+      capture("college_saved_from_results", { college: collegeName });
+    }
+  }, [user, recommendations, additionalColleges, savedColleges, toast]);
+
+  // Derive personalization summary from survey context
+  const personalizationSummary = useMemo(() => {
+    const parts: string[] = [];
+    const pick = (...keys: string[]) => {
+      for (const k of keys) {
+        const v = surveyContext[k];
+        if (v && v.trim() && !["no preference", "undecided", "none"].includes(v.trim().toLowerCase())) return v.trim();
+      }
+      return "";
+    };
+    const major = pick("areaOfStudy", "area_of_study");
+    const size = pick("campusSize", "campus_size");
+    const cost = pick("maxCost", "max_cost");
+    const location = pick("locationType", "location_type");
+    if (major) parts.push(major);
+    if (size) parts.push(size.toLowerCase() + " campus");
+    if (cost) parts.push(cost + " budget");
+    if (location) parts.push(location.toLowerCase() + " setting");
+    return parts.length > 0 ? parts.join(", ") : "";
+  }, [surveyContext]);
+
+  // Progress calculation
+  const progressPercent = useMemo(() => {
+    let progress = 30; // Base: took quiz
+    if (recommendations) progress += 20; // Got results
+    if (savedColleges.size > 0) progress += 20; // Saved at least one
+    if (savedColleges.size >= 3) progress += 10; // Saved multiple
+    // Max without premium is ~80%
+    return Math.min(progress, 80);
+  }, [recommendations, savedColleges]);
 
   const allCollegeNames = useMemo(() => {
     const names = recommendations?.colleges?.map(c => c.name) ?? [];
