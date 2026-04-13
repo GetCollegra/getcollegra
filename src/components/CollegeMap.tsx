@@ -202,8 +202,12 @@ export default function CollegeMap({
     all.forEach((college) => {
       const pos = geocodeLocation(college.location);
       if (!pos) return;
+      // Normalize legacy "Likely" category to "Safety"
+      const normalizedCollege = college.fitCategory === "Likely"
+        ? { ...college, fitCategory: "Safety" as College["fitCategory"] }
+        : college;
       const distance = homePos ? Math.round(haversineDistance(homePos, pos)) : null;
-      result.push({ pos, college, distance });
+      result.push({ pos, college: normalizedCollege, distance });
     });
     return result;
   }, [matchedColleges, savedColleges, homePos]);
