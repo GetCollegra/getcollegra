@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link, useSearchParams, useLocation } from "react-router-dom";
 import {
   CheckCircle2, MapPin, DollarSign, GraduationCap, Users, Loader2,
   Star, ArrowRight, TrendingUp, Sparkles,
-  BarChart3, Target, Shield, Zap, Award, BookOpen, Globe, Lock, ChevronDown
+  BarChart3, Target, Shield, Zap, Award, BookOpen, Globe, Lock, ChevronDown,
+  Heart, Bookmark
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -134,7 +135,75 @@ const setStoredMatchId = (matchId: string) => {
   }
 };
 
-const CollegeCard = ({ college, index }: { college: College; index: number }) => {
+const LockedCollegeCard = ({ college, index, onUnlock }: { college: College; index: number; onUnlock: () => void }) => {
+  const catConfig = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
+  const CatIcon = catConfig.icon;
+
+  return (
+    <motion.div
+      custom={index}
+      variants={fadeInUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-40px" }}
+      className="group relative"
+    >
+      <div className="relative bg-card border rounded-2xl lg:rounded-3xl overflow-hidden shadow-soft border-border">
+        {/* Rank badge */}
+        <div className={`absolute top-0 left-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${catConfig.gradient} flex items-end justify-end rounded-br-2xl z-10`}>
+          <span className="text-white font-bold text-base sm:text-lg mr-2 mb-0.5 sm:mr-2.5 sm:mb-1">{index + 1}</span>
+        </div>
+
+        {/* Visible: name + basic info */}
+        <div className="p-5 sm:p-6 md:p-8 pl-14 sm:pl-16 md:pl-20">
+          <div className="flex flex-col gap-3 mb-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-lg sm:text-xl md:text-2xl font-bold text-foreground mb-1.5 leading-tight">{college.name}</h3>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-xs sm:text-sm">
+                <span className="flex items-center gap-1"><MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> {college.location}</span>
+                <span className="hidden sm:inline w-1 h-1 rounded-full bg-border" />
+                <span className="flex items-center gap-1"><Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> {college.setting}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold ${catConfig.bg} ${catConfig.color} ${catConfig.border} border`}>
+                <CatIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                {college.fitCategory}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Blurred overlay */}
+        <div className="relative">
+          <div className="p-5 sm:p-6 md:p-8 pt-0 blur-[6px] opacity-40 select-none pointer-events-none" aria-hidden="true">
+            <p className="text-foreground text-sm sm:text-base leading-relaxed mb-3">{college.whyFit}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-muted/30 rounded-xl h-16" />
+              <div className="p-3 bg-muted/30 rounded-xl h-16" />
+            </div>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent flex items-center justify-center">
+            <div className="text-center px-4">
+              <Lock className="w-5 h-5 text-primary mx-auto mb-2" />
+              <p className="text-foreground text-sm font-semibold mb-1">Full match details locked</p>
+              <p className="text-muted-foreground text-xs mb-3">See why this school fits you, stats, and insights</p>
+              <Button
+                size="sm"
+                onClick={onUnlock}
+                className="rounded-full px-5 gap-1.5 bg-gradient-to-r from-primary to-accent text-white text-xs font-semibold"
+              >
+                Unlock All Matches <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const CollegeCard = ({ college, index, onSave, isSaved }: { college: College; index: number; onSave?: (name: string) => void; isSaved?: boolean }) => {
   const [expanded, setExpanded] = useState(false);
   const [challengesExpanded, setChallengesExpanded] = useState(false);
   const { toast } = useToast();
@@ -193,13 +262,16 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
                 className={`flex items-center gap-1 sm:gap-1.5 font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm bg-card border-2 border-border ring-4 ${fitScoreRing(college.fitScore)}`}
               >
                 <Star className={`w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current ${fitScoreColor(college.fitScore)}`} />
-                <span className={fitScoreColor(college.fitScore)}>{college.fitScore}%</span>
+                <span className={fitScoreColor(college.fitScore)}>{college.fitScore}% fit</span>
               </motion.div>
             </div>
           </div>
 
-          {/* Why Fit */}
-          <p className="text-foreground text-sm sm:text-base leading-relaxed mb-2">{college.whyFit}</p>
+          {/* Why Fit - personalized match reason */}
+          <div className="flex items-start gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-primary/5 border border-primary/10 rounded-xl mb-3">
+            <Target className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+            <p className="text-foreground text-xs sm:text-sm"><span className="font-semibold">Why this fits you:</span> {college.whyFit}</p>
+          </div>
 
           {/* Realism Note */}
           {college.realismNote && (
@@ -311,6 +383,25 @@ const CollegeCard = ({ college, index }: { college: College; index: number }) =>
               </AnimatePresence>
             </div>
           )}
+
+          {/* Save & Compare actions */}
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+            <Button
+              size="sm"
+              variant={isSaved ? "secondary" : "outline"}
+              className="rounded-full px-4 gap-1.5 text-xs"
+              onClick={() => onSave?.(college.name)}
+            >
+              {isSaved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Star className="w-3.5 h-3.5" />}
+              {isSaved ? "Saved" : "Save School"}
+            </Button>
+            <Link to="/dashboard">
+              <Button size="sm" variant="ghost" className="rounded-full px-4 gap-1.5 text-xs text-muted-foreground">
+                <BarChart3 className="w-3.5 h-3.5" />
+                Compare
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid - responsive */}
@@ -420,6 +511,7 @@ const QuizResults = () => {
   const [dbSurveyContext, setDbSurveyContext] = useState<Record<string, string>>({});
   const [aiEnhancing, setAiEnhancing] = useState(false);
   const aiEnhancementTriggered = useRef(false);
+  const [savedColleges, setSavedColleges] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { user, loading: authLoading, isSubscribed } = useAuth();
 
@@ -844,7 +936,73 @@ const QuizResults = () => {
     };
   }, [authLoading, requestedMatchId, routerState, surveyContext, user]);
 
-  // Results are now persisted by the edge function — no client-side save needed
+  // Load saved colleges on mount
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("saved_colleges").select("college_name").eq("user_id", user.id).then(({ data }) => {
+      if (data) setSavedColleges(new Set(data.map((r: any) => r.college_name)));
+    });
+  }, [user]);
+
+  const handleSaveCollege = useCallback(async (collegeName: string) => {
+    if (!user) {
+      toast({ title: "Sign in to save schools", description: "Create an account to save and compare colleges." });
+      return;
+    }
+    const college = recommendations?.colleges?.find(c => c.name === collegeName)
+      || additionalColleges.find(c => c.name === collegeName);
+    if (!college) return;
+
+    if (savedColleges.has(collegeName)) {
+      // Already saved
+      toast({ title: "Already saved", description: `${collegeName} is in your dashboard.` });
+      return;
+    }
+
+    const { error: saveErr } = await supabase.from("saved_colleges").insert({
+      user_id: user.id,
+      college_name: collegeName,
+      college_data: college as any,
+      status: "Considering",
+    });
+
+    if (!saveErr) {
+      setSavedColleges(prev => new Set(prev).add(collegeName));
+      toast({ title: "School saved! ✨", description: `${collegeName} added to your dashboard.` });
+      capture("college_saved_from_results", { college: collegeName });
+    }
+  }, [user, recommendations, additionalColleges, savedColleges, toast]);
+
+  // Derive personalization summary from survey context
+  const personalizationSummary = useMemo(() => {
+    const parts: string[] = [];
+    const pick = (...keys: string[]) => {
+      for (const k of keys) {
+        const v = surveyContext[k];
+        if (v && v.trim() && !["no preference", "undecided", "none"].includes(v.trim().toLowerCase())) return v.trim();
+      }
+      return "";
+    };
+    const major = pick("areaOfStudy", "area_of_study");
+    const size = pick("campusSize", "campus_size");
+    const cost = pick("maxCost", "max_cost");
+    const location = pick("locationType", "location_type");
+    if (major) parts.push(major);
+    if (size) parts.push(size.toLowerCase() + " campus");
+    if (cost) parts.push(cost + " budget");
+    if (location) parts.push(location.toLowerCase() + " setting");
+    return parts.length > 0 ? parts.join(", ") : "";
+  }, [surveyContext]);
+
+  // Progress calculation
+  const progressPercent = useMemo(() => {
+    let progress = 30; // Base: took quiz
+    if (recommendations) progress += 20; // Got results
+    if (savedColleges.size > 0) progress += 20; // Saved at least one
+    if (savedColleges.size >= 3) progress += 10; // Saved multiple
+    // Max without premium is ~80%
+    return Math.min(progress, 80);
+  }, [recommendations, savedColleges]);
 
   const allCollegeNames = useMemo(() => {
     const names = recommendations?.colleges?.map(c => c.name) ?? [];
@@ -1098,6 +1256,35 @@ const QuizResults = () => {
               </div>
             </section>
 
+            {/* Progress Indicator */}
+            <div className="container px-4 py-4 sm:py-6">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="max-w-5xl mx-auto"
+              >
+                <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
+                  <span className="text-muted-foreground font-medium">Your college plan progress</span>
+                  <span className="text-primary font-bold">{progressPercent}% complete</span>
+                </div>
+                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${progressPercent}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+                    className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                  />
+                </div>
+                <p className="text-muted-foreground text-[10px] sm:text-xs mt-1.5">
+                  {savedColleges.size === 0 ? "Save your top schools to continue building your plan" : 
+                   savedColleges.size < 3 ? "Save a few more schools to unlock deeper comparisons" :
+                   "Unlock Premium to complete your full college plan"}
+                </p>
+              </motion.div>
+            </div>
+
             {/* College Matches Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-background">
               <div className="container px-4">
@@ -1115,12 +1302,26 @@ const QuizResults = () => {
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-semibold mb-3 sm:mb-4"
                   >
                     <Award className="w-4 h-4" />
-                    Top 5 Matches
+                    Top {recommendations.colleges.length} Matches
                   </motion.div>
                   <h2 className="font-display text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 sm:mb-4">
                     Colleges picked for <span className="text-gradient">you</span>
                   </h2>
-                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-2">
+
+                  {/* Personalization Summary */}
+                  {personalizationSummary && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 }}
+                      className="text-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-2 mb-2"
+                    >
+                      Based on your preferences for <span className="font-semibold text-primary">{personalizationSummary}</span>, these are your best matches.
+                    </motion.p>
+                  )}
+
+                  <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto px-2">
                     Each school is scored based on how well it aligns with your unique goals, budget, and preferences.
                   </p>
                 </motion.div>
@@ -1152,9 +1353,36 @@ const QuizResults = () => {
                 </AnimatePresence>
 
                 <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
-                  {recommendations.colleges.map((college, i) => (
-                    <CollegeCard key={college.name} college={college} index={i} />
+                  {/* Top 3 fully visible */}
+                  {recommendations.colleges.slice(0, 3).map((college, i) => (
+                    <CollegeCard key={college.name} college={college} index={i} onSave={handleSaveCollege} isSaved={savedColleges.has(college.name)} />
                   ))}
+
+                  {/* Locked cards for colleges 4+ */}
+                  {recommendations.colleges.length > 3 && (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className="text-center py-4"
+                      >
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-xs sm:text-sm font-semibold">
+                          <Lock className="w-3.5 h-3.5" />
+                          +{recommendations.colleges.length - 3} more personalized matches waiting
+                        </div>
+                      </motion.div>
+
+                      {recommendations.colleges.slice(3).map((college, i) => (
+                        <LockedCollegeCard
+                          key={college.name}
+                          college={college}
+                          index={i + 3}
+                          onUnlock={() => { trackClick("Unlock Locked Card", "QuizResults"); startCheckout(toast); }}
+                        />
+                      ))}
+                    </>
+                  )}
 
                   {/* Additional discovered colleges */}
                   {additionalColleges.length > 0 && (
@@ -1174,7 +1402,7 @@ const QuizResults = () => {
                         </h3>
                       </motion.div>
                       {additionalColleges.map((college, i) => (
-                        <CollegeCard key={college.name} college={college} index={i + recommendations.colleges.length} />
+                        <CollegeCard key={college.name} college={college} index={i + recommendations.colleges.length} onSave={handleSaveCollege} isSaved={savedColleges.has(college.name)} />
                       ))}
                     </>
                   )}
@@ -1308,7 +1536,51 @@ const QuizResults = () => {
             </section>
 
 
-            {/* CTA Section */}
+            {/* Next Steps Prompt */}
+            <section className="py-10 sm:py-14 bg-muted/10">
+              <div className="container px-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <h3 className="font-display text-lg sm:text-xl font-bold text-foreground text-center mb-5">
+                    What should you do next?
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Bookmark className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-foreground text-sm font-semibold">Save top schools</p>
+                        <p className="text-muted-foreground text-xs">Build your shortlist</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                        <BarChart3 className="w-4 h-4 text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-foreground text-sm font-semibold">Compare favorites</p>
+                        <p className="text-muted-foreground text-xs">See them side-by-side</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Lock className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-foreground text-sm font-semibold">Unlock full plan</p>
+                        <p className="text-muted-foreground text-xs">Get complete insights</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </section>
+
             <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-hero" />
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(210_90%_70%/0.25),transparent_50%)]" />
