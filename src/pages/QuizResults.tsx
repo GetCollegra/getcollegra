@@ -1536,7 +1536,51 @@ const QuizResults = () => {
             </section>
 
 
-            {/* CTA Section */}
+            {/* Next Steps Prompt */}
+            <section className="py-10 sm:py-14 bg-muted/10">
+              <div className="container px-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <h3 className="font-display text-lg sm:text-xl font-bold text-foreground text-center mb-5">
+                    What should you do next?
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Bookmark className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-foreground text-sm font-semibold">Save top schools</p>
+                        <p className="text-muted-foreground text-xs">Build your shortlist</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                        <BarChart3 className="w-4 h-4 text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-foreground text-sm font-semibold">Compare favorites</p>
+                        <p className="text-muted-foreground text-xs">See them side-by-side</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Lock className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-foreground text-sm font-semibold">Unlock full plan</p>
+                        <p className="text-muted-foreground text-xs">Get complete insights</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </section>
+
             <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-hero" />
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(210_90%_70%/0.25),transparent_50%)]" />
