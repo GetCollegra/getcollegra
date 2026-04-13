@@ -152,34 +152,6 @@ export default function CollegeLifePanel({ college }: Props) {
     return () => { cancelled = true; };
   }, [college.name, college.location]);
 
-  // Fetch real campus photos from Unsplash
-  useEffect(() => {
-    if (!data) return;
-    let cancelled = false;
-    setPhotosLoading(true);
-
-    (async () => {
-      try {
-        const { data: result, error: fnError } = await supabase.functions.invoke("campus-photos", {
-          body: {
-            collegeName: college.name,
-            collegeLocation: college.location,
-            searchTerms: data.campusPhotos?.searchTerms || [],
-          },
-        });
-        if (cancelled) return;
-        if (!fnError && result?.photos) {
-          setPhotos(result.photos);
-        }
-      } catch (err) {
-        console.error("Failed to load campus photos:", err);
-      } finally {
-        if (!cancelled) setPhotosLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [college.name, data]);
 
   if (loading) {
     return (
