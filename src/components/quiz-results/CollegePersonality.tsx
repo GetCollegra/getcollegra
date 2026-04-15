@@ -4,6 +4,7 @@ import { Sparkles, Share2, Copy, Check, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { College, Recommendations } from "@/types/college";
+import { generateCollegraReport } from "@/lib/generateCollegraReport";
 
 const PERSONALITIES = [
   {
@@ -277,18 +278,15 @@ const CollegePersonality = ({ surveyContext, recommendations, firstName }: Colle
     } catch { toast({ title: "Could not copy", variant: "destructive" }); }
   };
   const handleDownload = () => {
-    const lines = [
-      `🎓 Collegra College Personality Results`, ``,
-      firstName ? `Student: ${firstName}` : "", `Personality: ${personality.name}`, ``,
-      `Top College Matches:`,
-      ...colleges.slice(0, 5).map((c, i) => `  ${i + 1}. ${c.name} — ${c.fitScore}% fit (${c.fitCategory})`),
-      ``, `Take the quiz: getcollegra.lovable.app`,
-    ].filter(Boolean);
-    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "collegra-results.txt"; a.click();
-    URL.revokeObjectURL(url);
-    toast({ title: "Downloaded!", description: "Your results card has been saved." });
+    generateCollegraReport(
+      recommendations,
+      personality.name,
+      personality.emoji,
+      personality.description,
+      traits.map(t => ({ label: t.label, value: t.value })),
+      firstName
+    );
+    toast({ title: "Downloading PDF!", description: "Your Collegra personality report is being generated." });
   };
 
   return (
