@@ -6,7 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const UNSPLASH_KEY = "0RFOIUa03s7zce9GGNz3G-5HP17u0kyybFzk2WQlR0k";
+const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY");
+if (!UNSPLASH_KEY) {
+  console.error("UNSPLASH_ACCESS_KEY secret is not configured");
+}
 
 // Well-known abbreviations for US colleges
 const knownAbbreviations: Record<string, string[]> = {
