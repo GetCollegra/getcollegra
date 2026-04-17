@@ -126,6 +126,24 @@ const CollegeDetailPage = () => {
     load();
   }, [user, collegeName]);
 
+  // ── Track view + dwell time ──
+  useEffect(() => {
+    if (!user || !collegeName || loading) return;
+    trackCollegeAction(collegeName, "view");
+    const startedAt = Date.now();
+    return () => {
+      trackCollegeDwell(collegeName, Date.now() - startedAt);
+    };
+  }, [user, collegeName, loading]);
+
+  // ── Track tab clicks ──
+  const handleTabChange = (next: string) => {
+    setActiveTab(next);
+    if (!collegeName) return;
+    if (next === "map") trackCollegeAction(collegeName, "click_map");
+    else if (next === "college-life") trackCollegeAction(collegeName, "click_life");
+  };
+
   const saveCollege = async () => {
     if (!user || !college) return;
     const { data, error } = await supabase
@@ -138,6 +156,7 @@ const CollegeDetailPage = () => {
     } else if (data) {
       setIsSaved(true);
       setSavedId(data.id);
+      trackCollegeAction(college.name, "click_save");
       toast({ title: "Saved!", description: `${college.name} added to your list.` });
     }
   };
