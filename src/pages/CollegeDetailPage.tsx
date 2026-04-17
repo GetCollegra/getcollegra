@@ -232,7 +232,7 @@ const CollegeDetailPage = () => {
         </motion.div>
 
         {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-3 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl mb-6">
             <TabsTrigger value="overview" className="gap-1.5 text-sm rounded-lg data-[state=active]:shadow-soft">
               <Sparkles className="h-4 w-4" /> Overview
@@ -386,7 +386,7 @@ const CollegeDetailPage = () => {
               {/* Campus Neighborhood */}
               <div>
                 {!showNeighborhood ? (
-                  <Button variant="outline" className="w-full gap-2" onClick={() => setShowNeighborhood(true)}>
+                  <Button variant="outline" className="w-full gap-2" onClick={() => { setShowNeighborhood(true); trackCollegeAction(college.name, "click_neighborhood"); }}>
                     <MapPin className="h-4 w-4" /> Explore Campus Neighborhood
                   </Button>
                 ) : (
