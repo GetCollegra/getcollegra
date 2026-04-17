@@ -714,7 +714,13 @@ function getTopPrograms(r: any): string[] {
  * Match schools are prioritized as the most important category.
  * Within each pool, schools are sorted by fitScore (which includes recognition bonus).
  */
-function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = [], weightAdj?: Record<string, number>): any[] {
+function ruleBasedMatch(
+  rawResults: any[],
+  prefs: Record<string, any>,
+  excludeColleges: string[] = [],
+  weightAdj?: Record<string, number>,
+  behaviorBoosts?: Map<string, number>,
+): any[] {
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
   const studentACT = parseStudentACT(prefs);
@@ -734,8 +740,12 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     .filter(r => !excludeSet.has((r["school.name"] || "").toLowerCase()))
     .map(r => {
       const fitCategory = determineFitCategory(r, gpa, studentSAT, studentACT);
-      const fitScore = computeFitScore(r, prefs, fitCategory, weightAdj);
-      return { raw: r, fitCategory, fitScore };
+      const baseScore = computeFitScore(r, prefs, fitCategory, weightAdj);
+      // ── Behavior boost from cohort signals (clamped ±5) ──
+      const name = r["school.name"] || "";
+      const boost = behaviorBoosts?.get(name) ?? 0;
+      const fitScore = Math.min(100, Math.max(0, Math.round(baseScore + boost)));
+      return { raw: r, fitCategory, fitScore, behaviorBoost: boost };
     })
     .sort((a, b) => b.fitScore - a.fitScore);
 
