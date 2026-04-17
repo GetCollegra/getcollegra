@@ -17,6 +17,7 @@ import {
   ThumbsUp, ThumbsDown, AlertTriangle, Sparkles
 } from "lucide-react";
 import type { College } from "@/types/college";
+import { trackCollegeAction, trackCollegeDwell } from "@/lib/userActions";
 
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
