@@ -21,12 +21,14 @@ export type ActionType =
   | "click_neighborhood"
   | "click_travel";
 
+type Json = string | number | boolean | null | { [k: string]: Json | undefined } | Json[];
+
 interface QueuedAction {
   user_id: string;
   college_name: string;
   action_type: ActionType;
   dwell_ms?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Json;
 }
 
 const queue: QueuedAction[] = [];
