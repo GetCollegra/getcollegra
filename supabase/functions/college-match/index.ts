@@ -108,6 +108,32 @@ function getNearbyStates(fips: string, distance: string): string[] {
   return [];
 }
 
+// ── Cohort bucketing (must match aggregate-cohort-signals) ──────────────────
+function computeCohortKey(prefs: Record<string, any>): string {
+  const gpa = Number(prefs.gpa);
+  const gpaBucket = !Number.isFinite(gpa) || gpa <= 0 ? "gpa:unk"
+    : gpa >= 3.9 ? "gpa:3.9+" : gpa >= 3.7 ? "gpa:3.7-3.9" : gpa >= 3.5 ? "gpa:3.5-3.7"
+    : gpa >= 3.2 ? "gpa:3.2-3.5" : gpa >= 2.8 ? "gpa:2.8-3.2" : "gpa:<2.8";
+  const sz = String(prefs.campusSize || prefs.campus_size || "").toLowerCase();
+  const sizeBucket = sz.includes("very large") || sz.includes("30,000") || sz.includes("30000") ? "size:vlarge"
+    : sz.includes("large") ? "size:large" : sz.includes("medium") ? "size:medium"
+    : sz.includes("small") ? "size:small" : "size:any";
+  const lc = String(prefs.locationType || prefs.location_type || "").toLowerCase();
+  const locBucket = lc.includes("urban") || lc.includes("city") ? "loc:urban"
+    : lc.includes("suburb") ? "loc:suburban" : lc.includes("rural") || lc.includes("town") ? "loc:rural" : "loc:any";
+  const cs = String(prefs.maxCost || prefs.max_cost || "").toLowerCase().replace(/[,$]/g, "");
+  const costBucket = cs.includes("under 10") || cs.includes("less than 10") ? "cost:<10k"
+    : cs.includes("10") && cs.includes("20") ? "cost:10-20k"
+    : cs.includes("20") && cs.includes("30") ? "cost:20-30k"
+    : cs.includes("30") && cs.includes("45") ? "cost:30-45k" : "cost:any";
+  const sd = String(prefs.areaOfStudy || prefs.area_of_study || "").toLowerCase();
+  let studyBucket = "study:any";
+  for (const k of ["computer", "engineering", "business", "health", "biology", "social", "psychology", "education", "art", "communication"]) {
+    if (sd.includes(k)) { studyBucket = `study:${k}`; break; }
+  }
+  return [gpaBucket, sizeBucket, locBucket, costBucket, studyBucket].join("|");
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // PROVIDER: College Scorecard  (Primary)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -714,7 +740,13 @@ function getTopPrograms(r: any): string[] {
  * Match schools are prioritized as the most important category.
  * Within each pool, schools are sorted by fitScore (which includes recognition bonus).
  */
-function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeColleges: string[] = [], weightAdj?: Record<string, number>): any[] {
+function ruleBasedMatch(
+  rawResults: any[],
+  prefs: Record<string, any>,
+  excludeColleges: string[] = [],
+  weightAdj?: Record<string, number>,
+  behaviorBoosts?: Map<string, number>,
+): any[] {
   const gpa = parseStudentGPA(prefs);
   const studentSAT = parseStudentSAT(prefs);
   const studentACT = parseStudentACT(prefs);
@@ -734,8 +766,12 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     .filter(r => !excludeSet.has((r["school.name"] || "").toLowerCase()))
     .map(r => {
       const fitCategory = determineFitCategory(r, gpa, studentSAT, studentACT);
-      const fitScore = computeFitScore(r, prefs, fitCategory, weightAdj);
-      return { raw: r, fitCategory, fitScore };
+      const baseScore = computeFitScore(r, prefs, fitCategory, weightAdj);
+      // ── Behavior boost from cohort signals (clamped ±5) ──
+      const name = r["school.name"] || "";
+      const boost = behaviorBoosts?.get(name) ?? 0;
+      const fitScore = Math.min(100, Math.max(0, Math.round(baseScore + boost)));
+      return { raw: r, fitCategory, fitScore, behaviorBoost: boost };
     })
     .sort((a, b) => b.fitScore - a.fitScore);
 
@@ -797,7 +833,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
     return b.fitScore - a.fitScore;
   });
 
-  return picked.slice(0, 5).map(({ raw: r, fitCategory, fitScore }) => {
+  return picked.slice(0, 5).map(({ raw: r, fitCategory, fitScore, behaviorBoost }) => {
     const admRate = r["latest.admissions.admission_rate.overall"];
     const locale = r["school.locale"];
     const setting = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
@@ -850,6 +886,7 @@ function ruleBasedMatch(rawResults: any[], prefs: Record<string, any>, excludeCo
       fitCategory,
       realismNote,
       whyFit: whyFitParts.join(" "),
+      behaviorBoost,
       prosForStudent: ["Meets your stated preferences", "Strong graduation and outcomes data"],
       consForStudent: ["See detailed analysis for more context"],
       challengesForStudent: [],
@@ -1055,7 +1092,7 @@ serve(async (req) => {
       return null;
     })();
 
-    const [scorecard, adjResult] = await Promise.all([
+    const [scorecard, adjResult, cohortSignals] = await Promise.all([
       fetchFromScorecard(prefs),
       authUserId
         ? createClient(supabaseUrl, serviceKey)
@@ -1066,6 +1103,15 @@ serve(async (req) => {
             .then(({ data }) => data)
             .catch(() => null)
         : Promise.resolve(null),
+      // Fetch behavior boost rows for this user's cohort
+      (async () => {
+        const cohortKey = computeCohortKey(prefs);
+        const { data } = await createClient(supabaseUrl, serviceKey)
+          .from("cohort_college_signals")
+          .select("college_name, behavior_boost, cohort_size")
+          .eq("cohort_key", cohortKey);
+        return { cohortKey, rows: data || [] };
+      })().catch(() => ({ cohortKey: "", rows: [] })),
     ]);
 
     if (adjResult) {
@@ -1080,6 +1126,27 @@ serve(async (req) => {
       };
       console.log("[college-match] Applying user weight adjustments:", weightAdj);
     }
+
+    // ── Build behavior boost lookup map ──
+    const behaviorBoosts = new Map<string, number>();
+    for (const row of cohortSignals.rows) {
+      behaviorBoosts.set(row.college_name, Number(row.behavior_boost) || 0);
+    }
+    console.log(`[college-match] Cohort=${cohortSignals.cohortKey} behaviorBoosts=${behaviorBoosts.size}`);
+
+    // ── If new user has no cohort data yet, trigger on-demand aggregation in background ──
+    if (authUserId && behaviorBoosts.size === 0 && cohortSignals.cohortKey) {
+      // Fire-and-forget — don't await so quiz response stays fast
+      fetch(`${supabaseUrl}/functions/v1/aggregate-cohort-signals`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ userId: authUserId }),
+      }).catch((err) => console.warn("[college-match] on-demand aggregate failed:", err));
+    }
+
     console.log(`[college-match] Scorecard returned ${scorecard.count} colleges`);
 
     if (scorecard.raw.length === 0) {
@@ -1089,8 +1156,8 @@ serve(async (req) => {
       });
     }
 
-    // ── Step 2: Rule-based matching (deterministic + user adjustments) ──
-    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges, weightAdj);
+    // ── Step 2: Rule-based matching (deterministic + user adjustments + cohort behavior) ──
+    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges, weightAdj, behaviorBoosts);
     console.log(`[college-match] Rule engine picked ${matchedColleges.length} colleges:`, matchedColleges.map(c => c.name));
 
     // ── Step 3: Build student profile (rule-based) ──

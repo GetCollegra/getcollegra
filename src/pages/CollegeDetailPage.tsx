@@ -17,6 +17,7 @@ import {
   ThumbsUp, ThumbsDown, AlertTriangle, Sparkles
 } from "lucide-react";
 import type { College } from "@/types/college";
+import { trackCollegeAction, trackCollegeDwell } from "@/lib/userActions";
 
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
@@ -125,6 +126,24 @@ const CollegeDetailPage = () => {
     load();
   }, [user, collegeName]);
 
+  // ── Track view + dwell time ──
+  useEffect(() => {
+    if (!user || !collegeName || loading) return;
+    trackCollegeAction(collegeName, "view");
+    const startedAt = Date.now();
+    return () => {
+      trackCollegeDwell(collegeName, Date.now() - startedAt);
+    };
+  }, [user, collegeName, loading]);
+
+  // ── Track tab clicks ──
+  const handleTabChange = (next: string) => {
+    setActiveTab(next);
+    if (!collegeName) return;
+    if (next === "map") trackCollegeAction(collegeName, "click_map");
+    else if (next === "college-life") trackCollegeAction(collegeName, "click_life");
+  };
+
   const saveCollege = async () => {
     if (!user || !college) return;
     const { data, error } = await supabase
@@ -137,6 +156,7 @@ const CollegeDetailPage = () => {
     } else if (data) {
       setIsSaved(true);
       setSavedId(data.id);
+      trackCollegeAction(college.name, "click_save");
       toast({ title: "Saved!", description: `${college.name} added to your list.` });
     }
   };
@@ -212,7 +232,7 @@ const CollegeDetailPage = () => {
         </motion.div>
 
         {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-3 h-auto gap-1 bg-muted/50 p-1.5 rounded-xl mb-6">
             <TabsTrigger value="overview" className="gap-1.5 text-sm rounded-lg data-[state=active]:shadow-soft">
               <Sparkles className="h-4 w-4" /> Overview
@@ -366,7 +386,7 @@ const CollegeDetailPage = () => {
               {/* Campus Neighborhood */}
               <div>
                 {!showNeighborhood ? (
-                  <Button variant="outline" className="w-full gap-2" onClick={() => setShowNeighborhood(true)}>
+                  <Button variant="outline" className="w-full gap-2" onClick={() => { setShowNeighborhood(true); trackCollegeAction(college.name, "click_neighborhood"); }}>
                     <MapPin className="h-4 w-4" /> Explore Campus Neighborhood
                   </Button>
                 ) : (
