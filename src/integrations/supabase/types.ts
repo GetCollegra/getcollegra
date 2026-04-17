@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      cohort_college_signals: {
+        Row: {
+          accepted_count: number
+          applied_count: number
+          applying_count: number
+          behavior_boost: number
+          cohort_key: string
+          cohort_size: number
+          college_name: string
+          computed_at: string
+          id: string
+          save_count: number
+          total_dwell_ms: number
+          view_count: number
+        }
+        Insert: {
+          accepted_count?: number
+          applied_count?: number
+          applying_count?: number
+          behavior_boost?: number
+          cohort_key: string
+          cohort_size?: number
+          college_name: string
+          computed_at?: string
+          id?: string
+          save_count?: number
+          total_dwell_ms?: number
+          view_count?: number
+        }
+        Update: {
+          accepted_count?: number
+          applied_count?: number
+          applying_count?: number
+          behavior_boost?: number
+          cohort_key?: string
+          cohort_size?: number
+          college_name?: string
+          computed_at?: string
+          id?: string
+          save_count?: number
+          total_dwell_ms?: number
+          view_count?: number
+        }
+        Relationships: []
+      }
       college_matches: {
         Row: {
           ai_error: string | null
@@ -353,6 +398,36 @@ export type Database = {
           email?: string | null
           id?: string
           preferences?: Json
+        }
+        Relationships: []
+      }
+      user_actions: {
+        Row: {
+          action_type: string
+          college_name: string
+          created_at: string
+          dwell_ms: number | null
+          id: string
+          metadata: Json
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          college_name: string
+          created_at?: string
+          dwell_ms?: number | null
+          id?: string
+          metadata?: Json
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          college_name?: string
+          created_at?: string
+          dwell_ms?: number | null
+          id?: string
+          metadata?: Json
+          user_id?: string
         }
         Relationships: []
       }
