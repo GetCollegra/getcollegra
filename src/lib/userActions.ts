@@ -93,7 +93,7 @@ const enqueue = async (
       college_name: collegeName,
       action_type: actionType,
       dwell_ms: extras.dwell_ms,
-      metadata: extras.metadata ?? {},
+      metadata: (extras.metadata ?? {}) as Json,
     });
 
     if (queue.length >= MAX_BATCH) {
