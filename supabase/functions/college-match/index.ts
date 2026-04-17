@@ -108,6 +108,32 @@ function getNearbyStates(fips: string, distance: string): string[] {
   return [];
 }
 
+// ── Cohort bucketing (must match aggregate-cohort-signals) ──────────────────
+function computeCohortKey(prefs: Record<string, any>): string {
+  const gpa = Number(prefs.gpa);
+  const gpaBucket = !Number.isFinite(gpa) || gpa <= 0 ? "gpa:unk"
+    : gpa >= 3.9 ? "gpa:3.9+" : gpa >= 3.7 ? "gpa:3.7-3.9" : gpa >= 3.5 ? "gpa:3.5-3.7"
+    : gpa >= 3.2 ? "gpa:3.2-3.5" : gpa >= 2.8 ? "gpa:2.8-3.2" : "gpa:<2.8";
+  const sz = String(prefs.campusSize || prefs.campus_size || "").toLowerCase();
+  const sizeBucket = sz.includes("very large") || sz.includes("30,000") || sz.includes("30000") ? "size:vlarge"
+    : sz.includes("large") ? "size:large" : sz.includes("medium") ? "size:medium"
+    : sz.includes("small") ? "size:small" : "size:any";
+  const lc = String(prefs.locationType || prefs.location_type || "").toLowerCase();
+  const locBucket = lc.includes("urban") || lc.includes("city") ? "loc:urban"
+    : lc.includes("suburb") ? "loc:suburban" : lc.includes("rural") || lc.includes("town") ? "loc:rural" : "loc:any";
+  const cs = String(prefs.maxCost || prefs.max_cost || "").toLowerCase().replace(/[,$]/g, "");
+  const costBucket = cs.includes("under 10") || cs.includes("less than 10") ? "cost:<10k"
+    : cs.includes("10") && cs.includes("20") ? "cost:10-20k"
+    : cs.includes("20") && cs.includes("30") ? "cost:20-30k"
+    : cs.includes("30") && cs.includes("45") ? "cost:30-45k" : "cost:any";
+  const sd = String(prefs.areaOfStudy || prefs.area_of_study || "").toLowerCase();
+  let studyBucket = "study:any";
+  for (const k of ["computer", "engineering", "business", "health", "biology", "social", "psychology", "education", "art", "communication"]) {
+    if (sd.includes(k)) { studyBucket = `study:${k}`; break; }
+  }
+  return [gpaBucket, sizeBucket, locBucket, costBucket, studyBucket].join("|");
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // PROVIDER: College Scorecard  (Primary)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
