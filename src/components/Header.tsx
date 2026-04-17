@@ -40,9 +40,14 @@ const Header = () => {
                 </a>
               </>
             ) : (
-              <a href="/login" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                <LogIn className="h-4 w-4" /> Sign In
-              </a>
+              <>
+                <a href="/signup" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <User className="h-4 w-4" /> Sign Up
+                </a>
+                <a href="/login" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <LogIn className="h-4 w-4" /> Sign In
+                </a>
+              </>
             )}
 
             <a href="/survey" className="text-sm font-semibold bg-primary text-primary-foreground px-5 py-2 rounded-full hover:bg-accent transition-colors shadow-soft">
@@ -60,9 +65,14 @@ const Header = () => {
                 </a>
               </>
             ) : (
-              <a href="/login" className="text-muted-foreground hover:text-primary transition-colors">
-                <LogIn className="h-5 w-5" />
-              </a>
+              <>
+                <a href="/signup" className="text-muted-foreground hover:text-primary transition-colors" title="Sign Up">
+                  <User className="h-5 w-5" />
+                </a>
+                <a href="/login" className="text-muted-foreground hover:text-primary transition-colors" title="Sign In">
+                  <LogIn className="h-5 w-5" />
+                </a>
+              </>
             )}
             <a href="/survey" className="text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-accent transition-colors">
               Get Started
