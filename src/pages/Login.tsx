@@ -96,8 +96,8 @@ const Login = () => {
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/signup" className="text-primary font-semibold hover:underline">Sign up</Link>
+              New here?{" "}
+              <Link to="/signup" className="text-primary font-semibold hover:underline">Create an account</Link>
             </p>
           </form>
         </div>
