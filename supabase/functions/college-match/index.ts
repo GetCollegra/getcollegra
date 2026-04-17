@@ -807,7 +807,7 @@ function ruleBasedMatch(
     return b.fitScore - a.fitScore;
   });
 
-  return picked.slice(0, 5).map(({ raw: r, fitCategory, fitScore }) => {
+  return picked.slice(0, 5).map(({ raw: r, fitCategory, fitScore, behaviorBoost }) => {
     const admRate = r["latest.admissions.admission_rate.overall"];
     const locale = r["school.locale"];
     const setting = locale <= 13 ? "Urban" : locale <= 23 ? "Suburban" : locale <= 33 ? "Town" : "Rural";
@@ -860,6 +860,7 @@ function ruleBasedMatch(
       fitCategory,
       realismNote,
       whyFit: whyFitParts.join(" "),
+      behaviorBoost,
       prosForStudent: ["Meets your stated preferences", "Strong graduation and outcomes data"],
       consForStudent: ["See detailed analysis for more context"],
       challengesForStudent: [],
