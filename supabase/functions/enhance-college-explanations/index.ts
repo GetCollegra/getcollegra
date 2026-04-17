@@ -73,12 +73,12 @@ Return a JSON object with this exact structure:
 
 IMPORTANT: Only return the JSON object, no markdown formatting or code blocks.`;
 
-// Failover model chain
+// Failover model chain — lead with GPT-5 for highest-quality personalization
 const AI_MODELS = [
-  "google/gemini-3-flash-preview",
-  "google/gemini-2.5-flash",
+  "openai/gpt-5",
   "openai/gpt-5-mini",
-  "google/gemini-2.5-flash-lite",
+  "google/gemini-2.5-pro",
+  "google/gemini-3-flash-preview",
 ];
 
 serve(async (req) => {
