@@ -2,12 +2,11 @@
  * Lightweight client-side action tracker.
  *
  * Records: views, dwell time, and key clicks on college pages.
- * Events are batched in-memory and flushed:
- *   - on a 5s interval
- *   - on page hide (using sendBeacon when available)
- *   - immediately when the queue exceeds 10 events
+ * Sends events IMMEDIATELY (no batching) so they appear in Supabase
+ * without delay — easier to debug and small enough volume to not matter.
  *
- * Only fires for logged-in users. Silent on failure — never blocks UX.
+ * Only fires for logged-in users. Logs every step to the console so the
+ * pipeline is visible end-to-end.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,86 +22,73 @@ export type ActionType =
 
 type Json = string | number | boolean | null | { [k: string]: Json | undefined } | Json[];
 
-interface QueuedAction {
-  user_id: string;
-  college_name: string;
-  action_type: ActionType;
-  dwell_ms?: number;
-  metadata?: Json;
-}
+const DEBUG = true; // flip to false once verified
 
-const queue: QueuedAction[] = [];
-const FLUSH_INTERVAL_MS = 5000;
-const MAX_BATCH = 10;
-let flushTimer: number | null = null;
-let listenersAttached = false;
-
-const ensureFlushScheduled = () => {
-  if (flushTimer != null) return;
-  flushTimer = window.setTimeout(() => {
-    flushTimer = null;
-    void flush();
-  }, FLUSH_INTERVAL_MS);
+const log = (...args: unknown[]) => {
+  if (DEBUG) console.log("[track]", ...args);
+};
+const warn = (...args: unknown[]) => {
+  if (DEBUG) console.warn("[track]", ...args);
+};
+const errorLog = (...args: unknown[]) => {
+  console.error("[track]", ...args);
 };
 
-const flush = async (sync = false): Promise<void> => {
-  if (queue.length === 0) return;
-  const batch = queue.splice(0, queue.length);
-  try {
-    if (sync && navigator.sendBeacon) {
-      // Best-effort sync send on unload — uses anon REST endpoint
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user_actions`;
-      const blob = new Blob([JSON.stringify(batch)], { type: "application/json" });
-      navigator.sendBeacon(url, blob);
-      return;
-    }
-    const { error } = await supabase.from("user_actions").insert(batch);
-    if (error) {
-      // Silent — re-queue at most once to avoid memory growth
-      if (queue.length < 50) queue.push(...batch);
-    }
-  } catch {
-    /* ignore */
-  }
-};
-
-const attachUnloadListeners = () => {
-  if (listenersAttached || typeof window === "undefined") return;
-  listenersAttached = true;
-  window.addEventListener("pagehide", () => void flush(true));
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") void flush(true);
-  });
-};
-
-const enqueue = async (
+/** Insert a single row immediately. No batching — easier to verify. */
+const insertAction = async (
   collegeName: string,
   actionType: ActionType,
   extras: { dwell_ms?: number; metadata?: Record<string, unknown> } = {}
 ): Promise<void> => {
-  if (!collegeName) return;
+  if (!collegeName) {
+    warn("skip: no college name");
+    return;
+  }
+
+  // 1. Auth check
+  const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+  if (sessionErr) {
+    errorLog("auth.getSession error:", sessionErr.message);
+    return;
+  }
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) {
+    warn(`skip ${actionType} for "${collegeName}" — no authenticated user`);
+    return;
+  }
+
+  // 2. Build payload
+  const payload = {
+    user_id: userId,
+    college_name: collegeName,
+    action_type: actionType,
+    dwell_ms: extras.dwell_ms ?? null,
+    metadata: (extras.metadata ?? {}) as Json,
+  };
+
+  log(`→ inserting ${actionType}`, { college: collegeName, user: userId, dwell_ms: payload.dwell_ms });
+
+  // 3. Insert with detailed error reporting
   try {
-    const { data } = await supabase.auth.getSession();
-    const userId = data.session?.user?.id;
-    if (!userId) return; // anonymous — don't track
+    const { data, error, status } = await supabase
+      .from("user_actions")
+      .insert(payload)
+      .select("id")
+      .single();
 
-    attachUnloadListeners();
-
-    queue.push({
-      user_id: userId,
-      college_name: collegeName,
-      action_type: actionType,
-      dwell_ms: extras.dwell_ms,
-      metadata: (extras.metadata ?? {}) as Json,
-    });
-
-    if (queue.length >= MAX_BATCH) {
-      void flush();
-    } else {
-      ensureFlushScheduled();
+    if (error) {
+      errorLog(`insert FAILED (status=${status}) for ${actionType} / ${collegeName}:`, {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        payload,
+      });
+      return;
     }
-  } catch {
-    /* ignore — tracking should never throw */
+    log(`✓ inserted ${actionType} for "${collegeName}" → row id=${data?.id}`);
+  } catch (e) {
+    errorLog(`insert THREW for ${actionType} / ${collegeName}:`, e);
   }
 };
 
@@ -111,11 +97,19 @@ export const trackCollegeAction = (
   actionType: ActionType,
   metadata?: Record<string, unknown>
 ): void => {
-  void enqueue(collegeName, actionType, { metadata });
+  log(`tracking ${actionType} on "${collegeName}"`);
+  void insertAction(collegeName, actionType, { metadata });
 };
 
 export const trackCollegeDwell = (collegeName: string, dwellMs: number): void => {
-  if (dwellMs < 1500) return; // ignore noise (<1.5s = bounce)
-  if (dwellMs > 30 * 60 * 1000) return; // cap at 30 min (likely tab left open)
-  void enqueue(collegeName, "dwell", { dwell_ms: Math.round(dwellMs) });
+  if (dwellMs < 1500) {
+    log(`skip dwell — too short (${dwellMs}ms < 1500ms) for "${collegeName}"`);
+    return;
+  }
+  if (dwellMs > 30 * 60 * 1000) {
+    log(`skip dwell — too long (${dwellMs}ms > 30min) for "${collegeName}"`);
+    return;
+  }
+  log(`tracking dwell ${Math.round(dwellMs)}ms on "${collegeName}"`);
+  void insertAction(collegeName, "dwell", { dwell_ms: Math.round(dwellMs) });
 };
