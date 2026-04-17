@@ -1066,7 +1066,7 @@ serve(async (req) => {
       return null;
     })();
 
-    const [scorecard, adjResult] = await Promise.all([
+    const [scorecard, adjResult, cohortSignals] = await Promise.all([
       fetchFromScorecard(prefs),
       authUserId
         ? createClient(supabaseUrl, serviceKey)
@@ -1077,6 +1077,15 @@ serve(async (req) => {
             .then(({ data }) => data)
             .catch(() => null)
         : Promise.resolve(null),
+      // Fetch behavior boost rows for this user's cohort
+      (async () => {
+        const cohortKey = computeCohortKey(prefs);
+        const { data } = await createClient(supabaseUrl, serviceKey)
+          .from("cohort_college_signals")
+          .select("college_name, behavior_boost, cohort_size")
+          .eq("cohort_key", cohortKey);
+        return { cohortKey, rows: data || [] };
+      })().catch(() => ({ cohortKey: "", rows: [] })),
     ]);
 
     if (adjResult) {
@@ -1091,6 +1100,27 @@ serve(async (req) => {
       };
       console.log("[college-match] Applying user weight adjustments:", weightAdj);
     }
+
+    // ── Build behavior boost lookup map ──
+    const behaviorBoosts = new Map<string, number>();
+    for (const row of cohortSignals.rows) {
+      behaviorBoosts.set(row.college_name, Number(row.behavior_boost) || 0);
+    }
+    console.log(`[college-match] Cohort=${cohortSignals.cohortKey} behaviorBoosts=${behaviorBoosts.size}`);
+
+    // ── If new user has no cohort data yet, trigger on-demand aggregation in background ──
+    if (authUserId && behaviorBoosts.size === 0 && cohortSignals.cohortKey) {
+      // Fire-and-forget — don't await so quiz response stays fast
+      fetch(`${supabaseUrl}/functions/v1/aggregate-cohort-signals`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ userId: authUserId }),
+      }).catch((err) => console.warn("[college-match] on-demand aggregate failed:", err));
+    }
+
     console.log(`[college-match] Scorecard returned ${scorecard.count} colleges`);
 
     if (scorecard.raw.length === 0) {
@@ -1100,8 +1130,8 @@ serve(async (req) => {
       });
     }
 
-    // ── Step 2: Rule-based matching (deterministic + user adjustments) ──
-    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges, weightAdj);
+    // ── Step 2: Rule-based matching (deterministic + user adjustments + cohort behavior) ──
+    const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges, weightAdj, behaviorBoosts);
     console.log(`[college-match] Rule engine picked ${matchedColleges.length} colleges:`, matchedColleges.map(c => c.name));
 
     // ── Step 3: Build student profile (rule-based) ──
