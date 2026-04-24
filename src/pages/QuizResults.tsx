@@ -1178,6 +1178,31 @@ const QuizResults = () => {
                   />
                 ))}
               </div>
+              {elapsedSec >= 30 && elapsedSec < 60 && (
+                <p className="text-muted-foreground text-xs sm:text-sm text-center max-w-md px-4">
+                  Taking a little longer than usual — we're searching extra carefully ({elapsedSec}s)
+                </p>
+              )}
+              {elapsedSec >= 60 && elapsedSec < 90 && (
+                <p className="text-foreground/80 text-xs sm:text-sm text-center max-w-md px-4">
+                  Still working… AI matches can take up to 90 seconds. Please keep this page open ({elapsedSec}s)
+                </p>
+              )}
+              {elapsedSec >= 90 && (
+                <div className="text-center max-w-md px-4 mt-2">
+                  <p className="text-foreground text-sm font-medium mb-3">
+                    This is taking longer than expected.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.reload()}
+                    className="rounded-full"
+                  >
+                    Refresh page
+                  </Button>
+                </div>
+              )}
             </motion.div>
           </section>
         )}
