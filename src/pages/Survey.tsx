@@ -51,6 +51,7 @@ const Survey = () => {
   }, [user, authLoading, isSubscribed, navigate]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const [elapsedSec, setElapsedSec] = useState(0);
   const isProcessingSubmissionRef = useRef(false);
   const hasNavigatedToResultsRef = useRef(false);
 
@@ -61,6 +62,17 @@ const Survey = () => {
       setLoadingMsgIndex((prev) => (prev + 1) % loadingMessages.length);
     }, 2200);
     return () => clearInterval(interval);
+  }, [isSubmitting]);
+
+  // Track elapsed time so we can surface "taking longer than usual" UX
+  useEffect(() => {
+    if (!isSubmitting) {
+      setElapsedSec(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const t = setInterval(() => setElapsedSec(Math.floor((Date.now() - startedAt) / 1000)), 1000);
+    return () => clearInterval(t);
   }, [isSubmitting]);
 
   useEffect(() => {
