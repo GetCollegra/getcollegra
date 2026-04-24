@@ -597,6 +597,17 @@ const QuizResults = () => {
     return () => clearInterval(interval);
   }, [loading]);
 
+  // Track elapsed seconds while loading so we can show "still working" reassurance
+  useEffect(() => {
+    if (!loading) {
+      setElapsedSec(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const t = setInterval(() => setElapsedSec(Math.floor((Date.now() - startedAt) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [loading]);
+
   // Helper to extract survey context from raw_preferences
   const extractSurveyContext = (rawPrefs: unknown) => {
     if (rawPrefs && typeof rawPrefs === "object" && !Array.isArray(rawPrefs)) {
