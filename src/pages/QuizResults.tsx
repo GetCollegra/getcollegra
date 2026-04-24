@@ -513,6 +513,8 @@ const QuizResults = () => {
   const [aiEnhancing, setAiEnhancing] = useState(false);
   const aiEnhancementTriggered = useRef(false);
   const [savedColleges, setSavedColleges] = useState<Set<string>>(new Set());
+  const [retryNonce, setRetryNonce] = useState(0);
+  const [retrying, setRetrying] = useState(false);
   const { toast } = useToast();
   const { user, loading: authLoading, isSubscribed } = useAuth();
 
@@ -946,7 +948,54 @@ const QuizResults = () => {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, requestedMatchId, routerState, surveyContext, user]);
+  }, [authLoading, requestedMatchId, routerState, surveyContext, user, retryNonce]);
+
+  // Retry AI matching without a full page reload
+  const handleRetryMatch = useCallback(async () => {
+    if (retrying) return;
+    setRetrying(true);
+
+    try {
+      capture("results_retry_clicked", { elapsedSec });
+      trackClick("results_retry_match", "QuizResults");
+
+      const retryPrefs = buildRetryPreferences(surveyContext);
+      const storedId = getStoredMatchId();
+
+      // Reset UI state so the loading screen takes over
+      aiEnhancementTriggered.current = false;
+      setRecommendations(null);
+      setAdditionalColleges([]);
+      setError(null);
+      setLoading(true);
+
+      // Best-effort: mark existing match as pending and re-invoke the function
+      if (user && storedId && retryPrefs) {
+        await supabase
+          .from("college_matches")
+          .update({ ai_status: "pending", ai_error: null } as any)
+          .eq("id", storedId)
+          .eq("user_id", user.id);
+
+        supabase.functions
+          .invoke("college-match", { body: { preferences: retryPrefs, matchId: storedId } })
+          .catch((err) => console.error("[QuizResults] Retry invoke failed:", err));
+      }
+
+      // Bump nonce to re-run the load effect (handles polling + recovery)
+      setRetryNonce((n) => n + 1);
+    } catch (err) {
+      console.error("[QuizResults] Retry failed:", err);
+      toast({
+        title: "Retry failed",
+        description: "We couldn't restart matching. Please refresh the page.",
+        variant: "destructive",
+      });
+      setLoading(false);
+    } finally {
+      setRetrying(false);
+    }
+  }, [retrying, elapsedSec, surveyContext, user, toast]);
 
   // Load saved colleges on mount
   useEffect(() => {
@@ -1220,10 +1269,27 @@ const QuizResults = () => {
               </div>
               <p className="text-foreground font-semibold text-lg mb-2">Something went wrong</p>
               <p className="text-muted-foreground mb-6 text-sm sm:text-base">{error}</p>
-              <div className="flex gap-3 justify-center">
-                <Button onClick={() => { setError(null); setLoading(true); window.location.reload(); }} variant="outline" className="rounded-full px-6">Refresh</Button>
-                <Link to="/survey">
-                  <Button className="rounded-full px-6 bg-gradient-to-r from-primary to-accent text-white">Retake Quiz</Button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
+                <Button
+                  onClick={handleRetryMatch}
+                  disabled={retrying}
+                  className="rounded-full px-6 bg-gradient-to-r from-primary to-accent text-white min-h-[44px]"
+                >
+                  {retrying ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Retrying…</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4 mr-2" /> Retry AI match</>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => { setError(null); setLoading(true); window.location.reload(); }}
+                  variant="outline"
+                  className="rounded-full px-6 min-h-[44px]"
+                >
+                  Refresh page
+                </Button>
+                <Link to="/survey" className="contents">
+                  <Button variant="ghost" className="rounded-full px-6 min-h-[44px]">Retake Quiz</Button>
                 </Link>
               </div>
             </motion.div>
