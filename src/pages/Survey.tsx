@@ -437,12 +437,22 @@ const Survey = () => {
           <p className="text-muted-foreground text-sm text-center max-w-md">
             This usually takes 15–30 seconds. Please don't close this page.
           </p>
+          {elapsedSec >= 30 && elapsedSec < 60 && (
+            <p className="text-muted-foreground text-xs text-center max-w-md mt-1">
+              Taking a little longer than usual — we're searching extra carefully ({elapsedSec}s)
+            </p>
+          )}
+          {elapsedSec >= 60 && (
+            <p className="text-foreground/80 text-xs text-center max-w-md mt-1">
+              Still working… AI matches can take up to 90 seconds. We'll move you to your results as soon as they're ready ({elapsedSec}s)
+            </p>
+          )}
         </div>
       ) : (
         <>
           <div className="container px-4 py-6">
             <Link to="/">
-              <Button variant="ghost" size="sm" className="gap-2">
+              <Button variant="ghost" size="sm" className="gap-2 min-h-[44px]">
                 <ArrowLeft className="w-4 h-4" />
                 Back to Home
               </Button>
