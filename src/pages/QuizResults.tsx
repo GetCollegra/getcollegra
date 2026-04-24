@@ -513,6 +513,8 @@ const QuizResults = () => {
   const [aiEnhancing, setAiEnhancing] = useState(false);
   const aiEnhancementTriggered = useRef(false);
   const [savedColleges, setSavedColleges] = useState<Set<string>>(new Set());
+  const [retryNonce, setRetryNonce] = useState(0);
+  const [retrying, setRetrying] = useState(false);
   const { toast } = useToast();
   const { user, loading: authLoading, isSubscribed } = useAuth();
 
