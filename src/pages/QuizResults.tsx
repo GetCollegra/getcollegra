@@ -1269,10 +1269,27 @@ const QuizResults = () => {
               </div>
               <p className="text-foreground font-semibold text-lg mb-2">Something went wrong</p>
               <p className="text-muted-foreground mb-6 text-sm sm:text-base">{error}</p>
-              <div className="flex gap-3 justify-center">
-                <Button onClick={() => { setError(null); setLoading(true); window.location.reload(); }} variant="outline" className="rounded-full px-6">Refresh</Button>
-                <Link to="/survey">
-                  <Button className="rounded-full px-6 bg-gradient-to-r from-primary to-accent text-white">Retake Quiz</Button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
+                <Button
+                  onClick={handleRetryMatch}
+                  disabled={retrying}
+                  className="rounded-full px-6 bg-gradient-to-r from-primary to-accent text-white min-h-[44px]"
+                >
+                  {retrying ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Retrying…</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4 mr-2" /> Retry AI match</>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => { setError(null); setLoading(true); window.location.reload(); }}
+                  variant="outline"
+                  className="rounded-full px-6 min-h-[44px]"
+                >
+                  Refresh page
+                </Button>
+                <Link to="/survey" className="contents">
+                  <Button variant="ghost" className="rounded-full px-6 min-h-[44px]">Retake Quiz</Button>
                 </Link>
               </div>
             </motion.div>
