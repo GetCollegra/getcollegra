@@ -1192,7 +1192,7 @@ const QuizResults = () => {
         {loading && (
           <section className="py-20 sm:py-32">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-5 sm:gap-6 px-4">
-              <div className="relative w-20 h-20 sm:w-24 sm:h-24">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28">
                 <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -1204,7 +1204,16 @@ const QuizResults = () => {
                   transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
                   className="absolute inset-3 rounded-full border-4 border-accent/30 border-b-transparent"
                 />
-                <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span
+                    className="font-display text-2xl sm:text-3xl font-bold text-primary tabular-nums leading-none"
+                    aria-live="polite"
+                    aria-label={`${elapsedSec} seconds elapsed`}
+                  >
+                    {elapsedSec}s
+                  </span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">elapsed</span>
+                </div>
               </div>
               <AnimatePresence mode="wait">
                 <motion.p
@@ -1218,6 +1227,15 @@ const QuizResults = () => {
                   {loadingMessages[loadingMsgIndex]}
                 </motion.p>
               </AnimatePresence>
+              {/* Progress bar — fills toward ~25s target, then hovers near 95% */}
+              <div className="w-full max-w-xs h-2 rounded-full bg-border/60 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(95, Math.round((elapsedSec / 25) * 100))}>
+                <motion.div
+                  className="h-full bg-gradient-to-r from-primary to-accent"
+                  initial={false}
+                  animate={{ width: `${Math.min(95, Math.round((elapsedSec / 25) * 100))}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                />
+              </div>
               <div className="flex gap-1.5">
                 {loadingMessages.map((_, i) => (
                   <motion.div
@@ -1227,17 +1245,20 @@ const QuizResults = () => {
                   />
                 ))}
               </div>
-              {elapsedSec >= 30 && elapsedSec < 60 && (
+              <p className="text-muted-foreground text-xs sm:text-sm text-center max-w-md px-4">
+                Most matches finish in under 25 seconds.
+              </p>
+              {elapsedSec >= 20 && elapsedSec < 40 && (
                 <p className="text-muted-foreground text-xs sm:text-sm text-center max-w-md px-4">
-                  Taking a little longer than usual — we're searching extra carefully ({elapsedSec}s)
+                  Almost there — finalizing your top picks ({elapsedSec}s)
                 </p>
               )}
-              {elapsedSec >= 60 && elapsedSec < 90 && (
+              {elapsedSec >= 40 && elapsedSec < 70 && (
                 <p className="text-foreground/80 text-xs sm:text-sm text-center max-w-md px-4">
-                  Still working… AI matches can take up to 90 seconds. Please keep this page open ({elapsedSec}s)
+                  Still working… please keep this page open ({elapsedSec}s)
                 </p>
               )}
-              {elapsedSec >= 90 && (
+              {elapsedSec >= 70 && (
                 <div className="text-center max-w-md px-4 mt-2">
                   <p className="text-foreground text-sm font-medium mb-3">
                     This is taking longer than expected.

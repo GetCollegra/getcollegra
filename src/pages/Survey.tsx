@@ -425,26 +425,41 @@ const Survey = () => {
   return (
     <div className="min-h-screen bg-background">
       {isSubmitting ? (
-        <div className="flex flex-col items-center justify-center min-h-screen gap-6 px-4">
-          <div className="relative w-20 h-20">
+        <div className="flex flex-col items-center justify-center min-h-screen gap-5 px-4">
+          <div className="relative w-24 h-24">
             <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
             <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-            <Loader2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary animate-pulse" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span
+                className="font-display text-2xl font-bold text-primary tabular-nums leading-none"
+                aria-live="polite"
+                aria-label={`${elapsedSec} seconds elapsed`}
+              >
+                {elapsedSec}s
+              </span>
+              <span className="text-[10px] text-muted-foreground mt-0.5">elapsed</span>
+            </div>
           </div>
           <p className="text-foreground text-lg font-semibold text-center">
             {loadingMessages[loadingMsgIndex]}
           </p>
+          <div className="w-full max-w-xs h-2 rounded-full bg-border/60 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(95, Math.round((elapsedSec / 25) * 100))}>
+            <div
+              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 ease-out"
+              style={{ width: `${Math.min(95, Math.round((elapsedSec / 25) * 100))}%` }}
+            />
+          </div>
           <p className="text-muted-foreground text-sm text-center max-w-md">
-            This usually takes 15–30 seconds. Please don't close this page.
+            Most matches finish in under 25 seconds. Please don't close this page.
           </p>
-          {elapsedSec >= 30 && elapsedSec < 60 && (
+          {elapsedSec >= 20 && elapsedSec < 40 && (
             <p className="text-muted-foreground text-xs text-center max-w-md mt-1">
-              Taking a little longer than usual — we're searching extra carefully ({elapsedSec}s)
+              Almost there — finalizing your top picks ({elapsedSec}s)
             </p>
           )}
-          {elapsedSec >= 60 && (
+          {elapsedSec >= 40 && (
             <p className="text-foreground/80 text-xs text-center max-w-md mt-1">
-              Still working… AI matches can take up to 90 seconds. We'll move you to your results as soon as they're ready ({elapsedSec}s)
+              Still working… we'll move you to your results as soon as they're ready ({elapsedSec}s)
             </p>
           )}
         </div>
