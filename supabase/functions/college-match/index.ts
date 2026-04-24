@@ -1095,13 +1095,18 @@ serve(async (req) => {
     const [scorecard, adjResult, cohortSignals] = await Promise.all([
       fetchFromScorecard(prefs),
       authUserId
-        ? createClient(supabaseUrl, serviceKey)
-            .from("scoring_weight_adjustments")
-            .select("culture_adj, academic_adj, cost_adj, distance_adj, admission_adj, size_adj, support_adj")
-            .eq("user_id", authUserId)
-            .maybeSingle()
-            .then(({ data }) => data)
-            .catch(() => null)
+        ? (async () => {
+            try {
+              const { data } = await createClient(supabaseUrl, serviceKey)
+                .from("scoring_weight_adjustments")
+                .select("culture_adj, academic_adj, cost_adj, distance_adj, admission_adj, size_adj, support_adj")
+                .eq("user_id", authUserId)
+                .maybeSingle();
+              return data;
+            } catch {
+              return null;
+            }
+          })()
         : Promise.resolve(null),
       // Fetch behavior boost rows for this user's cohort
       (async () => {
