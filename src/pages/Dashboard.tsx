@@ -185,7 +185,9 @@ const Dashboard = () => {
     const tick = async () => {
       if (cancelled) return;
       attempts += 1;
-      await refreshSubscription();
+      // Force = bypass cache; right after checkout the cache may still hold
+      // a stale "subscribed: false" if the webhook hasn't landed yet.
+      await refreshSubscription({ force: true });
       if (!cancelled && attempts < maxAttempts) {
         setTimeout(tick, 2000);
       }
