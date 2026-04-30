@@ -140,9 +140,15 @@ serve(async (req) => {
     });
     const hasActive = activeSubs.data.length > 0;
     const activeSub = hasActive ? activeSubs.data[0] : null;
-    const periodEnd = activeSub
-      ? new Date(activeSub.current_period_end * 1000).toISOString()
-      : null;
+    // Stripe API basil moved current_period_end onto subscription items.
+    const periodEndUnix =
+      (activeSub as any)?.current_period_end ??
+      activeSub?.items?.data?.[0]?.current_period_end ??
+      null;
+    const periodEnd =
+      typeof periodEndUnix === "number" && Number.isFinite(periodEndUnix)
+        ? new Date(periodEndUnix * 1000).toISOString()
+        : null;
 
     // Try to map this email to an existing auth user.
     let userId: string | null = null;
