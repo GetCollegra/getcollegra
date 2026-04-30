@@ -53,7 +53,25 @@ const fitCategoryConfig: Record<string, { color: string; bg: string; icon: typeo
 };
 
 const Dashboard = () => {
-  const { user, loading: authLoading, signOut, isSubscribed, refreshSubscription } = useAuth();
+  const { user, loading: authLoading, signOut, isSubscribed, subscriptionEnd, subscriptionLoading, refreshSubscription } = useAuth();
+  const [openingPortal, setOpeningPortal] = useState(false);
+
+  const openCustomerPortal = async () => {
+    setOpeningPortal(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw error;
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (err) {
+      toast({
+        title: "Couldn't open billing portal",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setOpeningPortal(false);
+    }
+  };
   const navigate = useNavigate();
   const { toast } = useToast();
 
