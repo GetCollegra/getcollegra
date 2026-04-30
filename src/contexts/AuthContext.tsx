@@ -11,7 +11,7 @@ type AuthContextType = {
   isSubscribed: boolean;
   subscriptionEnd: string | null;
   subscriptionLoading: boolean;
-  refreshSubscription: () => Promise<void>;
+  refreshSubscription: (opts?: { force?: boolean }) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
