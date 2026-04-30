@@ -152,16 +152,26 @@ serve(async (req) => {
 
     // Try to map this email to an existing auth user.
     let userId: string | null = null;
+    let firstName: string | null = null;
     try {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, first_name")
         .eq("email", email)
         .maybeSingle();
       userId = profile?.id ?? null;
+      firstName = profile?.first_name ?? null;
     } catch (err) {
       logStep("Profile lookup failed (non-fatal)", { error: String(err) });
     }
+
+    // Capture previous subscribed state so we know if this is a fresh activation.
+    const { data: prevRow } = await supabase
+      .from("subscribers")
+      .select("subscribed")
+      .eq("email", email)
+      .maybeSingle();
+    const wasSubscribed = !!prevRow?.subscribed;
 
     // 4. Upsert cached subscription state. This is the only path that writes here
     //    (RLS blocks everyone else). Service role bypasses RLS.
@@ -191,8 +201,51 @@ serve(async (req) => {
 
     logStep("Subscription state cached", { email, subscribed: hasActive, type: event.type });
 
+    // 5. Send Premium welcome email ONLY when the subscription transitions
+    //    from inactive → active (or on the explicit checkout completion event
+    //    if the row didn't exist yet). The `idempotencyKey` is keyed on the
+    //    Stripe subscription id so retries / duplicate events never re-send.
+    const isFreshActivation = hasActive && !wasSubscribed;
+    if (isFreshActivation && activeSub?.id) {
+      try {
+        const renewalDate = periodEnd
+          ? new Date(periodEnd).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          : undefined;
+
+        const { error: sendError } = await supabase.functions.invoke(
+          "send-transactional-email",
+          {
+            body: {
+              templateName: "premium-welcome",
+              recipientEmail: email,
+              idempotencyKey: `premium-welcome-${activeSub.id}`,
+              templateData: {
+                firstName: firstName ?? undefined,
+                renewalDate,
+              },
+            },
+          },
+        );
+
+        if (sendError) {
+          logStep("Premium welcome email send failed (non-fatal)", {
+            error: sendError.message,
+          });
+        } else {
+          logStep("Premium welcome email queued", { email, subId: activeSub.id });
+        }
+      } catch (err) {
+        // Never fail the webhook because of an email — Stripe will retry the whole event.
+        logStep("Premium welcome email exception (non-fatal)", { error: String(err) });
+      }
+    }
+
     return new Response(
-      JSON.stringify({ received: true, subscribed: hasActive }),
+      JSON.stringify({ received: true, subscribed: hasActive, emailed: isFreshActivation }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (err) {
