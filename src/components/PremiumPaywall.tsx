@@ -3,9 +3,10 @@ import { Lock, Crown, BarChart3, StickyNote, Sparkles, MapPin, Loader2 } from "l
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { capture } from "@/lib/posthog";
+import { startCheckout } from "@/lib/checkout";
+import { useAuth } from "@/contexts/AuthContext";
 
 const premiumFeatures = [
   { icon: BarChart3, label: "Side-by-side college comparison" },
@@ -17,41 +18,13 @@ const premiumFeatures = [
 export default function PremiumPaywall() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { isSubscribed } = useAuth();
 
   const handleUpgrade = async () => {
     capture("premium_clicked", { source: "paywall" });
     setLoading(true);
-    // Open window synchronously to avoid popup blocker
-    const checkoutWindow = window.open("about:blank", "_blank");
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      if (!accessToken) throw new Error("Please sign in again to continue.");
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || "Checkout failed");
-      if (data?.url && checkoutWindow) {
-        checkoutWindow.location.href = data.url;
-      } else if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Could not start checkout. Please try again.",
-        variant: "destructive",
-      });
+      await startCheckout(toast, { isSubscribed });
     } finally {
       setLoading(false);
     }

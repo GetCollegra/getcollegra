@@ -147,15 +147,33 @@ const Dashboard = () => {
     if (!authLoading && user) capture("dashboard_opened");
   }, [authLoading, user, navigate]);
 
-  // Refresh subscription after checkout redirect
+  // Refresh subscription after checkout redirect — poll for up to ~20s
+  // because Stripe can take a moment to register the active subscription.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("upgraded") === "true") {
-      refreshSubscription();
-      // Clean URL
-      window.history.replaceState({}, "", "/dashboard");
-    }
-  }, [refreshSubscription]);
+    if (params.get("upgraded") !== "true") return;
+
+    capture("checkout_completed");
+    toast({
+      title: "Welcome to Premium! 🎉",
+      description: "Unlocking your features now…",
+    });
+    window.history.replaceState({}, "", "/dashboard");
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 10; // 10 × 2s = 20s
+    const tick = async () => {
+      if (cancelled) return;
+      attempts += 1;
+      await refreshSubscription();
+      if (!cancelled && attempts < maxAttempts) {
+        setTimeout(tick, 2000);
+      }
+    };
+    tick();
+    return () => { cancelled = true; };
+  }, [refreshSubscription, toast]);
 
   // Load profile name
   useEffect(() => {

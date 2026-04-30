@@ -1,7 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import { capture } from "@/lib/posthog";
 
-export async function startCheckout(toast: (opts: { title: string; description: string; variant?: "default" | "destructive" }) => void) {
+type ToastFn = (opts: { title: string; description: string; variant?: "default" | "destructive" }) => void;
+
+export async function startCheckout(toast: ToastFn, opts?: { isSubscribed?: boolean }) {
+  // Client-side guard: don't open a new checkout if we already know they're subscribed.
+  if (opts?.isSubscribed) {
+    toast({
+      title: "You're already Premium",
+      description: "Manage your subscription from your profile.",
+    });
+    return;
+  }
+
   capture("checkout_started");
   const checkoutWindow = window.open("about:blank", "_blank");
   try {
@@ -25,6 +36,17 @@ export async function startCheckout(toast: (opts: { title: string; description: 
       }
     );
     const data = await response.json();
+
+    // Server-side duplicate guard (409): user already has an active subscription.
+    if (response.status === 409 || data?.already_subscribed) {
+      checkoutWindow?.close();
+      toast({
+        title: "You're already Premium",
+        description: data?.error || "Your subscription is already active.",
+      });
+      return;
+    }
+
     if (!response.ok) throw new Error(data?.error || "Checkout failed");
 
     if (data?.url && checkoutWindow) {
