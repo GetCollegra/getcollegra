@@ -48,6 +48,29 @@ serve(async (req) => {
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+
+      // Guard: prevent duplicate subscriptions
+      const existingSubs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "active",
+        limit: 1,
+      });
+      if (existingSubs.data.length > 0) {
+        logStep("User already has active subscription — blocking duplicate checkout", {
+          customerId,
+          subscriptionId: existingSubs.data[0].id,
+        });
+        return new Response(
+          JSON.stringify({
+            error: "You already have an active Premium subscription. Manage it from your account.",
+            already_subscribed: true,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 409,
+          }
+        );
+      }
     }
     logStep("Stripe customer lookup done", { customerId: customerId || "new" });
 
