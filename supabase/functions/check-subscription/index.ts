@@ -127,9 +127,16 @@ serve(async (req) => {
 
     const hasActiveSub = subscriptions.data.length > 0;
     const activeSub = hasActiveSub ? subscriptions.data[0] : null;
-    const subscriptionEnd = activeSub
-      ? new Date(activeSub.current_period_end * 1000).toISOString()
-      : null;
+    // Stripe API basil moved current_period_end onto subscription items.
+    // Fall back through both locations and guard against missing/invalid values.
+    const periodEndUnix =
+      (activeSub as any)?.current_period_end ??
+      activeSub?.items?.data?.[0]?.current_period_end ??
+      null;
+    const subscriptionEnd =
+      typeof periodEndUnix === "number" && Number.isFinite(periodEndUnix)
+        ? new Date(periodEndUnix * 1000).toISOString()
+        : null;
 
     // Refresh cache.
     await supabaseClient.from("subscribers").upsert({
