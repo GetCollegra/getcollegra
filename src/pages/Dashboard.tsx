@@ -28,8 +28,9 @@ import {
   Sparkles, MapPin, DollarSign, Target, Shield, TrendingUp,
   LogOut, Trophy, Navigation, Wallet, Loader2, Trash2, Plus, Search,
   ChevronDown, Users, BookOpen, Briefcase, Award, Lock, Heart, Zap, Eye,
-  ThumbsUp, ThumbsDown, Settings, X, Filter
+  ThumbsUp, ThumbsDown, Settings, X, Filter, Crown
 } from "lucide-react";
+import { startCheckout } from "@/lib/checkout";
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import TravelFromHome from "@/components/TravelFromHome";
@@ -53,7 +54,25 @@ const fitCategoryConfig: Record<string, { color: string; bg: string; icon: typeo
 };
 
 const Dashboard = () => {
-  const { user, loading: authLoading, signOut, isSubscribed, refreshSubscription } = useAuth();
+  const { user, loading: authLoading, signOut, isSubscribed, subscriptionEnd, subscriptionLoading, refreshSubscription } = useAuth();
+  const [openingPortal, setOpeningPortal] = useState(false);
+
+  const openCustomerPortal = async () => {
+    setOpeningPortal(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw error;
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (err) {
+      toast({
+        title: "Couldn't open billing portal",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setOpeningPortal(false);
+    }
+  };
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -509,6 +528,58 @@ const Dashboard = () => {
               <p className="text-muted-foreground text-lg">
                 Organize, compare, and plan your college journey — all in one place.
               </p>
+            </div>
+
+            {/* Subscription status indicator */}
+            <div className="shrink-0 w-full sm:w-auto">
+              {subscriptionLoading ? (
+                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-muted/50 border border-border/50">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Checking status…</span>
+                </div>
+              ) : isSubscribed ? (
+                <div className="flex flex-col sm:items-end gap-1.5">
+                  <Badge
+                    className="gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50"
+                    aria-label="Premium subscription active"
+                  >
+                    <Crown className="h-3.5 w-3.5" fill="currentColor" />
+                    <span className="font-semibold text-xs uppercase tracking-wide">Premium · Active</span>
+                    <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  </Badge>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {subscriptionEnd && (
+                      <span>Renews {new Date(subscriptionEnd).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={openCustomerPortal}
+                      disabled={openingPortal}
+                      className="underline-offset-2 hover:underline text-primary disabled:opacity-60"
+                    >
+                      {openingPortal ? "Opening…" : "Manage"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:items-end gap-1.5">
+                  <Badge
+                    variant="outline"
+                    className="gap-1.5 px-3 py-1.5 bg-muted/40 text-muted-foreground border-border"
+                    aria-label="Free plan — Premium features locked"
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                    <span className="font-semibold text-xs uppercase tracking-wide">Free Plan</span>
+                  </Badge>
+                  <button
+                    type="button"
+                    onClick={() => startCheckout(toast, { isSubscribed })}
+                    className="text-xs font-medium text-primary hover:underline underline-offset-2 inline-flex items-center gap-1"
+                  >
+                    <Crown className="h-3 w-3" /> Upgrade to Premium
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           {studentProfile && (
