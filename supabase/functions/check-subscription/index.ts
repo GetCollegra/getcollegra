@@ -69,7 +69,23 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId, email: userEmail });
 
+    // Caller can request a fresh check (e.g. right after Stripe checkout) by
+    // passing { force: true } in the body or ?force=true. This bypasses the
+    // cache so we don't accidentally lock a paying user out for the TTL window.
+    let force = false;
+    try {
+      if (req.method === "POST") {
+        const body = await req.json().catch(() => ({}));
+        if (body?.force === true) force = true;
+      }
+      const url = new URL(req.url);
+      if (url.searchParams.get("force") === "true") force = true;
+    } catch { /* ignore */ }
+
     // ─── 1. Try the webhook-maintained cache first ──────────────────────────
+    // We ONLY trust the cache when it says `subscribed: true`. A cached
+    // "subscribed: false" is never authoritative — a webhook may not have
+    // landed yet, so we always re-verify with Stripe in that case.
     const { data: cached } = await supabaseClient
       .from("subscribers")
       .select("subscribed, subscription_status, current_period_end, updated_at")
@@ -81,13 +97,12 @@ serve(async (req) => {
       : Infinity;
     const cacheFresh = cached && cacheAgeMs < CACHE_FRESHNESS_MS;
 
-    if (cacheFresh) {
-      logStep("Serving from cache", {
-        subscribed: cached!.subscribed,
+    if (!force && cacheFresh && cached!.subscribed === true) {
+      logStep("Serving subscribed=true from cache", {
         ageSec: Math.round(cacheAgeMs / 1000),
       });
       return new Response(JSON.stringify({
-        subscribed: !!cached!.subscribed,
+        subscribed: true,
         subscription_end: cached!.current_period_end,
         source: "cache",
       }), {

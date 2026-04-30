@@ -11,7 +11,7 @@ type AuthContextType = {
   isSubscribed: boolean;
   subscriptionEnd: string | null;
   subscriptionLoading: boolean;
-  refreshSubscription: () => Promise<void>;
+  refreshSubscription: (opts?: { force?: boolean }) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const checkSubscription = useCallback(async () => {
+  const checkSubscription = useCallback(async (opts?: { force?: boolean }) => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     if (!currentSession) {
       setIsSubscribed(false);
@@ -76,7 +76,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("check-subscription");
+      const { data, error } = await supabase.functions.invoke("check-subscription", {
+        body: opts?.force ? { force: true } : {},
+      });
       if (error) {
         // 401 = expired/invalid session — treat as not subscribed
         setIsSubscribed(false);
