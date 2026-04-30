@@ -28,8 +28,9 @@ import {
   Sparkles, MapPin, DollarSign, Target, Shield, TrendingUp,
   LogOut, Trophy, Navigation, Wallet, Loader2, Trash2, Plus, Search,
   ChevronDown, Users, BookOpen, Briefcase, Award, Lock, Heart, Zap, Eye,
-  ThumbsUp, ThumbsDown, Settings, X, Filter
+  ThumbsUp, ThumbsDown, Settings, X, Filter, Crown
 } from "lucide-react";
+import { startCheckout } from "@/lib/checkout";
 import type { College } from "@/types/college";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import TravelFromHome from "@/components/TravelFromHome";
