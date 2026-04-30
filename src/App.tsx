@@ -20,6 +20,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import CollegeMapPage from "./pages/CollegeMapPage";
 import CollegeDetailPage from "./pages/CollegeDetailPage";
+import Unsubscribe from "./pages/Unsubscribe";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
