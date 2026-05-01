@@ -834,129 +834,160 @@ const Dashboard = () => {
                 </Card>
               ) : (
                 <>
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredColleges.map((college, i) => {
-                      const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
-                      const CatIcon = cat.icon;
-                      const isSaved = savedColleges.some(s => s.college_name === college.name);
-                      return (
-                        <motion.div key={college.name} variants={fadeIn} custom={i + 1}>
-                          <Card className="bg-card border-border hover:shadow-card transition-shadow h-full flex flex-col">
-                            <CardHeader className="pb-3">
-                              <div className="flex items-start justify-between">
-                                <CardTitle className="text-lg leading-tight">{college.name}</CardTitle>
-                                <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0`}>
-                                  <CatIcon className="h-3 w-3 mr-1" />{college.fitCategory}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <MapPin className="h-3.5 w-3.5" />{college.location}
-                              </div>
-                            </CardHeader>
-                            <CardContent className="flex-1 flex flex-col gap-4">
-                              <div className="flex items-center gap-2">
-                                <div className="text-3xl font-bold text-primary">{college.fitScore}%</div>
-                                <span className="text-xs text-muted-foreground">match</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                  <Target className="h-3.5 w-3.5" />
-                                  <span>{college.acceptanceRate}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                  <DollarSign className="h-3.5 w-3.5" />
-                                  <span>{college.tuitionOutOfState}</span>
-                                </div>
-                              </div>
-                              <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
-                              <div className="mt-auto pt-3 flex gap-2">
-                                {(() => {
-                                  const savedEntry = savedColleges.find(s => s.college_name === college.name);
-                                  return (
-                                    <Button
-                                      variant={isSaved ? "outline" : "default"}
-                                      size="sm"
-                                      className="flex-1"
-                                      onClick={() => isSaved && savedEntry ? removeCollege(savedEntry.id) : saveCollege(college)}
-                                    >
-                                      {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Unsave</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
-                                    </Button>
-                                  );
-                                })()}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => navigate(`/college?name=${encodeURIComponent(college.name)}`)}
-                                  className="gap-1"
-                                >
-                                  <Eye className="h-4 w-4" /> Explore
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
+                  {/* Browse mode chips — visual filter only, doesn't break existing logic */}
+                  {(() => {
+                    const counts = {
+                      all: filteredColleges.length,
+                      best: filteredColleges.filter(c => c.fitScore >= 85).length,
+                      affordable: filteredColleges.filter(c => {
+                        const np = (c.netPrice || "").replace(/[^0-9]/g, "");
+                        const n = parseInt(np, 10);
+                        return Number.isFinite(n) && n > 0 && n < 25000;
+                      }).length,
+                      popular: filteredColleges.filter(c => (c.studentBody || "").toLowerCase().includes("large") || /\d{2,}/.test(c.studentBody || "")).length,
+                      reach: filteredColleges.filter(c => c.fitCategory === "Reach").length,
+                      trending: filteredColleges.filter(c => c.fitScore >= 90).length,
+                    };
+                    const chips: { id: BrowseMode; label: string; emoji: string; n: number }[] = [
+                      { id: "all", label: "All Matches", emoji: "🎓", n: counts.all },
+                      { id: "best", label: "Best Fits", emoji: "⭐", n: counts.best },
+                      { id: "affordable", label: "Affordable", emoji: "💰", n: counts.affordable },
+                      { id: "popular", label: "Popular", emoji: "👥", n: counts.popular },
+                      { id: "trending", label: "Trending", emoji: "🔥", n: counts.trending },
+                    ];
+                    return (
+                      <div className="-mx-4 sm:mx-0 mb-6 overflow-x-auto scrollbar-none">
+                        <div className="flex items-center gap-2 px-4 sm:px-0 min-w-max">
+                          {chips.map(chip => {
+                            const active = browseMode === chip.id;
+                            return (
+                              <button
+                                key={chip.id}
+                                type="button"
+                                onClick={() => setBrowseMode(chip.id)}
+                                className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                                  active
+                                    ? "bg-gradient-hero text-primary-foreground shadow-card"
+                                    : "bg-card text-foreground border border-border/60 hover:border-primary/40 hover:bg-primary/5"
+                                }`}
+                              >
+                                <span>{chip.emoji}</span>
+                                <span>{chip.label}</span>
+                                <span className={`ml-0.5 text-[11px] tabular-nums rounded-full px-1.5 py-0.5 ${
+                                  active ? "bg-white/20" : "bg-muted text-muted-foreground"
+                                }`}>{chip.n}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {(() => {
+                    // Apply visual browse-mode filter on top of existing filteredColleges.
+                    // This is presentation-only — does NOT alter matching/persistence logic.
+                    let visible = filteredColleges;
+                    if (browseMode === "best") {
+                      visible = filteredColleges.filter(c => c.fitScore >= 85);
+                    } else if (browseMode === "affordable") {
+                      visible = filteredColleges.filter(c => {
+                        const n = parseInt((c.netPrice || "").replace(/[^0-9]/g, ""), 10);
+                        return Number.isFinite(n) && n > 0 && n < 25000;
+                      });
+                    } else if (browseMode === "popular") {
+                      visible = filteredColleges.filter(c =>
+                        (c.studentBody || "").toLowerCase().includes("large") ||
+                        /\d{2,}/.test(c.studentBody || "")
                       );
-                    })}
-                  </div>
+                    } else if (browseMode === "trending") {
+                      visible = filteredColleges.filter(c => c.fitScore >= 90);
+                    }
+                    if (visible.length === 0) visible = filteredColleges;
+
+                    const sortedByFit = [...visible].sort((a, b) => b.fitScore - a.fitScore);
+                    const featured = sortedByFit[0];
+                    const rest = sortedByFit.slice(1);
+
+                    return (
+                      <>
+                        {featured && (
+                          <div className="mb-6">
+                            <PremiumCollegeCard
+                              college={featured}
+                              index={0}
+                              isFeatured
+                              isSaved={savedColleges.some(s => s.college_name === featured.name)}
+                              isCompared={(() => {
+                                const e = savedColleges.find(s => s.college_name === featured.name);
+                                return !!(e && compareIds.has(e.id));
+                              })()}
+                              onSave={() => saveCollege(featured)}
+                              onUnsave={() => {
+                                const e = savedColleges.find(s => s.college_name === featured.name);
+                                if (e) removeCollege(e.id);
+                              }}
+                              onCompareToggle={() => {
+                                const e = savedColleges.find(s => s.college_name === featured.name);
+                                if (e) { toggleCompare(e.id); setActiveTab("compare"); }
+                                else { saveCollege(featured).then(() => { toast({ title: "Saved! Head to Compare tab." }); setActiveTab("compare"); }); }
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {rest.length > 0 && (
+                          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            {rest.map((college, i) => {
+                              const savedEntry = savedColleges.find(s => s.college_name === college.name);
+                              const isSaved = !!savedEntry;
+                              return (
+                                <PremiumCollegeCard
+                                  key={college.name}
+                                  college={college}
+                                  index={i + 1}
+                                  isSaved={isSaved}
+                                  isCompared={!!(savedEntry && compareIds.has(savedEntry.id))}
+                                  onSave={() => saveCollege(college)}
+                                  onUnsave={() => savedEntry && removeCollege(savedEntry.id)}
+                                  onCompareToggle={() => {
+                                    if (savedEntry) { toggleCompare(savedEntry.id); setActiveTab("compare"); }
+                                    else { saveCollege(college).then(() => { toast({ title: "Saved! Head to Compare tab." }); setActiveTab("compare"); }); }
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Suggested Colleges */}
                   {filteredSuggestions.length > 0 && (
                     <>
-                      <div className="flex items-center gap-2 mt-10 mb-6">
-                        <Sparkles className="h-5 w-5 text-accent" />
+                      <div className="flex items-center gap-2 mt-12 mb-6">
+                        <Sparkles className="h-5 w-5 text-brand-purple" />
                         <h3 className="text-xl font-bold text-foreground">More Suggestions</h3>
                       </div>
-                      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         {filteredSuggestions.map((college, i) => {
-                          const cat = fitCategoryConfig[college.fitCategory] || fitCategoryConfig.Match;
-                          const CatIcon = cat.icon;
-                          const isSaved = savedColleges.some(s => s.college_name === college.name);
+                          const savedEntry = savedColleges.find(s => s.college_name === college.name);
+                          const isSaved = !!savedEntry;
                           return (
-                            <motion.div key={college.name} variants={fadeIn} custom={i + 1}>
-                              <Card className="bg-card border-border hover:shadow-card transition-shadow h-full flex flex-col">
-                                <CardHeader className="pb-3">
-                                  <div className="flex items-start justify-between">
-                                    <CardTitle className="text-lg leading-tight">{college.name}</CardTitle>
-                                    <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0`}>
-                                      <CatIcon className="h-3 w-3 mr-1" />{college.fitCategory}
-                                    </Badge>
-                                  </div>
-                                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                    <MapPin className="h-3.5 w-3.5" />{college.location}
-                                  </div>
-                                </CardHeader>
-                                <CardContent className="flex-1 flex flex-col gap-4">
-                                  <div className="flex items-center gap-2">
-                                    <div className="text-3xl font-bold text-primary">{college.fitScore}%</div>
-                                    <span className="text-xs text-muted-foreground">match</span>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground leading-relaxed">{college.whyFit}</p>
-                                  <div className="mt-auto pt-3 flex gap-2">
-                                    {(() => {
-                                      const savedEntry = savedColleges.find(s => s.college_name === college.name);
-                                      return (
-                                        <Button
-                                          variant={isSaved ? "outline" : "default"}
-                                          size="sm"
-                                          className="flex-1"
-                                          onClick={() => isSaved && savedEntry ? removeCollege(savedEntry.id) : saveCollege(college)}
-                                        >
-                                          {isSaved ? <><Bookmark className="h-4 w-4 mr-1" /> Unsave</> : <><BookmarkPlus className="h-4 w-4 mr-1" /> Save College</>}
-                                        </Button>
-                                      );
-                                    })()}
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => navigate(`/college?name=${encodeURIComponent(college.name)}`)}
-                                      className="gap-1"
-                                    >
-                                      <Eye className="h-4 w-4" /> Explore
-                                    </Button>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </motion.div>
+                            <PremiumCollegeCard
+                              key={college.name}
+                              college={college}
+                              index={i + 1}
+                              isSaved={isSaved}
+                              isCompared={!!(savedEntry && compareIds.has(savedEntry.id))}
+                              onSave={() => saveCollege(college)}
+                              onUnsave={() => savedEntry && removeCollege(savedEntry.id)}
+                              onCompareToggle={() => {
+                                if (savedEntry) { toggleCompare(savedEntry.id); setActiveTab("compare"); }
+                                else { saveCollege(college).then(() => { toast({ title: "Saved! Head to Compare tab." }); setActiveTab("compare"); }); }
+                              }}
+                            />
                           );
                         })}
                       </div>
