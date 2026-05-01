@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, CheckCircle2, RefreshCw } from "lucide-react";
 import Header from "@/components/Header";
 import { capture } from "@/lib/posthog";
 
