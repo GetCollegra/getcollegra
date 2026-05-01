@@ -40,13 +40,33 @@
 
     --radius: 0.5rem;
 
+    /* Premium palette extensions */
+    --brand-purple: 265 85% 60%;
+    --brand-purple-foreground: 0 0% 100%;
+    --brand-teal: 175 70% 45%;
+    --brand-teal-foreground: 0 0% 100%;
+    --success: 152 65% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 95% 52%;
+    --warning-foreground: 30 50% 12%;
+    --reach: 14 90% 58%;
+    --reach-foreground: 0 0% 100%;
+
     /* Custom tokens */
     --gradient-hero: linear-gradient(135deg, hsl(210 90% 38%) 0%, hsl(210 80% 55%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 30% 97%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 30% 98%) 100%);
+    --gradient-banner-1: linear-gradient(135deg, hsl(210 90% 50%) 0%, hsl(265 80% 60%) 100%);
+    --gradient-banner-2: linear-gradient(135deg, hsl(265 80% 58%) 0%, hsl(320 75% 60%) 100%);
+    --gradient-banner-3: linear-gradient(135deg, hsl(175 70% 45%) 0%, hsl(210 85% 50%) 100%);
+    --gradient-banner-4: linear-gradient(135deg, hsl(38 95% 55%) 0%, hsl(14 90% 58%) 100%);
+    --gradient-banner-5: linear-gradient(135deg, hsl(152 65% 42%) 0%, hsl(175 70% 45%) 100%);
+    --gradient-banner-6: linear-gradient(135deg, hsl(225 85% 55%) 0%, hsl(195 90% 50%) 100%);
+    --gradient-best-fit: linear-gradient(135deg, hsl(265 85% 60%) 0%, hsl(210 90% 50%) 50%, hsl(175 70% 45%) 100%);
     --shadow-soft: 0 2px 16px -4px hsl(210 50% 30% / 0.10);
     --shadow-card: 0 6px 28px -8px hsl(210 50% 30% / 0.14);
     --shadow-elevated: 0 12px 40px -12px hsl(210 50% 30% / 0.18);
+    --shadow-glow: 0 0 0 1px hsl(265 85% 60% / 0.35), 0 18px 60px -18px hsl(265 85% 60% / 0.45), 0 8px 30px -10px hsl(210 90% 50% / 0.35);
 
     /* Sidebar defaults */
     --sidebar-background: 0 0% 98%;
