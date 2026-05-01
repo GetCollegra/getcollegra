@@ -40,6 +40,7 @@ import PeerOutcomes from "@/components/PeerOutcomes";
 import PremiumCollegeCard from "@/components/PremiumCollegeCard";
 import PremiumSavedRow from "@/components/PremiumSavedRow";
 import PremiumCardBanner from "@/components/PremiumCardBanner";
+import { createUniqueFallbackIndexes, getCollegeFallbackKey } from "@/lib/campusFallback";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
@@ -508,6 +509,14 @@ const Dashboard = () => {
   const availableMajors = useMemo(() => extractMajors([...colleges, ...suggestedColleges]), [colleges, suggestedColleges]);
   const filteredColleges = useMemo(() => applySorting(applyFilters(colleges, filters), sort), [colleges, filters, sort]);
   const filteredSuggestions = useMemo(() => applySorting(applyFilters(suggestedColleges, filters), sort), [suggestedColleges, filters, sort]);
+  const fallbackIndexes = useMemo(
+    () => createUniqueFallbackIndexes([
+      ...filteredColleges.map(c => c.name),
+      ...filteredSuggestions.map(c => c.name),
+      ...savedColleges.map(s => s.college_name),
+    ]),
+    [filteredColleges, filteredSuggestions, savedColleges],
+  );
 
   // Organized saved colleges by category
   const savedByCategory = useMemo(() => {
@@ -999,6 +1008,7 @@ const Dashboard = () => {
                             <PremiumCollegeCard
                               college={featured}
                               index={0}
+                              fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(featured.name))}
                               isFeatured
                               simpleView={simpleView}
                               isSaved={savedColleges.some(s => s.college_name === featured.name)}
@@ -1030,6 +1040,7 @@ const Dashboard = () => {
                                   key={college.name}
                                   college={college}
                                   index={i + 1}
+                                  fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(college.name))}
                                   simpleView={simpleView}
                                   isSaved={isSaved}
                                   isCompared={!!(savedEntry && compareIds.has(savedEntry.id))}
@@ -1064,6 +1075,7 @@ const Dashboard = () => {
                               key={college.name}
                               college={college}
                               index={i + 1}
+                              fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(college.name))}
                               simpleView={simpleView}
                               isSaved={isSaved}
                               isCompared={!!(savedEntry && compareIds.has(savedEntry.id))}
@@ -1225,6 +1237,7 @@ const Dashboard = () => {
                             key={saved.id}
                             saved={saved}
                             index={idx}
+                            fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(saved.college_name))}
                             isCompared={compareIds.has(saved.id)}
                             onStatusChange={updateStatus}
                             onRemove={removeCollege}
@@ -1306,6 +1319,7 @@ const Dashboard = () => {
                             <PremiumCardBanner
                               college={saved.college_data}
                               index={idx}
+                              fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(saved.college_name))}
                               size="sm"
                               showFitScore={false}
                               rightSlot={
@@ -1481,6 +1495,7 @@ const Dashboard = () => {
                                 <PremiumCardBanner
                                   college={college}
                                   index={idx}
+                                  fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(college.name))}
                                   size="md"
                                 />
                                 {/* Quick stats below banner */}
