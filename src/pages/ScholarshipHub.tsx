@@ -306,7 +306,7 @@ const ScholarshipHub = () => {
 
   const handleUpgrade = async () => {
     capture("scholarship_hub_upgrade_clicked");
-    await startCheckout();
+    await startCheckout(toast, { isSubscribed });
   };
 
   const runEssayHelper = async () => {
