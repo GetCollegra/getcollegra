@@ -13,6 +13,8 @@ import Footer from "@/components/Footer";
 import CollegePersonality, { derivePersonality } from "@/components/quiz-results/CollegePersonality";
 import HowYouCompare from "@/components/quiz-results/HowYouCompare";
 import ShareResults from "@/components/quiz-results/ShareResults";
+import PeerOutcomes from "@/components/PeerOutcomes";
+import TrendingCollegeLists from "@/components/TrendingCollegeLists";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { trackClick } from "@/lib/analytics";
@@ -1534,6 +1536,21 @@ const QuizResults = () => {
                 </div>
               </div>
             </section>
+
+            {/* Students Like You Got Into — peer outcomes (AI-generated trends) */}
+            <PeerOutcomes
+              profile={{
+                gpa: surveyContext.gpa,
+                state: surveyContext.cityState || surveyContext.city_state,
+                major: surveyContext.areaOfStudy || surveyContext.area_of_study,
+                testScore: surveyContext.testScore || surveyContext.test_score,
+                campusSize: surveyContext.campusSize || surveyContext.campus_size,
+                locationType: surveyContext.locationType || surveyContext.location_type,
+              }}
+            />
+
+            {/* Trending College Lists — browseable curated collections */}
+            <TrendingCollegeLists />
 
             {/* Comparison Table Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-muted/20">
