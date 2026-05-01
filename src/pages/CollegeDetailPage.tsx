@@ -360,6 +360,9 @@ const CollegeDetailPage = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Student Vibe Reviews */}
+              <StudentVibeReviews collegeName={college.name} />
             </motion.div>
           </TabsContent>
 
