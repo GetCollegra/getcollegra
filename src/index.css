@@ -215,4 +215,50 @@
   .shadow-elevated {
     box-shadow: var(--shadow-elevated);
   }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Banner gradients keyed by index — keeps each card visually distinct */
+  .bg-banner-1 { background: var(--gradient-banner-1); }
+  .bg-banner-2 { background: var(--gradient-banner-2); }
+  .bg-banner-3 { background: var(--gradient-banner-3); }
+  .bg-banner-4 { background: var(--gradient-banner-4); }
+  .bg-banner-5 { background: var(--gradient-banner-5); }
+  .bg-banner-6 { background: var(--gradient-banner-6); }
+  .bg-best-fit { background: var(--gradient-best-fit); }
+
+  /* Subtle pattern overlay for banners */
+  .banner-pattern {
+    background-image:
+      radial-gradient(circle at 20% 30%, hsl(0 0% 100% / 0.20) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, hsl(0 0% 100% / 0.12) 0%, transparent 45%);
+  }
+
+  /* Smooth banner zoom container */
+  .zoom-on-hover .zoom-target {
+    transition: transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .zoom-on-hover:hover .zoom-target {
+    transform: scale(1.06);
+  }
+
+  /* Card lift + shadow deepen */
+  .card-premium {
+    @apply transition-all duration-300;
+  }
+  .card-premium:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* Pulse glow for the "Best Fit" hero card */
+  .glow-best-fit {
+    box-shadow: var(--shadow-glow);
+    animation: glow-pulse 3.5s ease-in-out infinite;
+  }
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 0 1px hsl(265 85% 60% / 0.35), 0 18px 60px -18px hsl(265 85% 60% / 0.45), 0 8px 30px -10px hsl(210 90% 50% / 0.35); }
+    50%      { box-shadow: 0 0 0 1px hsl(265 85% 60% / 0.55), 0 24px 80px -16px hsl(265 85% 60% / 0.6),  0 12px 40px -10px hsl(175 70% 45% / 0.45); }
+  }
 }
