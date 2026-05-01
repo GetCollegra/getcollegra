@@ -1170,7 +1170,7 @@ const Dashboard = () => {
                     </CardContent></Card>
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {savedColleges.map(saved => {
+                      {savedColleges.map((saved, idx) => {
                         const parsed = parseNotes(saved.notes);
                         const hasTags = parsed.tags.length > 0;
                         const hasNotes = parsed.general.trim().length > 0;
@@ -1180,20 +1180,21 @@ const Dashboard = () => {
                         return (
                           <Card
                             key={saved.id}
-                            className="bg-card border-border hover:shadow-card hover:border-primary/20 transition-all cursor-pointer group"
+                            className="card-premium overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm cursor-pointer group"
                             onClick={() => setNotesPanelId(saved.id)}
                           >
-                            <CardContent className="p-5">
-                              <div className="flex items-start justify-between gap-2 mb-3">
-                                <div className="min-w-0">
-                                  <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{saved.college_name}</h3>
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                                    <MapPin className="h-3 w-3" />
-                                    <span className="truncate">{saved.college_data.location}</span>
-                                  </div>
-                                </div>
-                                <StickyNote className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
-                              </div>
+                            <PremiumCardBanner
+                              college={saved.college_data}
+                              index={idx}
+                              size="sm"
+                              showFitScore={false}
+                              rightSlot={
+                                <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-white/95 shadow-soft">
+                                  <StickyNote className="h-3.5 w-3.5 text-foreground" />
+                                </span>
+                              }
+                            />
+                            <CardContent className="p-4">
                               {hasTags && (
                                 <div className="flex flex-wrap gap-1.5 mb-3">
                                   {parsed.tags.slice(0, 3).map(tag => (
@@ -1207,12 +1208,12 @@ const Dashboard = () => {
                               {hasNotes && (
                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{parsed.general}</p>
                               )}
-                              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                                {prosCount > 0 && <span className="flex items-center gap-0.5"><ThumbsUp className="h-2.5 w-2.5 text-emerald-600" /> {prosCount}</span>}
-                                {consCount > 0 && <span className="flex items-center gap-0.5"><ThumbsDown className="h-2.5 w-2.5 text-rose-500" /> {consCount}</span>}
-                                {checkDone > 0 && <span className="flex items-center gap-0.5"><Eye className="h-2.5 w-2.5" /> {checkDone}/4</span>}
+                              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                                {prosCount > 0 && <span className="flex items-center gap-0.5"><ThumbsUp className="h-3 w-3 text-success" /> {prosCount}</span>}
+                                {consCount > 0 && <span className="flex items-center gap-0.5"><ThumbsDown className="h-3 w-3 text-destructive" /> {consCount}</span>}
+                                {checkDone > 0 && <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {checkDone}/4</span>}
                                 {!hasTags && !hasNotes && prosCount === 0 && consCount === 0 && (
-                                  <span className="text-muted-foreground/60 italic">No notes yet — click to add</span>
+                                  <span className="text-muted-foreground/70 italic">No notes yet — click to add</span>
                                 )}
                               </div>
                             </CardContent>
