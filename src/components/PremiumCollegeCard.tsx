@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { College } from "@/types/college";
 import { cn } from "@/lib/utils";
+import { useCollegePhoto } from "@/hooks/useCollegePhoto";
 
 type Props = {
   college: College;
