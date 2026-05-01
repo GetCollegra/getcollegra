@@ -668,8 +668,8 @@ const Dashboard = () => {
                 {[
                   { label: "Saved Colleges", value: savedColleges.length, icon: Bookmark, onClick: () => setActiveTab("saved") },
                   { label: "Matches Found", value: colleges.length, icon: GraduationCap, onClick: () => setActiveTab("matches") },
-                  { label: "Scholarships Available", value: scholarshipCount, icon: Award, onClick: () => navigate("/scholarships") },
-                  { label: "Upcoming Deadlines", value: upcomingDeadlineCount, icon: Zap, onClick: () => navigate("/scholarships"), accent: upcomingDeadlineCount > 0 },
+                  { label: "Scholarships Available", value: scholarshipCount, icon: Award, onClick: () => navigate("/scholarship-hub") },
+                  { label: "Upcoming Deadlines", value: upcomingDeadlineCount, icon: Zap, onClick: () => navigate("/scholarship-hub"), accent: upcomingDeadlineCount > 0 },
                 ].map((stat) => {
                   const Icon = stat.icon;
                   return (
