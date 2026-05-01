@@ -894,10 +894,11 @@ const ScholarshipCard = ({
             </Badge>
           </div>
 
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3 mb-1">
             <div className="flex items-center gap-1 text-foreground font-bold">
               <DollarSign className="h-4 w-4 text-emerald-600" />
               {formatMoney(s.amount)}
+              <span className="text-[10px] font-normal text-muted-foreground ml-1">max award</span>
             </div>
             <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
               urgency === "urgent" ? "bg-red-50 text-red-700 border border-red-200" :
@@ -907,6 +908,16 @@ const ScholarshipCard = ({
               <Clock className="h-3 w-3" /> {days >= 0 ? `${days} days left` : "Closed"}
             </div>
           </div>
+          {s.application_url && (
+            <a
+              href={s.application_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-muted-foreground hover:text-primary inline-flex items-center gap-1 mb-3"
+            >
+              Verify amount on official site <ExternalLink className="h-2.5 w-2.5" />
+            </a>
+          )}
 
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{s.description}</p>
 
