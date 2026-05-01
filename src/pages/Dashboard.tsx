@@ -40,6 +40,7 @@ import PeerOutcomes from "@/components/PeerOutcomes";
 import PremiumCollegeCard from "@/components/PremiumCollegeCard";
 import PremiumSavedRow from "@/components/PremiumSavedRow";
 import PremiumCardBanner from "@/components/PremiumCardBanner";
+import { createUniqueFallbackIndexes, getCollegeFallbackKey } from "@/lib/campusFallback";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
@@ -508,6 +509,14 @@ const Dashboard = () => {
   const availableMajors = useMemo(() => extractMajors([...colleges, ...suggestedColleges]), [colleges, suggestedColleges]);
   const filteredColleges = useMemo(() => applySorting(applyFilters(colleges, filters), sort), [colleges, filters, sort]);
   const filteredSuggestions = useMemo(() => applySorting(applyFilters(suggestedColleges, filters), sort), [suggestedColleges, filters, sort]);
+  const fallbackIndexes = useMemo(
+    () => createUniqueFallbackIndexes([
+      ...filteredColleges.map(c => c.name),
+      ...filteredSuggestions.map(c => c.name),
+      ...savedColleges.map(s => s.college_name),
+    ]),
+    [filteredColleges, filteredSuggestions, savedColleges],
+  );
 
   // Organized saved colleges by category
   const savedByCategory = useMemo(() => {
