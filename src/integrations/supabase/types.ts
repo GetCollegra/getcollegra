@@ -311,6 +311,107 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_scholarships: {
+        Row: {
+          amount: number
+          created_at: string
+          deadline: string
+          id: string
+          scholarship_id: string
+          scholarship_name: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          deadline: string
+          id?: string
+          scholarship_id: string
+          scholarship_name: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          deadline?: string
+          id?: string
+          scholarship_id?: string
+          scholarship_name?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_scholarships_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scholarships: {
+        Row: {
+          amount: number
+          application_url: string | null
+          created_at: string
+          deadline: string
+          description: string
+          eligibility_tags: string[]
+          essay_required: boolean
+          grade_levels: string[]
+          id: string
+          is_local: boolean
+          majors: string[]
+          merit_based: boolean
+          min_gpa: number | null
+          name: string
+          need_based: boolean
+          provider: string | null
+          state: string | null
+        }
+        Insert: {
+          amount?: number
+          application_url?: string | null
+          created_at?: string
+          deadline: string
+          description?: string
+          eligibility_tags?: string[]
+          essay_required?: boolean
+          grade_levels?: string[]
+          id?: string
+          is_local?: boolean
+          majors?: string[]
+          merit_based?: boolean
+          min_gpa?: number | null
+          name: string
+          need_based?: boolean
+          provider?: string | null
+          state?: string | null
+        }
+        Update: {
+          amount?: number
+          application_url?: string | null
+          created_at?: string
+          deadline?: string
+          description?: string
+          eligibility_tags?: string[]
+          essay_required?: boolean
+          grade_levels?: string[]
+          id?: string
+          is_local?: boolean
+          majors?: string[]
+          merit_based?: boolean
+          min_gpa?: number | null
+          name?: string
+          need_based?: boolean
+          provider?: string | null
+          state?: string | null
+        }
+        Relationships: []
+      }
       scoring_weight_adjustments: {
         Row: {
           academic_adj: number

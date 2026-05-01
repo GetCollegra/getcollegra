@@ -21,6 +21,7 @@ import Profile from "./pages/Profile";
 import CollegeMapPage from "./pages/CollegeMapPage";
 import CollegeDetailPage from "./pages/CollegeDetailPage";
 import Unsubscribe from "./pages/Unsubscribe";
+import ScholarshipHub from "./pages/ScholarshipHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/college-map" element={<CollegeMapPage />} />
               <Route path="/college" element={<CollegeDetailPage />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
+              <Route path="/scholarship-hub" element={<ScholarshipHub />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

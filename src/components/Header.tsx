@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogIn, LayoutDashboard, User, Menu, Home, Tag, Sparkles } from "lucide-react";
+import { LogIn, LayoutDashboard, User, Menu, Home, Tag, Sparkles, Award } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 
 const Header = () => {
@@ -43,6 +43,9 @@ const Header = () => {
               <>
                 <a href="/dashboard" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                   <LayoutDashboard className="h-4 w-4" /> Dashboard
+                </a>
+                <a href="/scholarship-hub" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <Award className="h-4 w-4" /> Scholarships
                 </a>
                 <a href="/profile" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                   <User className="h-4 w-4" /> Profile
@@ -100,6 +103,11 @@ const Header = () => {
                       <SheetClose asChild>
                         <a href="/dashboard" className={mobileLinkClass}>
                           <LayoutDashboard className="h-5 w-5 text-muted-foreground" /> Dashboard
+                        </a>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <a href="/scholarship-hub" className={mobileLinkClass}>
+                          <Award className="h-5 w-5 text-muted-foreground" /> Scholarships
                         </a>
                       </SheetClose>
                       <SheetClose asChild>
