@@ -860,19 +860,24 @@ const Dashboard = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : colleges.length === 0 ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="p-10 text-center">
-                    <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No matches yet</h3>
+                <Card className="card-premium relative overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
+                  <div className="absolute inset-0 banner-pattern opacity-40" aria-hidden />
+                  <CardContent className="relative p-10 text-center">
+                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/15 to-brand-purple/15 border border-primary/20 mb-4">
+                      <GraduationCap className="h-7 w-7 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground mb-2">No matches yet</h3>
                     <p className="text-muted-foreground mb-4">Take the college quiz to get your personalized recommendations.</p>
-                    <Button onClick={() => navigate("/survey")}>Take the Quiz</Button>
+                    <Button onClick={() => navigate("/survey")} className="bg-gradient-hero text-primary-foreground font-semibold">Take the Quiz</Button>
                   </CardContent>
                 </Card>
               ) : filteredColleges.length === 0 && colleges.length > 0 ? (
-                <Card className="bg-card border-border">
+                <Card className="card-premium relative overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
                   <CardContent className="p-10 text-center">
-                    <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No colleges match your filters</h3>
+                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-muted border border-border/60 mb-4">
+                      <Filter className="h-7 w-7 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground mb-2">No colleges match your filters</h3>
                     <p className="text-muted-foreground mb-4">Try adjusting your filters or reset them to see all results.</p>
                     <Button variant="outline" onClick={() => setFilters(DEFAULT_FILTER_STATE)}>Reset Filters</Button>
                   </CardContent>
