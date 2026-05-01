@@ -993,6 +993,9 @@ const Dashboard = () => {
                       testScore: storedPreferences?.testScore || storedPreferences?.test_score,
                       campusSize: storedPreferences?.campusSize || storedPreferences?.campus_size,
                       locationType: storedPreferences?.locationType || storedPreferences?.location_type,
+                      academicImportance: storedPreferences?.academicImportance || storedPreferences?.academic_importance,
+                      idealSchoolType: studentProfile?.idealSchoolType,
+                      topPriorities: studentProfile?.topPriorities,
                     }}
                   />
                 </div>
