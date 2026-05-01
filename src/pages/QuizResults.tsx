@@ -13,6 +13,8 @@ import Footer from "@/components/Footer";
 import CollegePersonality, { derivePersonality } from "@/components/quiz-results/CollegePersonality";
 import HowYouCompare from "@/components/quiz-results/HowYouCompare";
 import ShareResults from "@/components/quiz-results/ShareResults";
+import PeerOutcomes from "@/components/PeerOutcomes";
+import TrendingCollegeLists from "@/components/TrendingCollegeLists";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { trackClick } from "@/lib/analytics";
