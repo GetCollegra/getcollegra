@@ -101,10 +101,27 @@ const Signup = () => {
           <div className="w-full max-w-md text-center bg-card rounded-2xl p-10 shadow-card border border-border">
             <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-foreground mb-2">Check Your Email</h2>
-            <p className="text-muted-foreground mb-6">We sent a verification link to <strong>{email}</strong>. Click it to activate your account.</p>
-            <Link to="/login">
-              <Button variant="outline">Go to Login</Button>
-            </Link>
+            <p className="text-muted-foreground mb-4">We sent a verification link to <strong>{email}</strong>. Click it to activate your account.</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Didn't get it? Check your spam folder, or whitelist <strong>noreply@getcollegra.com</strong>.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={handleResend}
+                disabled={resending || resendCooldown > 0}
+                variant="default"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${resending ? "animate-spin" : ""}`} />
+                {resendCooldown > 0
+                  ? `Resend in ${resendCooldown}s`
+                  : resending
+                    ? "Sending..."
+                    : "Resend verification email"}
+              </Button>
+              <Link to="/login">
+                <Button variant="outline" className="w-full">Go to Login</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
