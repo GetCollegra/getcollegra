@@ -706,26 +706,33 @@ const Dashboard = () => {
         <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-12 space-y-4">
 
           {studentProfile && (
-            <Card className="mt-6 bg-card border-border shadow-soft overflow-hidden">
-              <div className="h-1 bg-primary/20 w-full">
-                <div className="h-full bg-primary rounded-r-full" style={{ width: '100%' }} />
-              </div>
+            <Card className="card-premium mt-6 overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
+              <div className="h-1.5 bg-gradient-hero w-full" aria-hidden />
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
-                    <Sparkles className="h-5 w-5 text-primary" />
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                    <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-brand-purple/15 to-brand-teal/15 border border-brand-purple/20">
+                      <Sparkles className="h-5 w-5 text-brand-purple" />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-foreground mb-1">Your Student Profile</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{studentProfile.summary}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-[11px] uppercase tracking-wider font-bold text-brand-purple">Your Student Profile</p>
+                      <span className="inline-flex h-1.5 w-1.5 rounded-full bg-brand-purple animate-pulse" aria-hidden />
+                    </div>
+                    <p className="text-sm text-foreground/85 leading-relaxed">{studentProfile.summary}</p>
                     {studentProfile.idealSchoolType && (
                       <p className="text-xs text-muted-foreground mt-2">
                         <span className="font-semibold text-foreground">Ideal school type:</span> {studentProfile.idealSchoolType}
                       </p>
                     )}
-                    <div className="flex flex-wrap gap-2 mt-3">
+                    <div className="flex flex-wrap gap-1.5 mt-3">
                       {studentProfile.topPriorities?.map((p, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs font-medium">{p}</Badge>
+                        <span key={i} className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 text-brand-purple text-[11px] font-semibold px-2.5 py-1">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          {p}
+                        </span>
                       ))}
                     </div>
                   </div>
