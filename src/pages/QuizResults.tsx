@@ -1754,6 +1754,31 @@ const QuizResults = () => {
             </section>
           </>
         )}
+        {user && (
+          <section className="container px-4 max-w-4xl mx-auto pb-12">
+            <Link to="/scholarship-hub" onClick={() => trackClick("Scholarship Hub CTA", "QuizResults")} className="block group">
+              <div className="rounded-2xl p-6 md:p-8 bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-elevated hover:shadow-card transition-all hover:scale-[1.01]">
+                <div className="flex items-start md:items-center gap-4 md:gap-6 flex-col md:flex-row">
+                  <div className="h-14 w-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0">
+                    <Award className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs uppercase tracking-wider opacity-90 mb-1 font-semibold">New · Premium feature</div>
+                    <h3 className="text-xl md:text-2xl font-bold mb-1">
+                      Based on your profile, you may qualify for $32,000+ in scholarships.
+                    </h3>
+                    <p className="text-sm md:text-base opacity-90">
+                      Find scholarships matched to your profile and stay organized.
+                    </p>
+                  </div>
+                  <Button size="lg" className="bg-white text-primary hover:bg-white/95 font-bold shrink-0">
+                    Open Scholarship Hub <ArrowRight className="h-4 w-4 ml-1.5" />
+                  </Button>
+                </div>
+              </div>
+            </Link>
+          </section>
+        )}
       </main>
 
       <Footer />
