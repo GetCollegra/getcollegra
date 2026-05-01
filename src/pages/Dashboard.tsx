@@ -1115,28 +1115,31 @@ const Dashboard = () => {
               ) : (
                 <div className="space-y-8">
                   {/* Summary bar */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <Card className="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
-                      <CardContent className="p-4 text-center">
-                        <Shield className="h-5 w-5 text-emerald-600 mx-auto mb-1" />
-                        <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{savedByCategory.safety.length}</p>
-                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-500">Safety</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-primary/5 border-primary/20">
-                      <CardContent className="p-4 text-center">
-                        <Target className="h-5 w-5 text-primary mx-auto mb-1" />
-                        <p className="text-2xl font-bold text-primary">{savedByCategory.match.length}</p>
-                        <p className="text-xs font-medium text-primary">Match</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
-                      <CardContent className="p-4 text-center">
-                        <TrendingUp className="h-5 w-5 text-orange-600 mx-auto mb-1" />
-                        <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{savedByCategory.reach.length}</p>
-                        <p className="text-xs font-medium text-orange-600 dark:text-orange-500">Reach</p>
-                      </CardContent>
-                    </Card>
+                  <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                    {([
+                      { label: "Safety", count: savedByCategory.safety.length, icon: Shield, badge: "Likely Admit", tone: "success" },
+                      { label: "Match",  count: savedByCategory.match.length,  icon: Target, badge: "Strong Match", tone: "warning" },
+                      { label: "Reach",  count: savedByCategory.reach.length,  icon: TrendingUp, badge: "Reach School", tone: "reach" },
+                    ] as const).map(tile => {
+                      const Icon = tile.icon;
+                      const toneCls =
+                        tile.tone === "success"
+                          ? "from-success/15 to-success/5 border-success/30 text-success"
+                          : tile.tone === "warning"
+                            ? "from-warning/15 to-warning/5 border-warning/30 text-warning"
+                            : "from-reach/15 to-reach/5 border-reach/30 text-reach";
+                      return (
+                        <Card key={tile.label} className={`card-premium overflow-hidden border bg-gradient-to-br ${toneCls}`}>
+                          <CardContent className="p-4 text-center">
+                            <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-white/60 dark:bg-white/10 backdrop-blur shadow-soft mb-1.5">
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <p className="text-2xl sm:text-3xl font-bold tabular-nums leading-none">{tile.count}</p>
+                            <p className="text-[11px] font-bold uppercase tracking-wide mt-1">{tile.label}</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
 
                   {/* Categorized sections — premium card layout */}
