@@ -163,13 +163,13 @@ export default function PremiumCollegeCard({
               <FitIcon className="h-3 w-3" />
               {fit.label}
             </Badge>
-            {trending && !isFeatured && (
+            {!simpleView && trending && !isFeatured && (
               <Badge className="bg-white/90 text-foreground border-0 gap-1">
                 <Flame className="h-3 w-3 text-reach" />
                 Trending
               </Badge>
             )}
-            {goodValue && (
+            {!simpleView && goodValue && (
               <Badge className="bg-white/90 text-foreground border-0 gap-1">
                 <DollarSign className="h-3 w-3 text-success" />
                 Great Value
