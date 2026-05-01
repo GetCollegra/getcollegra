@@ -15,6 +15,10 @@ interface PeerOutcomesProps {
     testScore?: string;
     campusSize?: string;
     locationType?: string;
+    academicImportance?: string;
+    idealSchoolType?: string;
+    topPriorities?: string[];
+    interests?: string[];
   };
   variant?: "full" | "widget";
 }
@@ -23,6 +27,13 @@ const PeerOutcomes = ({ profile, variant = "full" }: PeerOutcomesProps) => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Stable cache key from quiz inputs so we re-fetch when answers change
+  const cacheKey = JSON.stringify({
+    g: profile.gpa, s: profile.state, m: profile.major, t: profile.testScore,
+    cs: profile.campusSize, lt: profile.locationType, ai: profile.academicImportance,
+    ist: profile.idealSchoolType, tp: profile.topPriorities, i: profile.interests,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +58,7 @@ const PeerOutcomes = ({ profile, variant = "full" }: PeerOutcomesProps) => {
     load();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.gpa, profile.state, profile.major, profile.testScore]);
+  }, [cacheKey]);
 
   const visibleGroups = variant === "widget" ? groups.slice(0, 1) : groups;
 
