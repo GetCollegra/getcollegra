@@ -59,6 +59,45 @@ export type Database = {
         }
         Relationships: []
       }
+      college_lists: {
+        Row: {
+          category: string
+          colleges: Json
+          created_at: string
+          description: string
+          display_order: number
+          emoji: string
+          id: string
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          colleges?: Json
+          created_at?: string
+          description?: string
+          display_order?: number
+          emoji?: string
+          id?: string
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          colleges?: Json
+          created_at?: string
+          description?: string
+          display_order?: number
+          emoji?: string
+          id?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       college_matches: {
         Row: {
           ai_error: string | null
@@ -98,6 +137,39 @@ export type Database = {
           results_version?: number
           student_profile?: Json
           user_id?: string
+        }
+        Relationships: []
+      }
+      college_vibe_reviews: {
+        Row: {
+          college_name: string
+          created_at: string
+          id: string
+          ratings: Json
+          snippets: Json
+          source_note: string
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          college_name: string
+          created_at?: string
+          id?: string
+          ratings?: Json
+          snippets?: Json
+          source_note?: string
+          summary?: string
+          updated_at?: string
+        }
+        Update: {
+          college_name?: string
+          created_at?: string
+          id?: string
+          ratings?: Json
+          snippets?: Json
+          source_note?: string
+          summary?: string
+          updated_at?: string
         }
         Relationships: []
       }
