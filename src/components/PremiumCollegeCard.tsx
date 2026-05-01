@@ -274,8 +274,8 @@ export default function PremiumCollegeCard({
             </div>
           </div>
 
-          {/* Major tags */}
-          {majorTags.length > 0 && (
+          {/* Major tags — hidden in Simple View */}
+          {!simpleView && majorTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {majorTags.map((tag, i) => (
                 <span
@@ -289,8 +289,8 @@ export default function PremiumCollegeCard({
             </div>
           )}
 
-          {/* Why You Match */}
-          {insights.length > 0 && (
+          {/* Why You Match — hidden in Simple View (available on detail page) */}
+          {!simpleView && insights.length > 0 && (
             <div className="rounded-xl border border-border/60 bg-gradient-to-br from-brand-teal/5 to-brand-purple/5 p-3">
               <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide font-bold text-brand-purple mb-1.5">
                 <Sparkles className="h-3 w-3" />
