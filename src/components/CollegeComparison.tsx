@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import type { College } from "@/types/college";
+import { useCollegePhoto } from "@/hooks/useCollegePhoto";
 
 type SavedCollege = {
   id: string;
