@@ -266,18 +266,13 @@ const Profile = () => {
     setOpeningPortal(true);
     try {
       const { data, error } = await supabase.functions.invoke("customer-portal");
-      if (error) {
-        let body: any = null;
-        try { body = await (error as any).context?.json?.(); } catch { /* ignore */ }
-        if (body?.no_customer) {
-          toast({
-            title: "No billing account yet",
-            description: "Subscribe to Premium first to manage billing.",
-          });
-          setOpeningPortal(false);
-          return;
-        }
-        throw new Error(body?.error || error.message);
+      if (error) throw error;
+      if (data?.no_customer) {
+        toast({
+          title: "No billing account yet",
+          description: "Subscribe to Premium first to manage billing.",
+        });
+        return;
       }
       if (data?.url) window.open(data.url, "_blank");
     } catch {

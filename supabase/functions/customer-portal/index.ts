@@ -36,12 +36,12 @@ serve(async (req) => {
     if (customers.data.length === 0) {
       return new Response(
         JSON.stringify({
-          error: "No billing account found. Subscribe to Premium to manage billing.",
           no_customer: true,
+          message: "No billing account found. Subscribe to Premium to manage billing.",
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 404,
+          status: 200,
         }
       );
     }
