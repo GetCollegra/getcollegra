@@ -1546,6 +1546,9 @@ const QuizResults = () => {
                 testScore: surveyContext.testScore || surveyContext.test_score,
                 campusSize: surveyContext.campusSize || surveyContext.campus_size,
                 locationType: surveyContext.locationType || surveyContext.location_type,
+                academicImportance: surveyContext.academicImportance || surveyContext.academic_importance,
+                idealSchoolType: recommendations?.studentProfile?.idealSchoolType,
+                topPriorities: recommendations?.studentProfile?.topPriorities,
               }}
             />
 
