@@ -8,8 +8,23 @@ import f3 from "@/assets/campus-fallback-3.jpg";
 import f4 from "@/assets/campus-fallback-4.jpg";
 import f5 from "@/assets/campus-fallback-5.jpg";
 import f6 from "@/assets/campus-fallback-6.jpg";
+import f7 from "@/assets/campus-fallback-7.jpg";
+import f8 from "@/assets/campus-fallback-8.jpg";
+import f9 from "@/assets/campus-fallback-9.jpg";
+import f10 from "@/assets/campus-fallback-10.jpg";
+import f11 from "@/assets/campus-fallback-11.jpg";
+import f12 from "@/assets/campus-fallback-12.jpg";
+import f13 from "@/assets/campus-fallback-13.jpg";
+import f14 from "@/assets/campus-fallback-14.jpg";
+import f15 from "@/assets/campus-fallback-15.jpg";
+import f16 from "@/assets/campus-fallback-16.jpg";
+import f17 from "@/assets/campus-fallback-17.jpg";
+import f18 from "@/assets/campus-fallback-18.jpg";
 
-export const CAMPUS_FALLBACKS: string[] = [f1, f2, f3, f4, f5, f6];
+export const CAMPUS_FALLBACKS: string[] = [
+  f1, f2, f3, f4, f5, f6, f7, f8, f9,
+  f10, f11, f12, f13, f14, f15, f16, f17, f18,
+];
 
 // Generic single fallback (kept for legacy imports).
 export const CAMPUS_FALLBACK_IMG: string = f1;
