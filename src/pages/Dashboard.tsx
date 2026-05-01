@@ -1008,6 +1008,7 @@ const Dashboard = () => {
                             <PremiumCollegeCard
                               college={featured}
                               index={0}
+                              fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(featured.name))}
                               isFeatured
                               simpleView={simpleView}
                               isSaved={savedColleges.some(s => s.college_name === featured.name)}
@@ -1039,6 +1040,7 @@ const Dashboard = () => {
                                   key={college.name}
                                   college={college}
                                   index={i + 1}
+                                  fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(college.name))}
                                   simpleView={simpleView}
                                   isSaved={isSaved}
                                   isCompared={!!(savedEntry && compareIds.has(savedEntry.id))}
@@ -1073,6 +1075,7 @@ const Dashboard = () => {
                               key={college.name}
                               college={college}
                               index={i + 1}
+                              fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(college.name))}
                               simpleView={simpleView}
                               isSaved={isSaved}
                               isCompared={!!(savedEntry && compareIds.has(savedEntry.id))}
