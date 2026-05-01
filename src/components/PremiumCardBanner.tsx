@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Target, Shield, TrendingUp } from "lucide-react";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
+import { CAMPUS_FALLBACK_IMG } from "@/lib/campusFallback";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { College } from "@/types/college";
 
@@ -73,22 +75,21 @@ export default function PremiumCardBanner({
   const initials = getInitials(college.name);
   const bannerClass = `bg-banner-${(index % 6) + 1}`;
   const { url: photoUrl } = useCollegePhoto(college.name);
+  const [imgFailed, setImgFailed] = useState(false);
+  const resolvedSrc = !imgFailed ? (photoUrl || CAMPUS_FALLBACK_IMG) : CAMPUS_FALLBACK_IMG;
 
   return (
     <div className={cn("relative overflow-hidden zoom-on-hover", heightCls[size], className)}>
       <div className={cn("absolute inset-0 zoom-target", bannerClass)} aria-hidden />
-      {photoUrl && (
-        <img
-          src={photoUrl}
-          alt={`${college.name} campus`}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          className="zoom-target absolute inset-0 w-full h-full object-cover"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-        />
-      )}
-      <div className="absolute inset-0 banner-pattern" aria-hidden />
+      <img
+        src={resolvedSrc}
+        alt={`${college.name} campus`}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        className="zoom-target absolute inset-0 w-full h-full object-cover"
+        onError={() => setImgFailed(true)}
+      />
       <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" aria-hidden />
 
       {/* Top-right area: badge + optional slot */}

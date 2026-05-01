@@ -11,6 +11,8 @@ import {
 import type { College } from "@/types/college";
 import { cn } from "@/lib/utils";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
+import { CAMPUS_FALLBACK_IMG } from "@/lib/campusFallback";
+import { useState } from "react";
 
 type Props = {
   college: College;
@@ -22,6 +24,8 @@ type Props = {
   onUnsave: () => void;
   onCompareToggle?: () => void;
   showCompare?: boolean;
+  /** Simple = just photo, name, location, score, badge, tuition, accept, save/view. */
+  simpleView?: boolean;
 };
 
 /** Stable initials used inside the banner "logo" badge */
@@ -93,6 +97,7 @@ export default function PremiumCollegeCard({
   onUnsave,
   onCompareToggle,
   showCompare = true,
+  simpleView = false,
 }: Props) {
   const navigate = useNavigate();
   const fit = fitStyles[college.fitCategory] || fitStyles.Match;
@@ -106,6 +111,10 @@ export default function PremiumCollegeCard({
   const trending = college.fitScore >= 90;
   const goodValue = isGoodValue(college);
   const { url: photoUrl } = useCollegePhoto(college.name);
+  const [imgFailed, setImgFailed] = useState(false);
+  // Always use either the real photo or our local fallback campus image,
+  // so cards never look empty.
+  const resolvedSrc = !imgFailed ? (photoUrl || CAMPUS_FALLBACK_IMG) : CAMPUS_FALLBACK_IMG;
 
   return (
     <motion.div
@@ -129,23 +138,18 @@ export default function PremiumCollegeCard({
         >
           {/* Gradient base — always rendered so banner never appears empty */}
           <div className={cn("absolute inset-0 zoom-target", bannerClass)} aria-hidden />
-          {/* Real campus photo, fades in once loaded */}
-          {photoUrl && (
-            <img
-              src={photoUrl}
-              alt={`${college.name} campus`}
-              loading="lazy"
-              decoding="async"
-              referrerPolicy="no-referrer"
-              className="zoom-target absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
-              onError={(e) => {
-                // Hide broken image so the gradient shows through
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
-          )}
-          <div className="absolute inset-0 banner-pattern" aria-hidden />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" aria-hidden />
+          {/* Campus photo (real photo or local fallback) — always present so cards look polished */}
+          <img
+            src={resolvedSrc}
+            alt={`${college.name} campus`}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            className="zoom-target absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+            onError={() => setImgFailed(true)}
+          />
+          {/* Subtle dark gradient at bottom for legible overlay text */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" aria-hidden />
 
           {/* Top-left badges */}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[70%]">
@@ -159,13 +163,13 @@ export default function PremiumCollegeCard({
               <FitIcon className="h-3 w-3" />
               {fit.label}
             </Badge>
-            {trending && !isFeatured && (
+            {!simpleView && trending && !isFeatured && (
               <Badge className="bg-white/90 text-foreground border-0 gap-1">
                 <Flame className="h-3 w-3 text-reach" />
                 Trending
               </Badge>
             )}
-            {goodValue && (
+            {!simpleView && goodValue && (
               <Badge className="bg-white/90 text-foreground border-0 gap-1">
                 <DollarSign className="h-3 w-3 text-success" />
                 Great Value
@@ -270,8 +274,8 @@ export default function PremiumCollegeCard({
             </div>
           </div>
 
-          {/* Major tags */}
-          {majorTags.length > 0 && (
+          {/* Major tags — hidden in Simple View */}
+          {!simpleView && majorTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {majorTags.map((tag, i) => (
                 <span
@@ -285,8 +289,8 @@ export default function PremiumCollegeCard({
             </div>
           )}
 
-          {/* Why You Match */}
-          {insights.length > 0 && (
+          {/* Why You Match — hidden in Simple View (available on detail page) */}
+          {!simpleView && insights.length > 0 && (
             <div className="rounded-xl border border-border/60 bg-gradient-to-br from-brand-teal/5 to-brand-purple/5 p-3">
               <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide font-bold text-brand-purple mb-1.5">
                 <Sparkles className="h-3 w-3" />

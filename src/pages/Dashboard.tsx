@@ -108,6 +108,8 @@ const Dashboard = () => {
   const [sort, setSort] = useState<SortOption>("fitScore");
   type BrowseMode = "all" | "best" | "affordable" | "popular" | "scholarships" | "trending";
   const [browseMode, setBrowseMode] = useState<BrowseMode>("all");
+  const [simpleView, setSimpleView] = useState<boolean>(true); // Focus Mode: default to clean cards
+  const [showEngagementWidgets, setShowEngagementWidgets] = useState<boolean>(false);
   const [scholarshipCount, setScholarshipCount] = useState<number>(0);
   const [upcomingDeadlineCount, setUpcomingDeadlineCount] = useState<number>(0);
 
@@ -828,16 +830,47 @@ const Dashboard = () => {
           {/* 2. College Matches */}
           <TabsContent value="matches">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="relative shrink-0">
-                  <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
-                  <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-primary/15 to-brand-purple/15 border border-primary/20">
-                    <GraduationCap className="h-5 w-5 text-primary" />
+              <div className="flex items-start sm:items-center justify-between gap-3 mb-5 flex-col sm:flex-row">
+                <div className="flex items-center gap-3">
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                    <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-primary/15 to-brand-purple/15 border border-primary/20">
+                      <GraduationCap className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground leading-tight">Your College Matches</h2>
+                    <p className="text-sm text-muted-foreground">Hand-picked schools tailored to your quiz answers.</p>
                   </div>
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground leading-tight">Your College Matches</h2>
-                  <p className="text-sm text-muted-foreground">Hand-picked schools tailored to your quiz answers.</p>
+                {/* Focus Mode toggle */}
+                <div
+                  role="tablist"
+                  aria-label="Card density"
+                  className="inline-flex rounded-full bg-muted/60 p-1 text-xs font-semibold shrink-0"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={simpleView}
+                    onClick={() => setSimpleView(true)}
+                    className={`px-3 py-1.5 rounded-full transition-all ${
+                      simpleView ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Simple
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={!simpleView}
+                    onClick={() => setSimpleView(false)}
+                    className={`px-3 py-1.5 rounded-full transition-all ${
+                      !simpleView ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Detailed
+                  </button>
                 </div>
               </div>
 
@@ -967,6 +1000,7 @@ const Dashboard = () => {
                               college={featured}
                               index={0}
                               isFeatured
+                              simpleView={simpleView}
                               isSaved={savedColleges.some(s => s.college_name === featured.name)}
                               isCompared={(() => {
                                 const e = savedColleges.find(s => s.college_name === featured.name);
@@ -996,6 +1030,7 @@ const Dashboard = () => {
                                   key={college.name}
                                   college={college}
                                   index={i + 1}
+                                  simpleView={simpleView}
                                   isSaved={isSaved}
                                   isCompared={!!(savedEntry && compareIds.has(savedEntry.id))}
                                   onSave={() => saveCollege(college)}
@@ -1029,6 +1064,7 @@ const Dashboard = () => {
                               key={college.name}
                               college={college}
                               index={i + 1}
+                              simpleView={simpleView}
                               isSaved={isSaved}
                               isCompared={!!(savedEntry && compareIds.has(savedEntry.id))}
                               onSave={() => saveCollege(college)}
@@ -1065,30 +1101,51 @@ const Dashboard = () => {
                 </>
               )}
 
-              {/* Engagement widgets */}
-              <div className="mt-10 space-y-8">
-                <div className="card-premium relative overflow-hidden bg-card/80 backdrop-blur-sm border border-border/60 rounded-2xl p-5 sm:p-6">
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-purple via-primary to-brand-teal" aria-hidden />
-                  <PeerOutcomes
-                    variant="widget"
-                    profile={{
-                      gpa: storedPreferences?.gpa,
-                      state: storedPreferences?.cityState || storedPreferences?.city_state,
-                      major: storedPreferences?.areaOfStudy || storedPreferences?.area_of_study,
-                      testScore: storedPreferences?.testScore || storedPreferences?.test_score,
-                      campusSize: storedPreferences?.campusSize || storedPreferences?.campus_size,
-                      locationType: storedPreferences?.locationType || storedPreferences?.location_type,
-                      academicImportance: storedPreferences?.academicImportance || storedPreferences?.academic_importance,
-                      idealSchoolType: studentProfile?.idealSchoolType,
-                      topPriorities: studentProfile?.topPriorities,
-                    }}
-                  />
-                </div>
-                <div className="card-premium relative overflow-hidden bg-card/80 backdrop-blur-sm border border-border/60 rounded-2xl p-5 sm:p-6">
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-teal via-primary to-brand-purple" aria-hidden />
-                  <TrendingCollegeLists variant="widget" />
-                </div>
-              </div>
+              {/* Engagement widgets — collapsed by default to reduce clutter */}
+              <Collapsible open={showEngagementWidgets} onOpenChange={setShowEngagementWidgets} className="mt-10">
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm px-5 py-4 hover:bg-card/80 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 rounded-xl bg-gradient-to-br from-brand-purple/15 to-brand-teal/15 border border-brand-purple/20 shrink-0">
+                        <Users className="h-4 w-4 text-brand-purple" />
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="text-sm font-bold text-foreground">Discover & Insights</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          Students like you · Trending college lists
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${showEngagementWidgets ? "rotate-180" : ""}`} />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-6 pt-6">
+                  <div className="card-premium relative overflow-hidden bg-card/80 backdrop-blur-sm border border-border/60 rounded-2xl p-5 sm:p-6">
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-purple via-primary to-brand-teal" aria-hidden />
+                    <PeerOutcomes
+                      variant="widget"
+                      profile={{
+                        gpa: storedPreferences?.gpa,
+                        state: storedPreferences?.cityState || storedPreferences?.city_state,
+                        major: storedPreferences?.areaOfStudy || storedPreferences?.area_of_study,
+                        testScore: storedPreferences?.testScore || storedPreferences?.test_score,
+                        campusSize: storedPreferences?.campusSize || storedPreferences?.campus_size,
+                        locationType: storedPreferences?.locationType || storedPreferences?.location_type,
+                        academicImportance: storedPreferences?.academicImportance || storedPreferences?.academic_importance,
+                        idealSchoolType: studentProfile?.idealSchoolType,
+                        topPriorities: studentProfile?.topPriorities,
+                      }}
+                    />
+                  </div>
+                  <div className="card-premium relative overflow-hidden bg-card/80 backdrop-blur-sm border border-border/60 rounded-2xl p-5 sm:p-6">
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-teal via-primary to-brand-purple" aria-hidden />
+                    <TrendingCollegeLists variant="widget" />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </motion.div>
           </TabsContent>
 
