@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Sparkles, ChevronDown } from "lucide-react";
+import { Heart, Sparkles, ChevronDown, ExternalLink } from "lucide-react";
 import { capture } from "@/lib/posthog";
 
 type Ratings = {
@@ -40,11 +40,14 @@ const RatingBar = ({ value }: { value: number }) => {
   );
 };
 
+type SourceLink = { platform: string; label: string; url: string };
+
 const StudentVibeReviews = ({ collegeName }: StudentVibeReviewsProps) => {
   const [summary, setSummary] = useState<string>("");
   const [snippets, setSnippets] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Ratings>({});
-  const [sourceNote, setSourceNote] = useState<string>("AI-summarized from public sources");
+  const [sources, setSources] = useState<SourceLink[]>([]);
+  const [sourceNote, setSourceNote] = useState<string>("Paraphrased themes from real public student reviews");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -64,7 +67,8 @@ const StudentVibeReviews = ({ collegeName }: StudentVibeReviewsProps) => {
         setSummary(data?.summary || "");
         setSnippets(data?.snippets || []);
         setRatings(data?.ratings || {});
-        setSourceNote(data?.sourceNote || "AI-summarized from public sources");
+        setSources(Array.isArray(data?.sources) ? data.sources : []);
+        setSourceNote(data?.sourceNote || "Paraphrased themes from real public student reviews");
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load");
       } finally {
@@ -148,6 +152,30 @@ const StudentVibeReviews = ({ collegeName }: StudentVibeReviewsProps) => {
                   ))}
                 </ul>
               )}
+            </div>
+          )}
+
+          {/* Verified source links — read real student reviews */}
+          {sources.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-border">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                Read real student reviews on:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {sources.map((src) => (
+                  <a
+                    key={src.platform}
+                    href={src.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/40 hover:bg-muted text-xs font-medium text-foreground border border-border transition-colors"
+                    title={src.label}
+                  >
+                    {src.platform}
+                    <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                  </a>
+                ))}
+              </div>
             </div>
           )}
         </>

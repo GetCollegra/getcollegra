@@ -148,6 +148,7 @@ export type Database = {
           ratings: Json
           snippets: Json
           source_note: string
+          sources: Json
           summary: string
           updated_at: string
         }
@@ -158,6 +159,7 @@ export type Database = {
           ratings?: Json
           snippets?: Json
           source_note?: string
+          sources?: Json
           summary?: string
           updated_at?: string
         }
@@ -168,6 +170,7 @@ export type Database = {
           ratings?: Json
           snippets?: Json
           source_note?: string
+          sources?: Json
           summary?: string
           updated_at?: string
         }
