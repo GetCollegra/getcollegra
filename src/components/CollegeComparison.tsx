@@ -103,6 +103,30 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   },
 ];
 
+/** Compact photo+gradient banner used at the top of each compare column card. */
+function CompareBanner({ collegeName, index, isCompact }: { collegeName: string; index: number; isCompact: boolean }) {
+  const { url } = useCollegePhoto(collegeName);
+  const bannerClass = `bg-banner-${(index % 6) + 1}`;
+  return (
+    <div className={`relative overflow-hidden ${isCompact ? "h-12" : "h-16"}`}>
+      <div className={`absolute inset-0 ${bannerClass}`} aria-hidden />
+      {url && (
+        <img
+          src={url}
+          alt={`${collegeName} campus`}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+        />
+      )}
+      <div className="absolute inset-0 banner-pattern" aria-hidden />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/40" aria-hidden />
+    </div>
+  );
+}
+
 type Props = {
   savedColleges: SavedCollege[];
   comparedColleges: SavedCollege[];
