@@ -552,75 +552,124 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-dashboard-ambient relative overflow-hidden">
+      {/* Ambient floating glow shapes */}
+      <div aria-hidden className="pointer-events-none absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-primary/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute top-40 -right-40 w-[32rem] h-[32rem] rounded-full bg-purple-400/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute bottom-0 left-1/3 w-[24rem] h-[24rem] rounded-full bg-blue-300/10 blur-3xl" />
+
       <Header />
       <FeedbackSurveyModal />
-      <main className="container px-4 pt-24 pb-16 max-w-7xl mx-auto">
-        {/* 1. Welcome Section */}
-        <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-12">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-primary mb-1">Dashboard</p>
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Welcome back, {firstName}
-              </h1>
-              <p className="text-muted-foreground text-lg">
-                Organize, compare, and plan your college journey — all in one place.
-              </p>
-            </div>
+      <main className="container px-4 pt-24 pb-16 max-w-7xl mx-auto relative">
+        {/* 1. Premium Hero Welcome Section */}
+        <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-10">
+          <div className="relative overflow-hidden rounded-3xl bg-hero-glass shadow-elevated">
+            {/* Decorative glass orbs */}
+            <div aria-hidden className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/15 blur-3xl" />
+            <div aria-hidden className="absolute -bottom-24 -left-16 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
+            <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_55%)]" />
 
-            {/* Subscription status indicator */}
-            <div className="shrink-0 w-full sm:w-auto">
-              {subscriptionLoading ? (
-                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-muted/50 border border-border/50">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Checking status…</span>
+            <div className="relative p-6 sm:p-8 md:p-10 text-white">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-white/75 mb-2">Your Dashboard</p>
+                  <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
+                    Welcome back, {firstName} <span className="inline-block">👋</span>
+                  </h1>
+                  <p className="text-white/85 text-sm sm:text-base mt-2 max-w-xl">
+                    Organize, compare, and plan your college journey — all in one place.
+                  </p>
                 </div>
-              ) : isSubscribed ? (
-                <div className="flex flex-col sm:items-end gap-1.5">
-                  <Badge
-                    className="gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50"
-                    aria-label="Premium subscription active"
+
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 shrink-0">
+                  {/* Subscription badge */}
+                  {subscriptionLoading ? (
+                    <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/15 backdrop-blur border border-white/20">
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
+                      <span className="text-xs text-white/90">Checking…</span>
+                    </div>
+                  ) : isSubscribed ? (
+                    <div className="flex flex-col items-start md:items-end gap-1">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur border border-white/25 text-xs font-semibold uppercase tracking-wide">
+                        <Crown className="h-3.5 w-3.5" fill="currentColor" /> Premium · Active
+                        <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                      </span>
+                      <div className="flex items-center gap-2 text-[11px] text-white/80">
+                        {subscriptionEnd && (
+                          <span>Renews {new Date(subscriptionEnd).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={openCustomerPortal}
+                          disabled={openingPortal}
+                          className="underline-offset-2 hover:underline disabled:opacity-60"
+                        >
+                          {openingPortal ? "Opening…" : "Manage"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-start md:items-end gap-1">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20 text-xs font-semibold uppercase tracking-wide">
+                        <Lock className="h-3.5 w-3.5" /> Free Plan
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startCheckout(toast, { isSubscribed })}
+                        className="text-[11px] font-semibold inline-flex items-center gap-1 hover:underline underline-offset-2"
+                      >
+                        <Crown className="h-3 w-3" /> Upgrade to Premium
+                      </button>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={() => navigate("/profile")}
+                    size="sm"
+                    className="bg-white text-primary hover:bg-white/90 shadow-card font-semibold"
                   >
-                    <Crown className="h-3.5 w-3.5" fill="currentColor" />
-                    <span className="font-semibold text-xs uppercase tracking-wide">Premium · Active</span>
-                    <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  </Badge>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {subscriptionEnd && (
-                      <span>Renews {new Date(subscriptionEnd).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
-                    )}
+                    <Settings className="h-4 w-4" /> Update Preferences
+                  </Button>
+                </div>
+              </div>
+
+              {/* Summary stat tiles */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-7">
+                {[
+                  { label: "Saved Colleges", value: savedColleges.length, icon: Bookmark, onClick: () => setActiveTab("saved") },
+                  { label: "Matches Found", value: colleges.length, icon: GraduationCap, onClick: () => setActiveTab("matches") },
+                  { label: "Scholarships Available", value: scholarshipCount, icon: Award, onClick: () => navigate("/scholarships") },
+                  { label: "Upcoming Deadlines", value: upcomingDeadlineCount, icon: Zap, onClick: () => navigate("/scholarships"), accent: upcomingDeadlineCount > 0 },
+                ].map((stat) => {
+                  const Icon = stat.icon;
+                  return (
                     <button
+                      key={stat.label}
                       type="button"
-                      onClick={openCustomerPortal}
-                      disabled={openingPortal}
-                      className="underline-offset-2 hover:underline text-primary disabled:opacity-60"
+                      onClick={stat.onClick}
+                      className="group text-left rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 p-4 hover-lift hover:bg-white/20"
                     >
-                      {openingPortal ? "Opening…" : "Manage"}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="p-2 rounded-xl bg-white/20">
+                          <Icon className="h-4 w-4 text-white" />
+                        </div>
+                        {stat.accent && (
+                          <span className="inline-flex h-2 w-2 rounded-full bg-amber-300 animate-pulse" />
+                        )}
+                      </div>
+                      <p className="text-3xl font-bold text-white leading-none">{stat.value}</p>
+                      <p className="text-[11px] sm:text-xs font-medium text-white/80 mt-1.5 uppercase tracking-wide">{stat.label}</p>
                     </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:items-end gap-1.5">
-                  <Badge
-                    variant="outline"
-                    className="gap-1.5 px-3 py-1.5 bg-muted/40 text-muted-foreground border-border"
-                    aria-label="Free plan — Premium features locked"
-                  >
-                    <Lock className="h-3.5 w-3.5" />
-                    <span className="font-semibold text-xs uppercase tracking-wide">Free Plan</span>
-                  </Badge>
-                  <button
-                    type="button"
-                    onClick={() => startCheckout(toast, { isSubscribed })}
-                    className="text-xs font-medium text-primary hover:underline underline-offset-2 inline-flex items-center gap-1"
-                  >
-                    <Crown className="h-3 w-3" /> Upgrade to Premium
-                  </button>
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </div>
           </div>
+        </motion.section>
+
+        {/* Legacy spacing wrapper — keep downstream sections unchanged */}
+        <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-12">
+          <div className="hidden">{/* placeholder to maintain animation rhythm */}</div>
           {studentProfile && (
             <Card className="mt-6 bg-card border-border shadow-soft overflow-hidden">
               <div className="h-1 bg-primary/20 w-full">
