@@ -1307,37 +1307,43 @@ const Dashboard = () => {
                       {insights && (
                         <div className="grid gap-4 md:grid-cols-3 mb-2">
                           {insights.bestMatch && (
-                            <Card className="bg-card border-border">
+                            <Card className="card-premium overflow-hidden border bg-gradient-to-br from-primary/10 to-brand-purple/5 border-primary/25">
                               <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-primary/10"><Trophy className="h-5 w-5 text-primary" /></div>
-                                <div>
-                                  <p className="text-xs font-medium text-muted-foreground">Best Overall Match</p>
-                                  <p className="text-sm font-bold text-foreground">{insights.bestMatch.name}</p>
-                                  <p className="text-xs text-primary font-semibold">{insights.bestMatch.fitScore}% fit</p>
+                                <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/70 dark:bg-white/10 backdrop-blur shadow-soft shrink-0">
+                                  <Trophy className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold uppercase tracking-wide text-primary">Best Overall Match</p>
+                                  <p className="text-sm font-bold text-foreground truncate">{insights.bestMatch.name}</p>
+                                  <p className="text-xs text-primary font-semibold tabular-nums">{insights.bestMatch.fitScore}% fit</p>
                                 </div>
                               </CardContent>
                             </Card>
                           )}
                           {insights.mostAffordable && (
-                            <Card className="bg-card border-border">
+                            <Card className="card-premium overflow-hidden border bg-gradient-to-br from-success/10 to-success/5 border-success/25">
                               <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-emerald-50"><Wallet className="h-5 w-5 text-emerald-600" /></div>
-                                <div>
-                                  <p className="text-xs font-medium text-muted-foreground">Most Affordable</p>
-                                  <p className="text-sm font-bold text-foreground">{insights.mostAffordable.name}</p>
-                                  <p className="text-xs text-emerald-600 font-semibold">{insights.mostAffordable.netPrice}</p>
+                                <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/70 dark:bg-white/10 backdrop-blur shadow-soft shrink-0">
+                                  <Wallet className="h-5 w-5 text-success" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold uppercase tracking-wide text-success">Most Affordable</p>
+                                  <p className="text-sm font-bold text-foreground truncate">{insights.mostAffordable.name}</p>
+                                  <p className="text-xs text-success font-semibold tabular-nums">{insights.mostAffordable.netPrice}</p>
                                 </div>
                               </CardContent>
                             </Card>
                           )}
                           {insights.safetySchool && (
-                            <Card className="bg-card border-border">
+                            <Card className="card-premium overflow-hidden border bg-gradient-to-br from-brand-teal/10 to-brand-teal/5 border-brand-teal/25">
                               <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-accent/10"><Shield className="h-5 w-5 text-accent" /></div>
-                                <div>
-                                  <p className="text-xs font-medium text-muted-foreground">Top Safety School</p>
-                                  <p className="text-sm font-bold text-foreground">{insights.safetySchool.name}</p>
-                                  <p className="text-xs text-accent font-semibold">{insights.safetySchool.fitScore}% fit</p>
+                                <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/70 dark:bg-white/10 backdrop-blur shadow-soft shrink-0">
+                                  <Shield className="h-5 w-5 text-brand-teal" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold uppercase tracking-wide text-brand-teal">Top Safety School</p>
+                                  <p className="text-sm font-bold text-foreground truncate">{insights.safetySchool.name}</p>
+                                  <p className="text-xs text-brand-teal font-semibold tabular-nums">{insights.safetySchool.fitScore}% fit</p>
                                 </div>
                               </CardContent>
                             </Card>
