@@ -138,23 +138,18 @@ export default function PremiumCollegeCard({
         >
           {/* Gradient base — always rendered so banner never appears empty */}
           <div className={cn("absolute inset-0 zoom-target", bannerClass)} aria-hidden />
-          {/* Real campus photo, fades in once loaded */}
-          {photoUrl && (
-            <img
-              src={photoUrl}
-              alt={`${college.name} campus`}
-              loading="lazy"
-              decoding="async"
-              referrerPolicy="no-referrer"
-              className="zoom-target absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
-              onError={(e) => {
-                // Hide broken image so the gradient shows through
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
-          )}
-          <div className="absolute inset-0 banner-pattern" aria-hidden />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" aria-hidden />
+          {/* Campus photo (real photo or local fallback) — always present so cards look polished */}
+          <img
+            src={resolvedSrc}
+            alt={`${college.name} campus`}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            className="zoom-target absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+            onError={() => setImgFailed(true)}
+          />
+          {/* Subtle dark gradient at bottom for legible overlay text */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" aria-hidden />
 
           {/* Top-left badges */}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[70%]">
