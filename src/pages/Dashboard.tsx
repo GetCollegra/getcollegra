@@ -706,26 +706,33 @@ const Dashboard = () => {
         <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-12 space-y-4">
 
           {studentProfile && (
-            <Card className="mt-6 bg-card border-border shadow-soft overflow-hidden">
-              <div className="h-1 bg-primary/20 w-full">
-                <div className="h-full bg-primary rounded-r-full" style={{ width: '100%' }} />
-              </div>
+            <Card className="card-premium mt-6 overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
+              <div className="h-1.5 bg-gradient-hero w-full" aria-hidden />
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
-                    <Sparkles className="h-5 w-5 text-primary" />
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                    <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-brand-purple/15 to-brand-teal/15 border border-brand-purple/20">
+                      <Sparkles className="h-5 w-5 text-brand-purple" />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-foreground mb-1">Your Student Profile</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{studentProfile.summary}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-[11px] uppercase tracking-wider font-bold text-brand-purple">Your Student Profile</p>
+                      <span className="inline-flex h-1.5 w-1.5 rounded-full bg-brand-purple animate-pulse" aria-hidden />
+                    </div>
+                    <p className="text-sm text-foreground/85 leading-relaxed">{studentProfile.summary}</p>
                     {studentProfile.idealSchoolType && (
                       <p className="text-xs text-muted-foreground mt-2">
                         <span className="font-semibold text-foreground">Ideal school type:</span> {studentProfile.idealSchoolType}
                       </p>
                     )}
-                    <div className="flex flex-wrap gap-2 mt-3">
+                    <div className="flex flex-wrap gap-1.5 mt-3">
                       {studentProfile.topPriorities?.map((p, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs font-medium">{p}</Badge>
+                        <span key={i} className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 text-brand-purple text-[11px] font-semibold px-2.5 py-1">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          {p}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -734,45 +741,75 @@ const Dashboard = () => {
             </Card>
           )}
 
-          {/* Add College Bar */}
+          {/* Add College Bar — AI-powered lookup */}
           {isSubscribed ? (
-            <Card className="bg-card border-border shadow-soft">
-              <CardContent className="p-4">
+            <Card className="card-premium overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
+              <div className="h-1 bg-gradient-to-r from-brand-purple via-primary to-brand-teal" aria-hidden />
+              <CardContent className="p-4 sm:p-5">
                 <form
                   onSubmit={(e) => { e.preventDefault(); addCustomCollege(); }}
-                  className="flex items-center gap-3"
+                  className="flex flex-col sm:flex-row sm:items-center gap-3"
                 >
+                  <div className="flex items-center gap-2 sm:shrink-0">
+                    <div className="relative">
+                      <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                      <div className="relative p-2 rounded-xl bg-gradient-to-br from-brand-purple/15 to-brand-teal/15 border border-brand-purple/20">
+                        <Sparkles className="h-4 w-4 text-brand-purple" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] uppercase tracking-wider font-bold text-brand-purple">Add a College</span>
+                      <span className="text-[11px] text-muted-foreground">AI fills in every detail</span>
+                    </div>
+                  </div>
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Add a college — AI will fill in all the details..."
+                      placeholder="Search any college by name…"
                       value={addCollegeName}
                       onChange={(e) => setAddCollegeName(e.target.value)}
-                      className="pl-10 bg-muted/30 border-border/50 focus:bg-card"
+                      className="pl-10 bg-muted/40 border-border/60 focus:bg-card focus:border-primary/50"
                       maxLength={200}
                     />
                   </div>
-                  <Button type="submit" disabled={!addCollegeName.trim() || addingCollege} size="default" className="shrink-0 gap-1.5">
+                  <Button
+                    type="submit"
+                    disabled={!addCollegeName.trim() || addingCollege}
+                    size="default"
+                    className="shrink-0 gap-1.5 bg-gradient-hero text-primary-foreground hover:opacity-95 shadow-soft hover:shadow-card font-semibold"
+                  >
                     {addingCollege ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                    Add
+                    {addingCollege ? "Looking up…" : "Add"}
                   </Button>
                 </form>
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-card border-border shadow-soft relative overflow-hidden">
-              <CardContent className="p-4 flex items-center gap-3 opacity-60">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Add a college — AI will fill in all the details..."
-                    disabled
-                    className="pl-10 bg-muted/30 border-border/50"
-                  />
+            <Card className="card-premium overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm relative">
+              <div className="h-1 bg-gradient-to-r from-brand-purple via-primary to-brand-teal opacity-60" aria-hidden />
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 opacity-70">
+                  <div className="flex items-center gap-2 sm:shrink-0">
+                    <div className="p-2 rounded-xl bg-muted border border-border/60">
+                      <Sparkles className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground">Add a College</span>
+                      <span className="text-[11px] text-muted-foreground">Premium feature</span>
+                    </div>
+                  </div>
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search any college by name…"
+                      disabled
+                      className="pl-10 bg-muted/40 border-border/60"
+                    />
+                  </div>
+                  <Button disabled size="default" className="shrink-0 gap-1.5">
+                    <Lock className="h-4 w-4" /> Premium
+                  </Button>
                 </div>
-                <Button disabled size="default" className="shrink-0 gap-1.5">
-                  <Lock className="h-4 w-4" /> Premium
-                </Button>
               </CardContent>
             </Card>
           )}
@@ -791,11 +828,17 @@ const Dashboard = () => {
           {/* 2. College Matches */}
           <TabsContent value="matches">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <GraduationCap className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-3 mb-5">
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                  <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-primary/15 to-brand-purple/15 border border-primary/20">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                  </div>
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Your College Matches</h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground leading-tight">Your College Matches</h2>
+                  <p className="text-sm text-muted-foreground">Hand-picked schools tailored to your quiz answers.</p>
+                </div>
               </div>
 
               {/* Filter/Sort Control Panel */}
@@ -817,19 +860,24 @@ const Dashboard = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : colleges.length === 0 ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="p-10 text-center">
-                    <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No matches yet</h3>
+                <Card className="card-premium relative overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
+                  <div className="absolute inset-0 banner-pattern opacity-40" aria-hidden />
+                  <CardContent className="relative p-10 text-center">
+                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/15 to-brand-purple/15 border border-primary/20 mb-4">
+                      <GraduationCap className="h-7 w-7 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground mb-2">No matches yet</h3>
                     <p className="text-muted-foreground mb-4">Take the college quiz to get your personalized recommendations.</p>
-                    <Button onClick={() => navigate("/survey")}>Take the Quiz</Button>
+                    <Button onClick={() => navigate("/survey")} className="bg-gradient-hero text-primary-foreground font-semibold">Take the Quiz</Button>
                   </CardContent>
                 </Card>
               ) : filteredColleges.length === 0 && colleges.length > 0 ? (
-                <Card className="bg-card border-border">
+                <Card className="card-premium relative overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
                   <CardContent className="p-10 text-center">
-                    <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No colleges match your filters</h3>
+                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-muted border border-border/60 mb-4">
+                      <Filter className="h-7 w-7 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground mb-2">No colleges match your filters</h3>
                     <p className="text-muted-foreground mb-4">Try adjusting your filters or reset them to see all results.</p>
                     <Button variant="outline" onClick={() => setFilters(DEFAULT_FILTER_STATE)}>Reset Filters</Button>
                   </CardContent>
@@ -1019,7 +1067,8 @@ const Dashboard = () => {
 
               {/* Engagement widgets */}
               <div className="mt-10 space-y-8">
-                <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-soft">
+                <div className="card-premium relative overflow-hidden bg-card/80 backdrop-blur-sm border border-border/60 rounded-2xl p-5 sm:p-6">
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-purple via-primary to-brand-teal" aria-hidden />
                   <PeerOutcomes
                     variant="widget"
                     profile={{
@@ -1035,7 +1084,8 @@ const Dashboard = () => {
                     }}
                   />
                 </div>
-                <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-soft">
+                <div className="card-premium relative overflow-hidden bg-card/80 backdrop-blur-sm border border-border/60 rounded-2xl p-5 sm:p-6">
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-teal via-primary to-brand-purple" aria-hidden />
                   <TrendingCollegeLists variant="widget" />
                 </div>
               </div>
@@ -1046,51 +1096,58 @@ const Dashboard = () => {
           <TabsContent value="saved">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Bookmark className="h-5 w-5 text-primary" />
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                  <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-primary/15 to-brand-teal/15 border border-primary/20">
+                    <Bookmark className="h-5 w-5 text-primary" />
+                  </div>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">My College List</h2>
+                  <h2 className="text-2xl font-bold text-foreground leading-tight">My College List</h2>
                   <p className="text-sm text-muted-foreground">Organize your saved schools by admission category and track progress.</p>
                 </div>
               </div>
               {loadingSaved ? (
                 <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : savedColleges.length === 0 ? (
-                <Card className="bg-card border-border border-dashed">
-                  <CardContent className="p-12 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                      <Bookmark className="h-8 w-8 text-muted-foreground" />
+                <Card className="card-premium relative overflow-hidden border-border/60 border-dashed bg-card/80 backdrop-blur-sm">
+                  <div className="absolute inset-0 banner-pattern opacity-40" aria-hidden />
+                  <CardContent className="relative p-12 text-center">
+                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/15 to-brand-teal/15 border border-primary/20 mb-4">
+                      <Bookmark className="h-7 w-7 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No saved colleges yet</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-2">No saved colleges yet</h3>
                     <p className="text-muted-foreground text-sm max-w-sm mx-auto">Save colleges from the Matches tab to organize and track them here.</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-8">
                   {/* Summary bar */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <Card className="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
-                      <CardContent className="p-4 text-center">
-                        <Shield className="h-5 w-5 text-emerald-600 mx-auto mb-1" />
-                        <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{savedByCategory.safety.length}</p>
-                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-500">Safety</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-primary/5 border-primary/20">
-                      <CardContent className="p-4 text-center">
-                        <Target className="h-5 w-5 text-primary mx-auto mb-1" />
-                        <p className="text-2xl font-bold text-primary">{savedByCategory.match.length}</p>
-                        <p className="text-xs font-medium text-primary">Match</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
-                      <CardContent className="p-4 text-center">
-                        <TrendingUp className="h-5 w-5 text-orange-600 mx-auto mb-1" />
-                        <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{savedByCategory.reach.length}</p>
-                        <p className="text-xs font-medium text-orange-600 dark:text-orange-500">Reach</p>
-                      </CardContent>
-                    </Card>
+                  <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                    {([
+                      { label: "Safety", count: savedByCategory.safety.length, icon: Shield, badge: "Likely Admit", tone: "success" },
+                      { label: "Match",  count: savedByCategory.match.length,  icon: Target, badge: "Strong Match", tone: "warning" },
+                      { label: "Reach",  count: savedByCategory.reach.length,  icon: TrendingUp, badge: "Reach School", tone: "reach" },
+                    ] as const).map(tile => {
+                      const Icon = tile.icon;
+                      const toneCls =
+                        tile.tone === "success"
+                          ? "from-success/15 to-success/5 border-success/30 text-success"
+                          : tile.tone === "warning"
+                            ? "from-warning/15 to-warning/5 border-warning/30 text-warning"
+                            : "from-reach/15 to-reach/5 border-reach/30 text-reach";
+                      return (
+                        <Card key={tile.label} className={`card-premium overflow-hidden border bg-gradient-to-br ${toneCls}`}>
+                          <CardContent className="p-4 text-center">
+                            <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-white/60 dark:bg-white/10 backdrop-blur shadow-soft mb-1.5">
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <p className="text-2xl sm:text-3xl font-bold tabular-nums leading-none">{tile.count}</p>
+                            <p className="text-[11px] font-bold uppercase tracking-wide mt-1">{tile.label}</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
 
                   {/* Categorized sections — premium card layout */}
@@ -1132,7 +1189,10 @@ const Dashboard = () => {
               {isSubscribed ? (
                 <>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 rounded-lg bg-primary/10"><BarChart3 className="h-5 w-5 text-primary" /></div>
+                    <div className="relative shrink-0">
+                      <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                      <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-primary/15 to-brand-purple/15 border border-primary/20"><BarChart3 className="h-5 w-5 text-primary" /></div>
+                    </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Compare Colleges</h2>
                       <p className="text-sm text-muted-foreground">Select up to 4 colleges for a visual side-by-side comparison.</p>
@@ -1158,7 +1218,10 @@ const Dashboard = () => {
               {isSubscribed ? (
                 <>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 rounded-lg bg-primary/10"><StickyNote className="h-5 w-5 text-primary" /></div>
+                    <div className="relative shrink-0">
+                      <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                      <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-brand-purple/15 to-brand-teal/15 border border-brand-purple/20"><StickyNote className="h-5 w-5 text-brand-purple" /></div>
+                    </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Personal Notes</h2>
                       <p className="text-sm text-muted-foreground">Click any college to open your structured notes workspace.</p>
@@ -1233,7 +1296,10 @@ const Dashboard = () => {
               {isSubscribed ? (
                 <>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 rounded-lg bg-primary/10"><Sparkles className="h-5 w-5 text-primary" /></div>
+                    <div className="relative shrink-0">
+                      <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                      <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-brand-purple/15 to-primary/15 border border-brand-purple/20"><Sparkles className="h-5 w-5 text-brand-purple" /></div>
+                    </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Decision Insights</h2>
                       <p className="text-sm text-muted-foreground">Personalized analysis to help you decide — not just describe.</p>
@@ -1249,37 +1315,43 @@ const Dashboard = () => {
                       {insights && (
                         <div className="grid gap-4 md:grid-cols-3 mb-2">
                           {insights.bestMatch && (
-                            <Card className="bg-card border-border">
+                            <Card className="card-premium overflow-hidden border bg-gradient-to-br from-primary/10 to-brand-purple/5 border-primary/25">
                               <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-primary/10"><Trophy className="h-5 w-5 text-primary" /></div>
-                                <div>
-                                  <p className="text-xs font-medium text-muted-foreground">Best Overall Match</p>
-                                  <p className="text-sm font-bold text-foreground">{insights.bestMatch.name}</p>
-                                  <p className="text-xs text-primary font-semibold">{insights.bestMatch.fitScore}% fit</p>
+                                <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/70 dark:bg-white/10 backdrop-blur shadow-soft shrink-0">
+                                  <Trophy className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold uppercase tracking-wide text-primary">Best Overall Match</p>
+                                  <p className="text-sm font-bold text-foreground truncate">{insights.bestMatch.name}</p>
+                                  <p className="text-xs text-primary font-semibold tabular-nums">{insights.bestMatch.fitScore}% fit</p>
                                 </div>
                               </CardContent>
                             </Card>
                           )}
                           {insights.mostAffordable && (
-                            <Card className="bg-card border-border">
+                            <Card className="card-premium overflow-hidden border bg-gradient-to-br from-success/10 to-success/5 border-success/25">
                               <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-emerald-50"><Wallet className="h-5 w-5 text-emerald-600" /></div>
-                                <div>
-                                  <p className="text-xs font-medium text-muted-foreground">Most Affordable</p>
-                                  <p className="text-sm font-bold text-foreground">{insights.mostAffordable.name}</p>
-                                  <p className="text-xs text-emerald-600 font-semibold">{insights.mostAffordable.netPrice}</p>
+                                <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/70 dark:bg-white/10 backdrop-blur shadow-soft shrink-0">
+                                  <Wallet className="h-5 w-5 text-success" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold uppercase tracking-wide text-success">Most Affordable</p>
+                                  <p className="text-sm font-bold text-foreground truncate">{insights.mostAffordable.name}</p>
+                                  <p className="text-xs text-success font-semibold tabular-nums">{insights.mostAffordable.netPrice}</p>
                                 </div>
                               </CardContent>
                             </Card>
                           )}
                           {insights.safetySchool && (
-                            <Card className="bg-card border-border">
+                            <Card className="card-premium overflow-hidden border bg-gradient-to-br from-brand-teal/10 to-brand-teal/5 border-brand-teal/25">
                               <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-accent/10"><Shield className="h-5 w-5 text-accent" /></div>
-                                <div>
-                                  <p className="text-xs font-medium text-muted-foreground">Top Safety School</p>
-                                  <p className="text-sm font-bold text-foreground">{insights.safetySchool.name}</p>
-                                  <p className="text-xs text-accent font-semibold">{insights.safetySchool.fitScore}% fit</p>
+                                <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/70 dark:bg-white/10 backdrop-blur shadow-soft shrink-0">
+                                  <Shield className="h-5 w-5 text-brand-teal" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold uppercase tracking-wide text-brand-teal">Top Safety School</p>
+                                  <p className="text-sm font-bold text-foreground truncate">{insights.safetySchool.name}</p>
+                                  <p className="text-xs text-brand-teal font-semibold tabular-nums">{insights.safetySchool.fitScore}% fit</p>
                                 </div>
                               </CardContent>
                             </Card>
