@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Sparkles, ChevronDown } from "lucide-react";
+import { Heart, Sparkles, ChevronDown, ExternalLink } from "lucide-react";
 import { capture } from "@/lib/posthog";
 
 type Ratings = {
@@ -40,11 +40,14 @@ const RatingBar = ({ value }: { value: number }) => {
   );
 };
 
+type SourceLink = { platform: string; label: string; url: string };
+
 const StudentVibeReviews = ({ collegeName }: StudentVibeReviewsProps) => {
   const [summary, setSummary] = useState<string>("");
   const [snippets, setSnippets] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Ratings>({});
-  const [sourceNote, setSourceNote] = useState<string>("AI-summarized from public sources");
+  const [sources, setSources] = useState<SourceLink[]>([]);
+  const [sourceNote, setSourceNote] = useState<string>("Paraphrased themes from real public student reviews");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -64,7 +67,8 @@ const StudentVibeReviews = ({ collegeName }: StudentVibeReviewsProps) => {
         setSummary(data?.summary || "");
         setSnippets(data?.snippets || []);
         setRatings(data?.ratings || {});
-        setSourceNote(data?.sourceNote || "AI-summarized from public sources");
+        setSources(Array.isArray(data?.sources) ? data.sources : []);
+        setSourceNote(data?.sourceNote || "Paraphrased themes from real public student reviews");
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load");
       } finally {
