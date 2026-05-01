@@ -828,11 +828,17 @@ const Dashboard = () => {
           {/* 2. College Matches */}
           <TabsContent value="matches">
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <GraduationCap className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-3 mb-5">
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                  <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-primary/15 to-brand-purple/15 border border-primary/20">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                  </div>
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Your College Matches</h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground leading-tight">Your College Matches</h2>
+                  <p className="text-sm text-muted-foreground">Hand-picked schools tailored to your quiz answers.</p>
+                </div>
               </div>
 
               {/* Filter/Sort Control Panel */}
