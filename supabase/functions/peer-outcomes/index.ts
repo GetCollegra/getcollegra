@@ -15,6 +15,10 @@ interface ProfileInput {
   testScore?: string;
   campusSize?: string;
   locationType?: string;
+  academicImportance?: string;
+  idealSchoolType?: string;
+  topPriorities?: string[];
+  interests?: string[];
 }
 
 Deno.serve(async (req) => {
@@ -27,6 +31,9 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const profile: ProfileInput = body?.profile || {};
 
+    const cleanArr = (a: unknown): string[] =>
+      Array.isArray(a) ? a.filter((x) => typeof x === "string" && x.trim()).map((x) => String(x).slice(0, 80)).slice(0, 8) : [];
+
     const safeProfile = {
       gpa: String(profile.gpa || "").slice(0, 20) || "unknown",
       state: String(profile.state || "").slice(0, 80) || "unknown",
@@ -34,24 +41,45 @@ Deno.serve(async (req) => {
       testScore: String(profile.testScore || "").slice(0, 40) || "not submitted",
       campusSize: String(profile.campusSize || "").slice(0, 40) || "no preference",
       locationType: String(profile.locationType || "").slice(0, 40) || "no preference",
+      academicImportance: String(profile.academicImportance || "").slice(0, 40) || "no preference",
+      idealSchoolType: String(profile.idealSchoolType || "").slice(0, 200) || "",
+      topPriorities: cleanArr(profile.topPriorities),
+      interests: cleanArr(profile.interests),
     };
 
-    const prompt = `Generate 3 short "students like you got into..." trend groups based on this US high schooler's profile.
+    const interestsLine = safeProfile.interests.length
+      ? `- Academic / personal interests: ${safeProfile.interests.join(", ")}`
+      : "";
+    const prioritiesLine = safeProfile.topPriorities.length
+      ? `- Top priorities (from quiz): ${safeProfile.topPriorities.join(", ")}`
+      : "";
+    const idealLine = safeProfile.idealSchoolType ? `- Ideal school type: ${safeProfile.idealSchoolType}` : "";
 
-PROFILE:
+    const prompt = `Generate 3 short "students like you got into..." trend groups grounded in this US high schooler's actual quiz responses.
+
+PROFILE (from their quiz):
 - GPA: ${safeProfile.gpa}
 - Home state: ${safeProfile.state}
-- Intended major: ${safeProfile.major}
+- Intended major / area of study: ${safeProfile.major}
 - Test score: ${safeProfile.testScore}
 - Campus size preference: ${safeProfile.campusSize}
 - Location preference: ${safeProfile.locationType}
+- Academic intensity preference: ${safeProfile.academicImportance}
+${idealLine}
+${prioritiesLine}
+${interestsLine}
 
-For each group:
-- "headline": short anonymous descriptor (e.g. "Students with a 3.6 GPA interested in Business")
-- "colleges": 4 realistic US colleges this profile would plausibly get into (mix of safety/match/reach). Use real college names.
-- "note": one short confidence-building line.
+REQUIREMENTS — make groups DIRECTLY reflect the user's quiz inputs:
+1. At least one group MUST be specific to the intended major "${safeProfile.major}" (e.g. "Students with a ${safeProfile.gpa} GPA pursuing ${safeProfile.major}"). Pick colleges with strong programs in that major.
+2. At least one group should reflect their top priorities or ideal school type (e.g. campus size, location, academic intensity).
+3. The third group can vary the angle (geography, GPA band, or test score profile).
 
-Make groups feel different — vary the angle (GPA, geography, major, profile type). These represent estimated community trends, not real student records.`;
+For each group return:
+- "headline": short anonymous descriptor that names a concrete dimension from the profile (GPA, major, state, priorities). Avoid generic phrasing.
+- "colleges": 4 realistic US colleges this profile would plausibly get into — mix of safety/match/reach. Use real college names. Colleges in major-focused groups must actually be known for that major.
+- "note": one short, specific confidence-building line that references the user's profile (e.g. "Strong match for ${safeProfile.major} programs in the ${safeProfile.state} region.").
+
+These represent estimated community trends, not real student records. No gendered pronouns.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
