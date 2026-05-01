@@ -293,7 +293,8 @@ export default function CollegeComparison({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <Card className="bg-card border-border overflow-hidden h-full">
+                  <Card className="card-premium overflow-hidden h-full border-border/60 bg-card/80 backdrop-blur-sm">
+                    <CompareBanner collegeName={c.college_name} index={i} isCompact={isCompact} />
                     <div className="h-1 bg-primary/20 w-full">
                       <div className="h-full bg-primary rounded-r-full" style={{ width: `${college.fitScore}%` }} />
                     </div>
