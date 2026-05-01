@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
+import { getFallbackForCollege } from "@/lib/campusFallback";
 import type { College } from "@/types/college";
 
 type SavedCollege = {
@@ -26,6 +27,7 @@ type SavedCollege = {
 type Props = {
   saved: SavedCollege;
   index: number;
+  fallbackIndex?: number;
   isCompared?: boolean;
   onStatusChange: (id: string, status: string) => void;
   onRemove: (id: string) => void;
@@ -62,6 +64,7 @@ const STATUS_STYLES: Record<string, string> = {
 export default function PremiumSavedRow({
   saved,
   index,
+  fallbackIndex,
   isCompared,
   onStatusChange,
   onRemove,
@@ -76,6 +79,9 @@ export default function PremiumSavedRow({
   const initials = getInitials(saved.college_name);
   const bannerClass = `bg-banner-${(index % 6) + 1}`;
   const { url: photoUrl } = useCollegePhoto(saved.college_name);
+  const [imgFailed, setImgFailed] = useState(false);
+  const fallbackSrc = getFallbackForCollege(saved.college_name, fallbackIndex);
+  const resolvedSrc = !imgFailed ? (photoUrl || fallbackSrc) : fallbackSrc;
 
   return (
     <motion.div
@@ -88,17 +94,15 @@ export default function PremiumSavedRow({
           {/* Banner strip */}
           <div className="relative overflow-hidden h-24 sm:h-28 zoom-on-hover">
             <div className={cn("absolute inset-0 zoom-target", bannerClass)} aria-hidden />
-            {photoUrl && (
-              <img
-                src={photoUrl}
-                alt={`${saved.college_name} campus`}
-                loading="lazy"
-                decoding="async"
-                referrerPolicy="no-referrer"
-                className="zoom-target absolute inset-0 w-full h-full object-cover"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
-            )}
+            <img
+              src={resolvedSrc}
+              alt={`${saved.college_name} campus`}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              className="zoom-target absolute inset-0 w-full h-full object-cover"
+              onError={() => setImgFailed(true)}
+            />
             <div className="absolute inset-0 banner-pattern" aria-hidden />
             <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" aria-hidden />
 
