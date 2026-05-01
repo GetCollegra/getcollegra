@@ -11,6 +11,7 @@ type Size = "sm" | "md" | "lg";
 type Props = {
   college: Pick<College, "name" | "location" | "fitCategory" | "fitScore">;
   index?: number;
+  fallbackIndex?: number;
   size?: Size;
   showFitScore?: boolean;
   showFitBadge?: boolean;
@@ -64,6 +65,7 @@ const titleCls: Record<Size, string> = {
 export default function PremiumCardBanner({
   college,
   index = 0,
+  fallbackIndex,
   size = "md",
   showFitScore = true,
   showFitBadge = true,
@@ -76,7 +78,7 @@ export default function PremiumCardBanner({
   const bannerClass = `bg-banner-${(index % 6) + 1}`;
   const { url: photoUrl } = useCollegePhoto(college.name);
   const [imgFailed, setImgFailed] = useState(false);
-  const fallbackSrc = getFallbackForCollege(college.name);
+  const fallbackSrc = getFallbackForCollege(college.name, fallbackIndex);
   const resolvedSrc = !imgFailed ? (photoUrl || fallbackSrc) : fallbackSrc;
 
   return (
