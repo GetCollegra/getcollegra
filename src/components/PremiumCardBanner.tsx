@@ -76,7 +76,7 @@ export default function PremiumCardBanner({
   const FitIcon = fit.Icon;
   const initials = getInitials(college.name);
   const bannerClass = `bg-banner-${(index % 6) + 1}`;
-  const { url: photoUrl } = useCollegePhoto(college.name);
+  const { url: photoUrl } = useCollegePhoto(college.name, fallbackIndex ?? index);
   const [imgFailed, setImgFailed] = useState(false);
   const fallbackSrc = getFallbackForCollege(college.name, fallbackIndex);
   const resolvedSrc = !imgFailed ? (photoUrl || fallbackSrc) : fallbackSrc;
