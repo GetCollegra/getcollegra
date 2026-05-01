@@ -104,6 +104,8 @@ const Dashboard = () => {
   const [mapSelectedCollege, setMapSelectedCollege] = useState<College | null>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
   const [sort, setSort] = useState<SortOption>("fitScore");
+  type BrowseMode = "all" | "best" | "affordable" | "popular" | "scholarships" | "trending";
+  const [browseMode, setBrowseMode] = useState<BrowseMode>("all");
   const [scholarshipCount, setScholarshipCount] = useState<number>(0);
   const [upcomingDeadlineCount, setUpcomingDeadlineCount] = useState<number>(0);
 
