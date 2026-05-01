@@ -7,6 +7,8 @@ project_id = "iyaflygbuoghplhykhzd"
     verify_jwt = false
   [functions.auth-rate-check]
     verify_jwt = false
+  [functions.resend-confirmation]
+    verify_jwt = false
   [functions.check-subscription]
     verify_jwt = false
   [functions.create-checkout]
