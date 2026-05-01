@@ -11,6 +11,8 @@ import {
 import type { College } from "@/types/college";
 import { cn } from "@/lib/utils";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
+import { CAMPUS_FALLBACK_IMG } from "@/lib/campusFallback";
+import { useState } from "react";
 
 type Props = {
   college: College;
@@ -22,6 +24,8 @@ type Props = {
   onUnsave: () => void;
   onCompareToggle?: () => void;
   showCompare?: boolean;
+  /** Simple = just photo, name, location, score, badge, tuition, accept, save/view. */
+  simpleView?: boolean;
 };
 
 /** Stable initials used inside the banner "logo" badge */
@@ -93,6 +97,7 @@ export default function PremiumCollegeCard({
   onUnsave,
   onCompareToggle,
   showCompare = true,
+  simpleView = false,
 }: Props) {
   const navigate = useNavigate();
   const fit = fitStyles[college.fitCategory] || fitStyles.Match;
@@ -106,6 +111,10 @@ export default function PremiumCollegeCard({
   const trending = college.fitScore >= 90;
   const goodValue = isGoodValue(college);
   const { url: photoUrl } = useCollegePhoto(college.name);
+  const [imgFailed, setImgFailed] = useState(false);
+  // Always use either the real photo or our local fallback campus image,
+  // so cards never look empty.
+  const resolvedSrc = !imgFailed ? (photoUrl || CAMPUS_FALLBACK_IMG) : CAMPUS_FALLBACK_IMG;
 
   return (
     <motion.div
