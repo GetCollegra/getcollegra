@@ -103,6 +103,34 @@ const Dashboard = () => {
   const [mapSelectedCollege, setMapSelectedCollege] = useState<College | null>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
   const [sort, setSort] = useState<SortOption>("fitScore");
+  const [scholarshipCount, setScholarshipCount] = useState<number>(0);
+  const [upcomingDeadlineCount, setUpcomingDeadlineCount] = useState<number>(0);
+
+  // Load scholarship + deadline summary stats for the hero
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const in30 = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const [{ count: total }, { count: upcoming }] = await Promise.all([
+        supabase
+          .from("scholarships")
+          .select("id", { count: "exact", head: true })
+          .gte("deadline", today),
+        supabase
+          .from("scholarships")
+          .select("id", { count: "exact", head: true })
+          .gte("deadline", today)
+          .lte("deadline", in30),
+      ]);
+      if (!cancelled) {
+        setScholarshipCount(total ?? 0);
+        setUpcomingDeadlineCount(upcoming ?? 0);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   const notesPanelCollege = savedColleges.find(s => s.id === notesPanelId);
 
