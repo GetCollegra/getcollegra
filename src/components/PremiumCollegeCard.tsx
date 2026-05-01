@@ -17,6 +17,7 @@ import { useState } from "react";
 type Props = {
   college: College;
   index: number;
+  fallbackIndex?: number;
   isSaved: boolean;
   isFeatured?: boolean;
   isCompared?: boolean;
@@ -90,6 +91,7 @@ function getInsights(college: College): string[] {
 export default function PremiumCollegeCard({
   college,
   index,
+  fallbackIndex,
   isSaved,
   isFeatured = false,
   isCompared = false,
@@ -114,7 +116,7 @@ export default function PremiumCollegeCard({
   const [imgFailed, setImgFailed] = useState(false);
   // Always use either the real photo or our local fallback campus image,
   // so cards never look empty.
-  const fallbackSrc = getFallbackForCollege(college.name);
+  const fallbackSrc = getFallbackForCollege(college.name, fallbackIndex);
   const resolvedSrc = !imgFailed ? (photoUrl || fallbackSrc) : fallbackSrc;
 
   return (
