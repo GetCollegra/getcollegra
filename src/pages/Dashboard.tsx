@@ -873,6 +873,26 @@ const Dashboard = () => {
                   )}
                 </>
               )}
+
+              {/* Engagement widgets */}
+              <div className="mt-10 space-y-8">
+                <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-soft">
+                  <PeerOutcomes
+                    variant="widget"
+                    profile={{
+                      gpa: storedPreferences?.gpa,
+                      state: storedPreferences?.cityState || storedPreferences?.city_state,
+                      major: storedPreferences?.areaOfStudy || storedPreferences?.area_of_study,
+                      testScore: storedPreferences?.testScore || storedPreferences?.test_score,
+                      campusSize: storedPreferences?.campusSize || storedPreferences?.campus_size,
+                      locationType: storedPreferences?.locationType || storedPreferences?.location_type,
+                    }}
+                  />
+                </div>
+                <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-soft">
+                  <TrendingCollegeLists variant="widget" />
+                </div>
+              </div>
             </motion.div>
           </TabsContent>
 
