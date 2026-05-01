@@ -1210,7 +1210,10 @@ const Dashboard = () => {
               {isSubscribed ? (
                 <>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 rounded-lg bg-primary/10"><StickyNote className="h-5 w-5 text-primary" /></div>
+                    <div className="relative shrink-0">
+                      <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                      <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-brand-purple/15 to-brand-teal/15 border border-brand-purple/20"><StickyNote className="h-5 w-5 text-brand-purple" /></div>
+                    </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Personal Notes</h2>
                       <p className="text-sm text-muted-foreground">Click any college to open your structured notes workspace.</p>
