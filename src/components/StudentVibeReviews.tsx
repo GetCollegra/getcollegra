@@ -154,6 +154,30 @@ const StudentVibeReviews = ({ collegeName }: StudentVibeReviewsProps) => {
               )}
             </div>
           )}
+
+          {/* Verified source links — read real student reviews */}
+          {sources.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-border">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                Read real student reviews on:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {sources.map((src) => (
+                  <a
+                    key={src.platform}
+                    href={src.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/40 hover:bg-muted text-xs font-medium text-foreground border border-border transition-colors"
+                    title={src.label}
+                  >
+                    {src.platform}
+                    <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
