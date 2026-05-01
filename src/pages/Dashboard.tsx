@@ -1062,7 +1062,8 @@ const Dashboard = () => {
 
               {/* Engagement widgets */}
               <div className="mt-10 space-y-8">
-                <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-soft">
+                <div className="card-premium relative overflow-hidden bg-card/80 backdrop-blur-sm border border-border/60 rounded-2xl p-5 sm:p-6">
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-purple via-primary to-brand-teal" aria-hidden />
                   <PeerOutcomes
                     variant="widget"
                     profile={{
@@ -1078,7 +1079,8 @@ const Dashboard = () => {
                     }}
                   />
                 </div>
-                <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-soft">
+                <div className="card-premium relative overflow-hidden bg-card/80 backdrop-blur-sm border border-border/60 rounded-2xl p-5 sm:p-6">
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-teal via-primary to-brand-purple" aria-hidden />
                   <TrendingCollegeLists variant="widget" />
                 </div>
               </div>
