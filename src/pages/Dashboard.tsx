@@ -1237,6 +1237,7 @@ const Dashboard = () => {
                             key={saved.id}
                             saved={saved}
                             index={idx}
+                            fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(saved.college_name))}
                             isCompared={compareIds.has(saved.id)}
                             onStatusChange={updateStatus}
                             onRemove={removeCollege}
@@ -1318,6 +1319,7 @@ const Dashboard = () => {
                             <PremiumCardBanner
                               college={saved.college_data}
                               index={idx}
+                              fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(saved.college_name))}
                               size="sm"
                               showFitScore={false}
                               rightSlot={
@@ -1493,6 +1495,7 @@ const Dashboard = () => {
                                 <PremiumCardBanner
                                   college={college}
                                   index={idx}
+                                  fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(college.name))}
                                   size="md"
                                 />
                                 {/* Quick stats below banner */}
