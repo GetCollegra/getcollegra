@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Target, Shield, TrendingUp } from "lucide-react";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
-import { CAMPUS_FALLBACK_IMG } from "@/lib/campusFallback";
+import { getFallbackForCollege } from "@/lib/campusFallback";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { College } from "@/types/college";
@@ -76,7 +76,8 @@ export default function PremiumCardBanner({
   const bannerClass = `bg-banner-${(index % 6) + 1}`;
   const { url: photoUrl } = useCollegePhoto(college.name);
   const [imgFailed, setImgFailed] = useState(false);
-  const resolvedSrc = !imgFailed ? (photoUrl || CAMPUS_FALLBACK_IMG) : CAMPUS_FALLBACK_IMG;
+  const fallbackSrc = getFallbackForCollege(college.name);
+  const resolvedSrc = !imgFailed ? (photoUrl || fallbackSrc) : fallbackSrc;
 
   return (
     <div className={cn("relative overflow-hidden zoom-on-hover", heightCls[size], className)}>

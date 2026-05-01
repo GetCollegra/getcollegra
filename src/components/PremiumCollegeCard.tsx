@@ -11,7 +11,7 @@ import {
 import type { College } from "@/types/college";
 import { cn } from "@/lib/utils";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
-import { CAMPUS_FALLBACK_IMG } from "@/lib/campusFallback";
+import { getFallbackForCollege } from "@/lib/campusFallback";
 import { useState } from "react";
 
 type Props = {
@@ -114,7 +114,8 @@ export default function PremiumCollegeCard({
   const [imgFailed, setImgFailed] = useState(false);
   // Always use either the real photo or our local fallback campus image,
   // so cards never look empty.
-  const resolvedSrc = !imgFailed ? (photoUrl || CAMPUS_FALLBACK_IMG) : CAMPUS_FALLBACK_IMG;
+  const fallbackSrc = getFallbackForCollege(college.name);
+  const resolvedSrc = !imgFailed ? (photoUrl || fallbackSrc) : fallbackSrc;
 
   return (
     <motion.div
