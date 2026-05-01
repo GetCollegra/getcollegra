@@ -1537,6 +1537,21 @@ const QuizResults = () => {
               </div>
             </section>
 
+            {/* Students Like You Got Into — peer outcomes (AI-generated trends) */}
+            <PeerOutcomes
+              profile={{
+                gpa: surveyContext.gpa,
+                state: surveyContext.cityState || surveyContext.city_state,
+                major: surveyContext.areaOfStudy || surveyContext.area_of_study,
+                testScore: surveyContext.testScore || surveyContext.test_score,
+                campusSize: surveyContext.campusSize || surveyContext.campus_size,
+                locationType: surveyContext.locationType || surveyContext.location_type,
+              }}
+            />
+
+            {/* Trending College Lists — browseable curated collections */}
+            <TrendingCollegeLists />
+
             {/* Comparison Table Section */}
             <section className="py-12 sm:py-16 md:py-24 bg-muted/20">
               <div className="container px-4">
