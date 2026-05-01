@@ -106,7 +106,7 @@ const COMPARISON_ROWS: ComparisonRow[] = [
 
 /** Compact photo+gradient banner used at the top of each compare column card. */
 function CompareBanner({ collegeName, index, fallbackIndex, isCompact }: { collegeName: string; index: number; fallbackIndex?: number; isCompact: boolean }) {
-  const { url } = useCollegePhoto(collegeName);
+  const { url } = useCollegePhoto(collegeName, fallbackIndex ?? index);
   const [imgFailed, setImgFailed] = useState(false);
   const fallbackSrc = getFallbackForCollege(collegeName, fallbackIndex);
   const resolvedSrc = !imgFailed ? (url || fallbackSrc) : fallbackSrc;
