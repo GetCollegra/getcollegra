@@ -15,7 +15,42 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const handleResend = async () => {
+    if (resendCooldown > 0 || resending) return;
+    setResending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("resend-confirmation", {
+        body: { email },
+      });
+      if (error) {
+        // Edge function returns 429 with a JSON message on rate limit.
+        const ctx = (error as any)?.context;
+        let body: any = null;
+        try { body = ctx ? await ctx.json?.() : null; } catch { /* ignore */ }
+        const msg = body?.message || error.message || "Could not resend right now.";
+        if (body?.retryAfterSeconds) setResendCooldown(body.retryAfterSeconds);
+        toast({ title: "Please wait", description: msg, variant: "destructive" });
+      } else {
+        capture("verification_email_resent");
+        toast({ title: "Email sent", description: data?.message ?? "Check your inbox shortly." });
+        setResendCooldown(data?.cooldownSeconds ?? 60);
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message ?? "Try again in a moment.", variant: "destructive" });
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
