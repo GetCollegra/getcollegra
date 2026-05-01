@@ -668,8 +668,8 @@ const Dashboard = () => {
         </motion.section>
 
         {/* Legacy spacing wrapper — keep downstream sections unchanged */}
-        <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-12">
-          <div className="hidden">{/* placeholder to maintain animation rhythm */}</div>
+        <motion.section initial="hidden" animate="visible" variants={fadeIn} custom={0} className="mb-12 space-y-4">
+
           {studentProfile && (
             <Card className="mt-6 bg-card border-border shadow-soft overflow-hidden">
               <div className="h-1 bg-primary/20 w-full">
