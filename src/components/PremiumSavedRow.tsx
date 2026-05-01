@@ -78,7 +78,7 @@ export default function PremiumSavedRow({
   const FitIcon = fit.Icon;
   const initials = getInitials(saved.college_name);
   const bannerClass = `bg-banner-${(index % 6) + 1}`;
-  const { url: photoUrl } = useCollegePhoto(saved.college_name);
+  const { url: photoUrl } = useCollegePhoto(saved.college_name, fallbackIndex ?? index);
   const [imgFailed, setImgFailed] = useState(false);
   const fallbackSrc = getFallbackForCollege(saved.college_name, fallbackIndex);
   const resolvedSrc = !imgFailed ? (photoUrl || fallbackSrc) : fallbackSrc;
