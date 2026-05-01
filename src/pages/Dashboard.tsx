@@ -38,6 +38,8 @@ import FeedbackSurveyModal from "@/components/FeedbackSurveyModal";
 import TrendingCollegeLists from "@/components/TrendingCollegeLists";
 import PeerOutcomes from "@/components/PeerOutcomes";
 import PremiumCollegeCard from "@/components/PremiumCollegeCard";
+import PremiumSavedRow from "@/components/PremiumSavedRow";
+import PremiumCardBanner from "@/components/PremiumCardBanner";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
