@@ -38,6 +38,8 @@ import FeedbackSurveyModal from "@/components/FeedbackSurveyModal";
 import TrendingCollegeLists from "@/components/TrendingCollegeLists";
 import PeerOutcomes from "@/components/PeerOutcomes";
 import PremiumCollegeCard from "@/components/PremiumCollegeCard";
+import PremiumSavedRow from "@/components/PremiumSavedRow";
+import PremiumCardBanner from "@/components/PremiumCardBanner";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
@@ -1091,159 +1093,31 @@ const Dashboard = () => {
                     </Card>
                   </div>
 
-                  {/* Categorized sections */}
+                  {/* Categorized sections — premium card layout */}
                   {([
-                    { label: "Safety Schools", items: savedByCategory.safety, icon: Shield, color: "text-emerald-600", borderColor: "border-l-emerald-500" },
-                    { label: "Match Schools", items: savedByCategory.match, icon: Target, color: "text-primary", borderColor: "border-l-primary" },
-                    { label: "Reach Schools", items: savedByCategory.reach, icon: TrendingUp, color: "text-orange-600", borderColor: "border-l-orange-500" },
+                    { label: "Safety Schools", items: savedByCategory.safety, icon: Shield, color: "text-success" },
+                    { label: "Match Schools",  items: savedByCategory.match,  icon: Target, color: "text-warning" },
+                    { label: "Reach Schools",  items: savedByCategory.reach,  icon: TrendingUp, color: "text-reach" },
                   ] as const).map(section => section.items.length > 0 && (
                     <div key={section.label}>
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-4">
                         <section.icon className={`h-5 w-5 ${section.color}`} />
                         <h3 className="text-lg font-bold text-foreground">{section.label}</h3>
                         <Badge variant="secondary" className="text-xs">{section.items.length}</Badge>
                       </div>
-                      <div className="space-y-3">
-                        {section.items.map(saved => {
-                          const cat = fitCategoryConfig[saved.college_data.fitCategory] || fitCategoryConfig.Match;
-                          const CatIcon = cat.icon;
-                          const statusColors: Record<string, string> = {
-                            Considering: "bg-muted text-muted-foreground",
-                            Applying: "bg-primary/10 text-primary",
-                            Applied: "bg-accent/10 text-accent",
-                            Accepted: "bg-emerald-50 text-emerald-600",
-                          };
-                          return (
-                            <Collapsible key={saved.id}>
-                              <Card className={`bg-card border-border border-l-4 ${section.borderColor} hover:shadow-soft transition-all duration-200 overflow-hidden`}>
-                                <CardContent className="p-0">
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5">
-                                    <CollapsibleTrigger className="flex-1 min-w-0 text-left cursor-pointer group">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{saved.college_name}</h3>
-                                        <Badge className={`${cat.bg} ${cat.color} border-0 text-[10px] shrink-0`}>
-                                          <CatIcon className="h-3 w-3 mr-0.5" />{saved.college_data.fitCategory}
-                                        </Badge>
-                                        <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto shrink-0 transition-transform group-data-[state=open]:rotate-180" />
-                                      </div>
-                                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                                        <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{saved.college_data.location}</span>
-                                        <span className="font-semibold text-primary">{saved.college_data.fitScore}% match</span>
-                                        <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{saved.college_data.netPrice}</span>
-                                        <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{saved.college_data.acceptanceRate}</span>
-                                      </div>
-                                    </CollapsibleTrigger>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <Select value={saved.status} onValueChange={(val) => updateStatus(saved.id, val)}>
-                                        <SelectTrigger className={`h-8 text-xs w-[130px] border-0 font-medium ${statusColors[saved.status] || ""}`}>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="Considering">Considering</SelectItem>
-                                          <SelectItem value="Applying">Applying</SelectItem>
-                                          <SelectItem value="Applied">Applied</SelectItem>
-                                          <SelectItem value="Accepted">Accepted</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                      <Button variant="outline" size="sm" className="h-8 gap-1 text-xs" onClick={() => navigate(`/college?name=${encodeURIComponent(saved.college_name)}`)}>
-                                        <Eye className="h-3.5 w-3.5" /> Explore
-                                      </Button>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeCollege(saved.id)}>
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-
-                                  <CollapsibleContent>
-                                    <div className="border-t border-border bg-muted/20 p-5">
-                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-                                        {[
-                                          { label: "In-State Tuition", value: saved.college_data.tuitionInState, icon: DollarSign },
-                                          { label: "Out-of-State Tuition", value: saved.college_data.tuitionOutOfState, icon: DollarSign },
-                                          { label: "Financial Aid", value: saved.college_data.avgFinancialAid, icon: Wallet },
-                                          { label: "Graduation Rate", value: saved.college_data.graduationRate, icon: Award },
-                                          { label: "Student Body", value: saved.college_data.studentBody, icon: Users },
-                                          { label: "Student:Faculty", value: saved.college_data.studentFacultyRatio, icon: BookOpen },
-                                          { label: "Campus Size", value: saved.college_data.campusSize, icon: MapPin },
-                                          { label: "Avg Starting Salary", value: saved.college_data.avgStartingSalary, icon: Briefcase },
-                                        ].filter(item => {
-                                          const v = item.value;
-                                          return v && v !== "Premium" && v !== "N/A" && v !== "See school website" && v !== "—";
-                                        }).map(item => {
-                                          const Icon = item.icon;
-                                          return (
-                                            <div key={item.label} className="bg-card rounded-lg p-3 border border-border/50">
-                                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                                                <Icon className="h-3 w-3" />{item.label}
-                                              </div>
-                                              <p className="text-sm font-semibold text-foreground">{item.value}</p>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                      <div className="grid md:grid-cols-3 gap-4 mb-5">
-                                        <div className="bg-card rounded-lg p-4 border border-border/50">
-                                          <p className="text-xs font-semibold text-muted-foreground mb-1.5">Why It's a Good Fit</p>
-                                          <p className="text-sm text-foreground">{saved.college_data.whyFit || "—"}</p>
-                                        </div>
-                                        <div className="bg-card rounded-lg p-4 border border-border/50">
-                                          <p className="text-xs font-semibold text-muted-foreground mb-1.5">Campus Vibe</p>
-                                          <p className="text-sm text-foreground">{saved.college_data.campusVibe || "—"}</p>
-                                        </div>
-                                        <div className="bg-card rounded-lg p-4 border border-border/50">
-                                          <p className="text-xs font-semibold text-muted-foreground mb-1.5">Notable Feature</p>
-                                          <p className="text-sm text-foreground">{saved.college_data.notableFeature || "—"}</p>
-                                        </div>
-                                      </div>
-                                      {saved.college_data.topPrograms?.length > 0 && (
-                                        <div className="mb-5">
-                                          <p className="text-xs font-semibold text-muted-foreground mb-2">Top Programs</p>
-                                          <div className="flex flex-wrap gap-1.5">
-                                            {saved.college_data.topPrograms.map((prog, i) => (
-                                              <Badge key={i} variant="secondary" className="text-xs">{prog}</Badge>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                      <div className="grid md:grid-cols-3 gap-4">
-                                        {saved.college_data.prosForStudent?.length > 0 && (
-                                          <div className="bg-secondary/50 rounded-lg p-4 border border-border/50">
-                                            <p className="text-xs font-semibold text-foreground mb-2">✓ Pros</p>
-                                            <ul className="space-y-1">
-                                              {saved.college_data.prosForStudent.map((pro, i) => (
-                                                <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
-                                                  <span className="text-primary mt-0.5">•</span>{pro}
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {saved.college_data.consForStudent?.length > 0 && (
-                                          <div className="bg-destructive/5 rounded-lg p-4 border border-destructive/10">
-                                            <p className="text-xs font-semibold text-foreground mb-2">✗ Cons</p>
-                                            <ul className="space-y-1">
-                                              {saved.college_data.consForStudent.map((con, i) => (
-                                                <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
-                                                  <span className="text-destructive mt-0.5">•</span>{con}
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {saved.college_data.howToGetIn && saved.college_data.howToGetIn !== "—" && (
-                                          <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
-                                            <p className="text-xs font-semibold text-primary mb-2">How to Get In</p>
-                                            <p className="text-sm text-foreground">{saved.college_data.howToGetIn}</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </CollapsibleContent>
-                                </CardContent>
-                              </Card>
-                            </Collapsible>
-                          );
-                        })}
+                      <div className="grid gap-4">
+                        {section.items.map((saved, idx) => (
+                          <PremiumSavedRow
+                            key={saved.id}
+                            saved={saved}
+                            index={idx}
+                            isCompared={compareIds.has(saved.id)}
+                            onStatusChange={updateStatus}
+                            onRemove={removeCollege}
+                            onCompareToggle={(id) => { toggleCompare(id); setActiveTab("compare"); }}
+                            onOpenNotes={(id) => setNotesPanelId(id)}
+                          />
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -1296,7 +1170,7 @@ const Dashboard = () => {
                     </CardContent></Card>
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {savedColleges.map(saved => {
+                      {savedColleges.map((saved, idx) => {
                         const parsed = parseNotes(saved.notes);
                         const hasTags = parsed.tags.length > 0;
                         const hasNotes = parsed.general.trim().length > 0;
@@ -1306,20 +1180,21 @@ const Dashboard = () => {
                         return (
                           <Card
                             key={saved.id}
-                            className="bg-card border-border hover:shadow-card hover:border-primary/20 transition-all cursor-pointer group"
+                            className="card-premium overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm cursor-pointer group"
                             onClick={() => setNotesPanelId(saved.id)}
                           >
-                            <CardContent className="p-5">
-                              <div className="flex items-start justify-between gap-2 mb-3">
-                                <div className="min-w-0">
-                                  <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{saved.college_name}</h3>
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                                    <MapPin className="h-3 w-3" />
-                                    <span className="truncate">{saved.college_data.location}</span>
-                                  </div>
-                                </div>
-                                <StickyNote className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
-                              </div>
+                            <PremiumCardBanner
+                              college={saved.college_data}
+                              index={idx}
+                              size="sm"
+                              showFitScore={false}
+                              rightSlot={
+                                <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-white/95 shadow-soft">
+                                  <StickyNote className="h-3.5 w-3.5 text-foreground" />
+                                </span>
+                              }
+                            />
+                            <CardContent className="p-4">
                               {hasTags && (
                                 <div className="flex flex-wrap gap-1.5 mb-3">
                                   {parsed.tags.slice(0, 3).map(tag => (
@@ -1333,12 +1208,12 @@ const Dashboard = () => {
                               {hasNotes && (
                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{parsed.general}</p>
                               )}
-                              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                                {prosCount > 0 && <span className="flex items-center gap-0.5"><ThumbsUp className="h-2.5 w-2.5 text-emerald-600" /> {prosCount}</span>}
-                                {consCount > 0 && <span className="flex items-center gap-0.5"><ThumbsDown className="h-2.5 w-2.5 text-rose-500" /> {consCount}</span>}
-                                {checkDone > 0 && <span className="flex items-center gap-0.5"><Eye className="h-2.5 w-2.5" /> {checkDone}/4</span>}
+                              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                                {prosCount > 0 && <span className="flex items-center gap-0.5"><ThumbsUp className="h-3 w-3 text-success" /> {prosCount}</span>}
+                                {consCount > 0 && <span className="flex items-center gap-0.5"><ThumbsDown className="h-3 w-3 text-destructive" /> {consCount}</span>}
+                                {checkDone > 0 && <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {checkDone}/4</span>}
                                 {!hasTags && !hasNotes && prosCount === 0 && consCount === 0 && (
-                                  <span className="text-muted-foreground/60 italic">No notes yet — click to add</span>
+                                  <span className="text-muted-foreground/70 italic">No notes yet — click to add</span>
                                 )}
                               </div>
                             </CardContent>
@@ -1471,29 +1346,21 @@ const Dashboard = () => {
 
                         return (
                           <motion.div key={college.name} variants={fadeIn} custom={idx + 1}>
-                            <Card className="bg-card border-border overflow-hidden">
+                            <Card className="card-premium bg-card/80 backdrop-blur-sm border-border/60 overflow-hidden">
                               <CardContent className="p-0">
-                                {/* Header */}
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 pb-4 border-b border-border/50">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <h3 className="text-lg font-bold text-foreground truncate">{college.name}</h3>
-                                      <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0 text-xs`}>
-                                        <CatIcon className="h-3 w-3 mr-0.5" />{college.fitCategory}
-                                      </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                      <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{college.location}</span>
-                                      <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{college.acceptanceRate}</span>
-                                      <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{college.netPrice}</span>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <div className="text-center">
-                                      <div className="text-3xl font-bold text-primary leading-none">{college.fitScore}%</div>
-                                      <p className="text-[10px] font-medium text-muted-foreground mt-0.5">FIT SCORE</p>
-                                    </div>
-                                  </div>
+                                {/* Premium banner header */}
+                                <PremiumCardBanner
+                                  college={college}
+                                  index={idx}
+                                  size="md"
+                                />
+                                {/* Quick stats below banner */}
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 border-b border-border/50 bg-muted/20 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{college.acceptanceRate}</span>
+                                  <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{college.netPrice}</span>
+                                  {college.graduationRate && college.graduationRate !== "—" && college.graduationRate !== "Premium" && (
+                                    <span className="flex items-center gap-1"><Award className="h-3.5 w-3.5" />{college.graduationRate} grad rate</span>
+                                  )}
                                 </div>
 
                                 {/* Fit Breakdown */}

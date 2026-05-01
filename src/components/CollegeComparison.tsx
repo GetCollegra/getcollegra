@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import type { College } from "@/types/college";
+import { useCollegePhoto } from "@/hooks/useCollegePhoto";
 
 type SavedCollege = {
   id: string;
@@ -101,6 +102,30 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     format: "text",
   },
 ];
+
+/** Compact photo+gradient banner used at the top of each compare column card. */
+function CompareBanner({ collegeName, index, isCompact }: { collegeName: string; index: number; isCompact: boolean }) {
+  const { url } = useCollegePhoto(collegeName);
+  const bannerClass = `bg-banner-${(index % 6) + 1}`;
+  return (
+    <div className={`relative overflow-hidden ${isCompact ? "h-12" : "h-16"}`}>
+      <div className={`absolute inset-0 ${bannerClass}`} aria-hidden />
+      {url && (
+        <img
+          src={url}
+          alt={`${collegeName} campus`}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+        />
+      )}
+      <div className="absolute inset-0 banner-pattern" aria-hidden />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/40" aria-hidden />
+    </div>
+  );
+}
 
 type Props = {
   savedColleges: SavedCollege[];
@@ -268,7 +293,8 @@ export default function CollegeComparison({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <Card className="bg-card border-border overflow-hidden h-full">
+                  <Card className="card-premium overflow-hidden h-full border-border/60 bg-card/80 backdrop-blur-sm">
+                    <CompareBanner collegeName={c.college_name} index={i} isCompact={isCompact} />
                     <div className="h-1 bg-primary/20 w-full">
                       <div className="h-full bg-primary rounded-r-full" style={{ width: `${college.fitScore}%` }} />
                     </div>
