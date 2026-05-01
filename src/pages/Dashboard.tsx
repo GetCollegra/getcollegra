@@ -1345,29 +1345,21 @@ const Dashboard = () => {
 
                         return (
                           <motion.div key={college.name} variants={fadeIn} custom={idx + 1}>
-                            <Card className="bg-card border-border overflow-hidden">
+                            <Card className="card-premium bg-card/80 backdrop-blur-sm border-border/60 overflow-hidden">
                               <CardContent className="p-0">
-                                {/* Header */}
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 pb-4 border-b border-border/50">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <h3 className="text-lg font-bold text-foreground truncate">{college.name}</h3>
-                                      <Badge className={`${cat.bg} ${cat.color} border-0 shrink-0 text-xs`}>
-                                        <CatIcon className="h-3 w-3 mr-0.5" />{college.fitCategory}
-                                      </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                      <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{college.location}</span>
-                                      <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{college.acceptanceRate}</span>
-                                      <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{college.netPrice}</span>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <div className="text-center">
-                                      <div className="text-3xl font-bold text-primary leading-none">{college.fitScore}%</div>
-                                      <p className="text-[10px] font-medium text-muted-foreground mt-0.5">FIT SCORE</p>
-                                    </div>
-                                  </div>
+                                {/* Premium banner header */}
+                                <PremiumCardBanner
+                                  college={college}
+                                  index={idx}
+                                  size="md"
+                                />
+                                {/* Quick stats below banner */}
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 border-b border-border/50 bg-muted/20 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{college.acceptanceRate}</span>
+                                  <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{college.netPrice}</span>
+                                  {college.graduationRate && college.graduationRate !== "—" && college.graduationRate !== "Premium" && (
+                                    <span className="flex items-center gap-1"><Award className="h-3.5 w-3.5" />{college.graduationRate} grad rate</span>
+                                  )}
                                 </div>
 
                                 {/* Fit Breakdown */}
