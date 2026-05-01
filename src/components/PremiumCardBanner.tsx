@@ -32,7 +32,7 @@ const fitStyles: Record<
 > = {
   Safety: { label: "Likely Admit", cls: "bg-success text-success-foreground", Icon: Shield },
   Match:  { label: "Strong Match", cls: "bg-warning text-warning-foreground", Icon: Target },
-  Reach:  { label: "Reach School", discriminator: "" as never, cls: "bg-reach text-reach-foreground", Icon: TrendingUp } as any,
+  Reach:  { label: "Reach School", cls: "bg-reach text-reach-foreground", Icon: TrendingUp },
 };
 
 const heightCls: Record<Size, string> = {
