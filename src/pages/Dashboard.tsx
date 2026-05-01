@@ -290,16 +290,46 @@ const Dashboard = () => {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [loadMatches]);
 
-  // Load stored survey preferences from sessionStorage
+  // Load stored survey preferences — sessionStorage first, then DB fallback
+  // (so peer outcomes always reflect the user's quiz inputs even on a fresh device).
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("latest_survey_preferences");
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed?.responses) setStoredPreferences(parsed.responses);
+        if (parsed?.responses) {
+          setStoredPreferences(parsed.responses);
+          return;
+        }
       }
     } catch { /* ignore */ }
-  }, []);
+    if (!user) return;
+    (async () => {
+      // Prefer the latest college_matches.raw_preferences (already normalized);
+      // fall back to quiz_answers.answers.
+      const { data: match } = await supabase
+        .from("college_matches")
+        .select("raw_preferences")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (match?.raw_preferences && typeof match.raw_preferences === "object") {
+        setStoredPreferences(match.raw_preferences as Record<string, any>);
+        return;
+      }
+      const { data: quiz } = await supabase
+        .from("quiz_answers")
+        .select("answers")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (quiz?.answers && typeof quiz.answers === "object") {
+        setStoredPreferences(quiz.answers as Record<string, any>);
+      }
+    })();
+  }, [user]);
 
   // Load saved colleges — and unmask premium fields using college_matches data
   // Also sync saved college_data with latest match data when matches change
@@ -963,6 +993,9 @@ const Dashboard = () => {
                       testScore: storedPreferences?.testScore || storedPreferences?.test_score,
                       campusSize: storedPreferences?.campusSize || storedPreferences?.campus_size,
                       locationType: storedPreferences?.locationType || storedPreferences?.location_type,
+                      academicImportance: storedPreferences?.academicImportance || storedPreferences?.academic_importance,
+                      idealSchoolType: studentProfile?.idealSchoolType,
+                      topPriorities: studentProfile?.topPriorities,
                     }}
                   />
                 </div>
