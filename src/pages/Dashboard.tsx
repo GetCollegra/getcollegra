@@ -108,6 +108,8 @@ const Dashboard = () => {
   const [sort, setSort] = useState<SortOption>("fitScore");
   type BrowseMode = "all" | "best" | "affordable" | "popular" | "scholarships" | "trending";
   const [browseMode, setBrowseMode] = useState<BrowseMode>("all");
+  const [simpleView, setSimpleView] = useState<boolean>(true); // Focus Mode: default to clean cards
+  const [showEngagementWidgets, setShowEngagementWidgets] = useState<boolean>(false);
   const [scholarshipCount, setScholarshipCount] = useState<number>(0);
   const [upcomingDeadlineCount, setUpcomingDeadlineCount] = useState<number>(0);
 
