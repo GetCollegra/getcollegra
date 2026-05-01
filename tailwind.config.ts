@@ -43,6 +43,26 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        "brand-purple": {
+          DEFAULT: "hsl(var(--brand-purple))",
+          foreground: "hsl(var(--brand-purple-foreground))",
+        },
+        "brand-teal": {
+          DEFAULT: "hsl(var(--brand-teal))",
+          foreground: "hsl(var(--brand-teal-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        reach: {
+          DEFAULT: "hsl(var(--reach))",
+          foreground: "hsl(var(--reach-foreground))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",

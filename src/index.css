@@ -40,13 +40,33 @@
 
     --radius: 0.5rem;
 
+    /* Premium palette extensions */
+    --brand-purple: 265 85% 60%;
+    --brand-purple-foreground: 0 0% 100%;
+    --brand-teal: 175 70% 45%;
+    --brand-teal-foreground: 0 0% 100%;
+    --success: 152 65% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 95% 52%;
+    --warning-foreground: 30 50% 12%;
+    --reach: 14 90% 58%;
+    --reach-foreground: 0 0% 100%;
+
     /* Custom tokens */
     --gradient-hero: linear-gradient(135deg, hsl(210 90% 38%) 0%, hsl(210 80% 55%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 30% 97%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 30% 98%) 100%);
+    --gradient-banner-1: linear-gradient(135deg, hsl(210 90% 50%) 0%, hsl(265 80% 60%) 100%);
+    --gradient-banner-2: linear-gradient(135deg, hsl(265 80% 58%) 0%, hsl(320 75% 60%) 100%);
+    --gradient-banner-3: linear-gradient(135deg, hsl(175 70% 45%) 0%, hsl(210 85% 50%) 100%);
+    --gradient-banner-4: linear-gradient(135deg, hsl(38 95% 55%) 0%, hsl(14 90% 58%) 100%);
+    --gradient-banner-5: linear-gradient(135deg, hsl(152 65% 42%) 0%, hsl(175 70% 45%) 100%);
+    --gradient-banner-6: linear-gradient(135deg, hsl(225 85% 55%) 0%, hsl(195 90% 50%) 100%);
+    --gradient-best-fit: linear-gradient(135deg, hsl(265 85% 60%) 0%, hsl(210 90% 50%) 50%, hsl(175 70% 45%) 100%);
     --shadow-soft: 0 2px 16px -4px hsl(210 50% 30% / 0.10);
     --shadow-card: 0 6px 28px -8px hsl(210 50% 30% / 0.14);
     --shadow-elevated: 0 12px 40px -12px hsl(210 50% 30% / 0.18);
+    --shadow-glow: 0 0 0 1px hsl(265 85% 60% / 0.35), 0 18px 60px -18px hsl(265 85% 60% / 0.45), 0 8px 30px -10px hsl(210 90% 50% / 0.35);
 
     /* Sidebar defaults */
     --sidebar-background: 0 0% 98%;
@@ -88,12 +108,31 @@
     --input: 213 28% 20%;
     --ring: 210 80% 55%;
 
+    --brand-purple: 265 80% 65%;
+    --brand-purple-foreground: 0 0% 100%;
+    --brand-teal: 175 65% 50%;
+    --brand-teal-foreground: 0 0% 100%;
+    --success: 152 60% 50%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 95% 58%;
+    --warning-foreground: 30 50% 12%;
+    --reach: 14 90% 62%;
+    --reach-foreground: 0 0% 100%;
+
     --gradient-hero: linear-gradient(135deg, hsl(210 85% 50%) 0%, hsl(210 70% 40%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(213 35% 10%) 0%, hsl(213 35% 12%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(213 35% 13%) 0%, hsl(213 35% 15%) 100%);
+    --gradient-banner-1: linear-gradient(135deg, hsl(210 80% 45%) 0%, hsl(265 70% 55%) 100%);
+    --gradient-banner-2: linear-gradient(135deg, hsl(265 70% 52%) 0%, hsl(320 65% 55%) 100%);
+    --gradient-banner-3: linear-gradient(135deg, hsl(175 60% 40%) 0%, hsl(210 75% 45%) 100%);
+    --gradient-banner-4: linear-gradient(135deg, hsl(38 85% 50%) 0%, hsl(14 80% 52%) 100%);
+    --gradient-banner-5: linear-gradient(135deg, hsl(152 55% 38%) 0%, hsl(175 60% 40%) 100%);
+    --gradient-banner-6: linear-gradient(135deg, hsl(225 75% 50%) 0%, hsl(195 80% 45%) 100%);
+    --gradient-best-fit: linear-gradient(135deg, hsl(265 80% 60%) 0%, hsl(210 85% 50%) 50%, hsl(175 65% 45%) 100%);
     --shadow-soft: 0 2px 16px -4px hsl(210 50% 5% / 0.30);
     --shadow-card: 0 6px 28px -8px hsl(210 50% 5% / 0.40);
     --shadow-elevated: 0 12px 40px -12px hsl(210 50% 5% / 0.50);
+    --shadow-glow: 0 0 0 1px hsl(265 80% 65% / 0.4), 0 18px 60px -18px hsl(265 80% 65% / 0.5), 0 8px 30px -10px hsl(210 85% 50% / 0.4);
 
     --sidebar-background: 213 35% 10%;
     --sidebar-foreground: 210 25% 95%;
@@ -175,5 +214,51 @@
 
   .shadow-elevated {
     box-shadow: var(--shadow-elevated);
+  }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Banner gradients keyed by index — keeps each card visually distinct */
+  .bg-banner-1 { background: var(--gradient-banner-1); }
+  .bg-banner-2 { background: var(--gradient-banner-2); }
+  .bg-banner-3 { background: var(--gradient-banner-3); }
+  .bg-banner-4 { background: var(--gradient-banner-4); }
+  .bg-banner-5 { background: var(--gradient-banner-5); }
+  .bg-banner-6 { background: var(--gradient-banner-6); }
+  .bg-best-fit { background: var(--gradient-best-fit); }
+
+  /* Subtle pattern overlay for banners */
+  .banner-pattern {
+    background-image:
+      radial-gradient(circle at 20% 30%, hsl(0 0% 100% / 0.20) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, hsl(0 0% 100% / 0.12) 0%, transparent 45%);
+  }
+
+  /* Smooth banner zoom container */
+  .zoom-on-hover .zoom-target {
+    transition: transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .zoom-on-hover:hover .zoom-target {
+    transform: scale(1.06);
+  }
+
+  /* Card lift + shadow deepen */
+  .card-premium {
+    @apply transition-all duration-300;
+  }
+  .card-premium:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* Pulse glow for the "Best Fit" hero card */
+  .glow-best-fit {
+    box-shadow: var(--shadow-glow);
+    animation: glow-pulse 3.5s ease-in-out infinite;
+  }
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 0 1px hsl(265 85% 60% / 0.35), 0 18px 60px -18px hsl(265 85% 60% / 0.45), 0 8px 30px -10px hsl(210 90% 50% / 0.35); }
+    50%      { box-shadow: 0 0 0 1px hsl(265 85% 60% / 0.55), 0 24px 80px -16px hsl(265 85% 60% / 0.6),  0 12px 40px -10px hsl(175 70% 45% / 0.45); }
   }
 }
