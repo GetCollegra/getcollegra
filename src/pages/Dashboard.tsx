@@ -1110,12 +1110,13 @@ const Dashboard = () => {
               {loadingSaved ? (
                 <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : savedColleges.length === 0 ? (
-                <Card className="bg-card border-border border-dashed">
-                  <CardContent className="p-12 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                      <Bookmark className="h-8 w-8 text-muted-foreground" />
+                <Card className="card-premium relative overflow-hidden border-border/60 border-dashed bg-card/80 backdrop-blur-sm">
+                  <div className="absolute inset-0 banner-pattern opacity-40" aria-hidden />
+                  <CardContent className="relative p-12 text-center">
+                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/15 to-brand-teal/15 border border-primary/20 mb-4">
+                      <Bookmark className="h-7 w-7 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No saved colleges yet</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-2">No saved colleges yet</h3>
                     <p className="text-muted-foreground text-sm max-w-sm mx-auto">Save colleges from the Matches tab to organize and track them here.</p>
                   </CardContent>
                 </Card>
