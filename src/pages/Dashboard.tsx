@@ -741,45 +741,75 @@ const Dashboard = () => {
             </Card>
           )}
 
-          {/* Add College Bar */}
+          {/* Add College Bar — AI-powered lookup */}
           {isSubscribed ? (
-            <Card className="bg-card border-border shadow-soft">
-              <CardContent className="p-4">
+            <Card className="card-premium overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
+              <div className="h-1 bg-gradient-to-r from-brand-purple via-primary to-brand-teal" aria-hidden />
+              <CardContent className="p-4 sm:p-5">
                 <form
                   onSubmit={(e) => { e.preventDefault(); addCustomCollege(); }}
-                  className="flex items-center gap-3"
+                  className="flex flex-col sm:flex-row sm:items-center gap-3"
                 >
+                  <div className="flex items-center gap-2 sm:shrink-0">
+                    <div className="relative">
+                      <div className="absolute inset-0 rounded-xl bg-gradient-hero blur-md opacity-30" aria-hidden />
+                      <div className="relative p-2 rounded-xl bg-gradient-to-br from-brand-purple/15 to-brand-teal/15 border border-brand-purple/20">
+                        <Sparkles className="h-4 w-4 text-brand-purple" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] uppercase tracking-wider font-bold text-brand-purple">Add a College</span>
+                      <span className="text-[11px] text-muted-foreground">AI fills in every detail</span>
+                    </div>
+                  </div>
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Add a college — AI will fill in all the details..."
+                      placeholder="Search any college by name…"
                       value={addCollegeName}
                       onChange={(e) => setAddCollegeName(e.target.value)}
-                      className="pl-10 bg-muted/30 border-border/50 focus:bg-card"
+                      className="pl-10 bg-muted/40 border-border/60 focus:bg-card focus:border-primary/50"
                       maxLength={200}
                     />
                   </div>
-                  <Button type="submit" disabled={!addCollegeName.trim() || addingCollege} size="default" className="shrink-0 gap-1.5">
+                  <Button
+                    type="submit"
+                    disabled={!addCollegeName.trim() || addingCollege}
+                    size="default"
+                    className="shrink-0 gap-1.5 bg-gradient-hero text-primary-foreground hover:opacity-95 shadow-soft hover:shadow-card font-semibold"
+                  >
                     {addingCollege ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                    Add
+                    {addingCollege ? "Looking up…" : "Add"}
                   </Button>
                 </form>
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-card border-border shadow-soft relative overflow-hidden">
-              <CardContent className="p-4 flex items-center gap-3 opacity-60">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Add a college — AI will fill in all the details..."
-                    disabled
-                    className="pl-10 bg-muted/30 border-border/50"
-                  />
+            <Card className="card-premium overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm relative">
+              <div className="h-1 bg-gradient-to-r from-brand-purple via-primary to-brand-teal opacity-60" aria-hidden />
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 opacity-70">
+                  <div className="flex items-center gap-2 sm:shrink-0">
+                    <div className="p-2 rounded-xl bg-muted border border-border/60">
+                      <Sparkles className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground">Add a College</span>
+                      <span className="text-[11px] text-muted-foreground">Premium feature</span>
+                    </div>
+                  </div>
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search any college by name…"
+                      disabled
+                      className="pl-10 bg-muted/40 border-border/60"
+                    />
+                  </div>
+                  <Button disabled size="default" className="shrink-0 gap-1.5">
+                    <Lock className="h-4 w-4" /> Premium
+                  </Button>
                 </div>
-                <Button disabled size="default" className="shrink-0 gap-1.5">
-                  <Lock className="h-4 w-4" /> Premium
-                </Button>
               </CardContent>
             </Card>
           )}
