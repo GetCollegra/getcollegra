@@ -933,6 +933,7 @@ const preferenceKeyMap: Record<string, string> = {
   weather_region: "weatherRegion",
   list_mode: "listMode",
   area_of_study: "areaOfStudy",
+  custom_major: "customMajor",
 };
 
 function normalizePreferenceKeys(input: Record<string, any>): Record<string, any> {
@@ -1165,14 +1166,27 @@ serve(async (req) => {
     const matchedColleges = ruleBasedMatch(scorecard.raw, prefs, excludeColleges, weightAdj, behaviorBoosts);
     console.log(`[college-match] Rule engine picked ${matchedColleges.length} colleges:`, matchedColleges.map(c => c.name));
 
-    // ── Step 3: Build student profile (rule-based) ──
+    // ── Step 3: Build student profile (rule-based, grounded in quiz answers) ──
+    const priorityCandidates: string[] = [];
+    if (prefs.areaOfStudy && !/undecided/i.test(prefs.areaOfStudy)) priorityCandidates.push(prefs.areaOfStudy);
+    if (prefs.campusSize && !/no preference/i.test(prefs.campusSize)) priorityCandidates.push(`${prefs.campusSize} campus`);
+    if (prefs.locationType && !/no preference/i.test(prefs.locationType)) priorityCandidates.push(`${prefs.locationType} setting`);
+    if (prefs.financialAid && /essential|very important/i.test(prefs.financialAid)) priorityCandidates.push("Strong financial aid");
+    else if (prefs.maxCost && !/no preference/i.test(prefs.maxCost)) priorityCandidates.push(`Budget ${prefs.maxCost}`);
+    if (prefs.academicImportance && /top priority|very important/i.test(prefs.academicImportance)) priorityCandidates.push("Academic rigor");
+    if (prefs.campusLife && !/no preference/i.test(prefs.campusLife)) {
+      const firstLife = String(prefs.campusLife).split(",")[0]?.trim();
+      if (firstLife) priorityCandidates.push(firstLife);
+    }
+    if ((prefs as any).activities) {
+      const act = String((prefs as any).activities).slice(0, 60);
+      if (act) priorityCandidates.push(`Continuing ${act}`);
+    }
+    while (priorityCandidates.length < 3) priorityCandidates.push("Campus fit");
+
     const studentProfile = {
       summary: `Based on your preferences, we found ${matchedColleges.length} schools that match your criteria using U.S. Department of Education data.`,
-      topPriorities: [
-        prefs.areaOfStudy && prefs.areaOfStudy !== "Undecided" ? prefs.areaOfStudy : "Academic quality",
-        prefs.campusSize && prefs.campusSize !== "No preference" ? `${prefs.campusSize} campus` : "Campus fit",
-        prefs.financialAid === "Essential" ? "Financial aid" : "Affordability",
-      ],
+      topPriorities: priorityCandidates.slice(0, 3),
       idealSchoolType: "Schools matching your stated preferences for location, size, and academic focus",
     };
     const comparisonInsight = `These ${matchedColleges.length} schools were selected from U.S. Department of Education data based on your preferences, with a balanced mix of Safety, Match, and Reach schools.`;

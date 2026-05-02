@@ -173,7 +173,13 @@ const Survey = () => {
           { keywords: ["campus life", "outside of academics"], paramKey: "campus_life" },
           { keywords: ["how important", "academics"], paramKey: "academic_importance" },
           { keywords: ["far", "home", "distance"], paramKey: "distance_from_home" },
+          { keywords: ["academic areas", "interest you the most"], paramKey: "area_of_study" },
           { keywords: ["area of study", "study", "major"], paramKey: "area_of_study" },
+          { keywords: ["major", "isn't listed"], paramKey: "custom_major" },
+          { keywords: ["major", "not listed"], paramKey: "custom_major" },
+          { keywords: ["type it here"], paramKey: "custom_major" },
+          { keywords: ["activities", "planning to go"], paramKey: "activities" },
+          { keywords: ["are you in any activities"], paramKey: "activities" },
         ];
 
         const findParamKey = (title: string): string | null => {
@@ -332,7 +338,17 @@ const Survey = () => {
           distanceFromHome: clean(pick("distance_from_home", "distanceFromHome"), "No preference"),
           weatherRegion: clean(pick("weather_region", "weatherRegion"), "No preference"),
           listMode: clean(pick("list_mode", "listMode"), "Balanced"),
-          areaOfStudy: clean(pick("area_of_study", "areaOfStudy"), "Undecided"),
+          areaOfStudy: (() => {
+            const primary = clean(pick("area_of_study", "areaOfStudy"), "");
+            const custom = clean(pick("custom_major", "customMajor"), "");
+            // If user typed a custom major and primary is empty / Undecided, prefer custom
+            if (custom && (!primary || /undecided/i.test(primary))) return custom;
+            // If both, append the custom for additional specificity
+            if (custom && primary) return `${primary} (specifically: ${custom})`;
+            return primary || "Undecided";
+          })(),
+          activities: clean(pick("activities"), ""),
+          customMajor: clean(pick("custom_major", "customMajor"), ""),
           allResponses: cleanedResponses,
         };
 
