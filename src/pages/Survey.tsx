@@ -338,7 +338,17 @@ const Survey = () => {
           distanceFromHome: clean(pick("distance_from_home", "distanceFromHome"), "No preference"),
           weatherRegion: clean(pick("weather_region", "weatherRegion"), "No preference"),
           listMode: clean(pick("list_mode", "listMode"), "Balanced"),
-          areaOfStudy: clean(pick("area_of_study", "areaOfStudy"), "Undecided"),
+          areaOfStudy: (() => {
+            const primary = clean(pick("area_of_study", "areaOfStudy"), "");
+            const custom = clean(pick("custom_major", "customMajor"), "");
+            // If user typed a custom major and primary is empty / Undecided, prefer custom
+            if (custom && (!primary || /undecided/i.test(primary))) return custom;
+            // If both, append the custom for additional specificity
+            if (custom && primary) return `${primary} (specifically: ${custom})`;
+            return primary || "Undecided";
+          })(),
+          activities: clean(pick("activities"), ""),
+          customMajor: clean(pick("custom_major", "customMajor"), ""),
           allResponses: cleanedResponses,
         };
 
