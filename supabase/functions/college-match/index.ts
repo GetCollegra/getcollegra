@@ -933,6 +933,7 @@ const preferenceKeyMap: Record<string, string> = {
   weather_region: "weatherRegion",
   list_mode: "listMode",
   area_of_study: "areaOfStudy",
+  custom_major: "customMajor",
 };
 
 function normalizePreferenceKeys(input: Record<string, any>): Record<string, any> {

@@ -103,6 +103,8 @@ export type StudentPreferences = {
   weatherRegion: string;
   listMode: string;
   areaOfStudy: string;
+  activities?: string;
+  customMajor?: string;
   allResponses?: Record<string, string>;
 };
 
