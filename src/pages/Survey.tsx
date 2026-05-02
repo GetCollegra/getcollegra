@@ -173,7 +173,13 @@ const Survey = () => {
           { keywords: ["campus life", "outside of academics"], paramKey: "campus_life" },
           { keywords: ["how important", "academics"], paramKey: "academic_importance" },
           { keywords: ["far", "home", "distance"], paramKey: "distance_from_home" },
+          { keywords: ["academic areas", "interest you the most"], paramKey: "area_of_study" },
           { keywords: ["area of study", "study", "major"], paramKey: "area_of_study" },
+          { keywords: ["major", "isn't listed"], paramKey: "custom_major" },
+          { keywords: ["major", "not listed"], paramKey: "custom_major" },
+          { keywords: ["type it here"], paramKey: "custom_major" },
+          { keywords: ["activities", "planning to go"], paramKey: "activities" },
+          { keywords: ["are you in any activities"], paramKey: "activities" },
         ];
 
         const findParamKey = (title: string): string | null => {
