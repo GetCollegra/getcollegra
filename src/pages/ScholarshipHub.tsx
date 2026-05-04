@@ -184,11 +184,22 @@ const ScholarshipHub = () => {
         const home = profRes.data?.home_address ?? "";
         // Try to detect state from home_address (last 2-letter token)
         const stateMatch = home?.match(/\b([A-Z]{2})\b\s*\d{0,5}\s*$/);
+        const arrify = (v: any): string[] | undefined => {
+          if (!v) return undefined;
+          if (Array.isArray(v)) return v.filter(Boolean).map(String);
+          if (typeof v === "string" && v.trim()) return [v];
+          return undefined;
+        };
         setProfile({
           state: stateMatch?.[1] ?? meta.state ?? quizAns.state ?? undefined,
           intended_major: meta.intended_major ?? quizAns.intendedMajor ?? quizAns.intended_major ?? quizAns.major ?? undefined,
           gpa: typeof quizAns.gpa === "number" ? quizAns.gpa : Number(quizAns.gpa) || undefined,
           grade_level: meta.grade_level ?? quizAns.gradeLevel ?? quizAns.grade_level ?? "12",
+          activities: arrify(quizAns.activities ?? quizAns.extracurriculars),
+          leadership: quizAns.leadership ?? quizAns.leadershipExperience ?? undefined,
+          volunteer: quizAns.volunteer ?? quizAns.communityService ?? quizAns.volunteerWork ?? undefined,
+          sports: arrify(quizAns.sports ?? quizAns.athletics),
+          career_goals: quizAns.careerGoals ?? quizAns.career_goals ?? quizAns.futureGoals ?? quizAns.openEnded ?? undefined,
         });
       } catch (e) {
         console.error(e);
