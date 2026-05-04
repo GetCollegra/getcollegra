@@ -7,15 +7,41 @@
 
 export type SportsDivision = "I" | "II" | "III";
 
+export type SportsTeam = {
+  sport: string;
+  division: SportsDivision;
+  competitiveness: "Low" | "Moderate" | "High" | "Elite";
+  recruitment: "Walk-on friendly" | "Competitive" | "Elite";
+  ranking?: string;
+};
+
 export type CollegeSports = {
   division: SportsDivision;
   conference: string;
-  popularSports: string[]; // e.g. ["Football", "Basketball"]
+  mascot?: string;
+  colors?: string[]; // hex colors, e.g. ["#990000", "#FFCC00"]
+  popularSports: string[];
   cultureScore: number; // 1-5
-  gameDay: string; // short description
-  badges: string[]; // e.g. ["Strong Sports Culture"]
-  knownFor?: string[]; // sports the school is famous for
+  gameDay: string;
+  badges: string[];
+  knownFor?: string[];
+  teams: SportsTeam[];
+  achievements: string[];
+  facilities: string[];
+  experienceNotes: string;
 };
+
+type KnownEntry = {
+  conference: string;
+  division: SportsDivision;
+  cultureScore?: number;
+  knownFor?: string[];
+  mascot?: string;
+  colors?: string[];
+  achievements?: string[];
+  facilities?: string[];
+};
+
 
 const KNOWN: Record<string, Partial<CollegeSports> & { conference: string; division: SportsDivision }> = {
   // SEC
