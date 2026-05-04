@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { GraduationCap, Users, BookOpen, Sparkles, BarChart3 } from "lucide-react";
 import { getClassroomExperience } from "@/lib/collegeExperience";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,8 +45,8 @@ export default function ClassroomExperienceSection({ college }: Props) {
   const lecture = Math.min(100, Math.max(5, exp.ratioNum * 4 - 25));
 
   return (
-    <Card className="bg-gradient-to-br from-card to-primary/5 border-border overflow-hidden">
-      <div className="h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+    <Card className="bg-card border-border/60 overflow-hidden">
+      <div className="h-1 bg-primary" />
       <CardContent className="p-5 sm:p-6 space-y-5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
@@ -62,24 +61,24 @@ export default function ClassroomExperienceSection({ college }: Props) {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-extrabold tabular-nums text-gradient">{exp.ratio}</div>
+            <div className="text-3xl font-extrabold tabular-nums text-primary">{exp.ratio}</div>
             <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Student : Faculty</div>
           </div>
         </div>
 
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <Stat icon={Users} label="Avg Class Size" value={`~${exp.averageClassSize}`} accent="from-blue-500/10 to-blue-600/5" />
-          <Stat icon={BookOpen} label="Classes < 20" value={`${exp.pctUnder20}%`} accent="from-emerald-500/10 to-emerald-600/5" />
-          <Stat icon={BarChart3} label="Classes > 50" value={`${exp.pctOver50}%`} accent="from-amber-500/10 to-amber-600/5" />
-          <Stat icon={Sparkles} label="Prof. Access" value={`${exp.professorAccess}%`} accent="from-violet-500/10 to-violet-600/5" />
+          <Stat icon={Users} label="Avg Class Size" value={`~${exp.averageClassSize}`} />
+          <Stat icon={BookOpen} label="Classes < 20" value={`${exp.pctUnder20}%`} />
+          <Stat icon={BarChart3} label="Classes > 50" value={`${exp.pctOver50}%`} />
+          <Stat icon={Sparkles} label="Prof. Access" value={`${exp.professorAccess}%`} />
         </div>
 
         {/* Visual comparison */}
-        <div className="space-y-3 rounded-xl border border-border/60 bg-card/60 p-4">
-          <Bar label="More Personal Attention" value={personal} tone="bg-emerald-500" />
-          <Bar label="Large Lecture Feel" value={lecture} tone="bg-orange-500" />
-          <Bar label="Academic Support" value={exp.academicSupport} tone="bg-primary" />
+        <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
+          <Bar label="More Personal Attention" value={personal} tone="bg-primary" />
+          <Bar label="Large Lecture Feel" value={lecture} tone="bg-muted-foreground/50" />
+          <Bar label="Academic Support" value={exp.academicSupport} tone="bg-primary/70" />
         </div>
 
         {/* Badges */}
@@ -92,7 +91,7 @@ export default function ClassroomExperienceSection({ college }: Props) {
         )}
 
         {/* What this feels like */}
-        <div className="rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 p-4">
+        <div className="rounded-xl bg-primary/5 border border-primary/20 p-4">
           <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" /> What This Feels Like
           </p>
@@ -105,13 +104,13 @@ export default function ClassroomExperienceSection({ college }: Props) {
             <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-2">Compared to your saved colleges</p>
             <div className="space-y-1.5 text-sm">
               {comparisons.smaller.length > 0 && (
-                <p><span className="text-emerald-600 font-semibold">Smaller classes than</span> {comparisons.smaller.join(", ")}</p>
+                <p><span className="text-primary font-semibold">Smaller classes than</span> {comparisons.smaller.join(", ")}</p>
               )}
               {comparisons.similar.length > 0 && (
-                <p><span className="text-primary font-semibold">Similar ratio to</span> {comparisons.similar.join(", ")}</p>
+                <p><span className="text-foreground font-semibold">Similar ratio to</span> {comparisons.similar.join(", ")}</p>
               )}
               {comparisons.larger.length > 0 && (
-                <p><span className="text-orange-600 font-semibold">Larger classes than</span> {comparisons.larger.join(", ")}</p>
+                <p><span className="text-muted-foreground font-semibold">Larger classes than</span> {comparisons.larger.join(", ")}</p>
               )}
             </div>
           </div>
@@ -121,11 +120,11 @@ export default function ClassroomExperienceSection({ college }: Props) {
   );
 }
 
-function Stat({ icon: Icon, label, value, accent }: { icon: any; label: string; value: string; accent: string }) {
+function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className={`bg-gradient-to-br ${accent} rounded-xl p-3 border border-border/40`}>
+    <div className="bg-muted/30 rounded-xl p-3 border border-border/60">
       <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-        <Icon className="h-3 w-3" />{label}
+        <Icon className="h-3 w-3 text-primary" />{label}
       </div>
       <p className="text-base font-bold text-foreground tabular-nums">{value}</p>
     </div>
