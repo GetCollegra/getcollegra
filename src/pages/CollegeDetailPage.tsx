@@ -378,6 +378,9 @@ const CollegeDetailPage = () => {
                 </Card>
               )}
 
+              {/* Sports & Athletics */}
+              <SportsSection college={college} showRecruiting={athleteInterest} />
+
               {/* Student Vibe Reviews */}
               <StudentVibeReviews collegeName={college.name} />
             </motion.div>
