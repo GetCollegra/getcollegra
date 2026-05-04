@@ -379,66 +379,95 @@ const ScholarshipHub = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-dashboard-ambient relative overflow-hidden flex flex-col">
+      {/* Ambient floating glow shapes — matches Dashboard */}
+      <div aria-hidden className="pointer-events-none absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-primary/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute top-40 -right-40 w-[32rem] h-[32rem] rounded-full bg-purple-400/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute bottom-0 left-1/3 w-[24rem] h-[24rem] rounded-full bg-blue-300/10 blur-3xl" />
+
       <Header />
 
-      <main className="flex-1 pt-20 pb-16">
+      <main className="flex-1 pt-24 pb-16 relative">
         <div className="container px-4 max-w-7xl mx-auto">
 
-          {/* ─── Hero ─── */}
+          {/* ─── Premium Hero (matches Dashboard) ─── */}
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-8"
+            className="mb-10"
           >
-            <div className="flex items-center gap-2 mb-3 text-primary">
-              <Award className="h-5 w-5" />
-              <span className="text-sm font-semibold tracking-wide uppercase">Scholarship Hub</span>
-              {isSubscribed && (
-                <Badge className="bg-primary/10 text-primary border-primary/20 ml-1">
-                  <Crown className="h-3 w-3 mr-1" /> Premium
-                </Badge>
-              )}
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Scholarship Hub
-            </h1>
-            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mb-6">
-              Find scholarships matched to your profile and stay organized.
-            </p>
+            <div className="relative overflow-hidden rounded-3xl bg-hero-glass shadow-elevated">
+              <div aria-hidden className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/15 blur-3xl" />
+              <div aria-hidden className="absolute -bottom-24 -left-16 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
+              <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_55%)]" />
 
-            {/* Stat card */}
-            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 shadow-card overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20" />
-              <CardContent className="p-6 md:p-8 relative">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      Potential Scholarship Value
+              <div className="relative p-6 sm:p-8 md:p-10 text-white">
+                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Award className="h-4 w-4 text-white/90" />
+                      <span className="text-xs font-semibold tracking-widest uppercase text-white/80">Scholarship Hub</span>
+                      {isSubscribed && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur border border-white/25 text-[10px] font-semibold uppercase tracking-wide">
+                          <Crown className="h-3 w-3" fill="currentColor" /> Premium
+                        </span>
+                      )}
                     </div>
-                    <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums">
-                      {formatMoney(animatedTotal)}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Across {filtered.length} matched scholarships{profile.state && ` (incl. ${profile.state} local)`}.
+                    <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
+                      Find scholarships <br className="hidden sm:block" />made for you
+                    </h1>
+                    <p className="text-white/85 text-sm sm:text-base mt-3 max-w-xl">
+                      Personalized matches, deadline tracking, and AI essay help — all in one place.
                     </p>
                   </div>
-                  <div className="flex flex-col gap-2 min-w-[200px]">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Saved</span>
-                      <span className="font-semibold text-foreground">{saved.length}</span>
+
+                  <div className="rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 p-5 min-w-[240px]">
+                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide font-semibold text-white/80 mb-1">
+                      <Sparkles className="h-3.5 w-3.5" /> Potential value
                     </div>
-                    <Progress value={isSubscribed ? Math.min((saved.length / 10) * 100, 100) : (saved.length / FREE_SAVE_LIMIT) * 100} />
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Submitted</span>
-                      <span className="font-semibold text-foreground">{submittedCount}</span>
+                    <div className="text-3xl sm:text-4xl font-bold tabular-nums leading-none">
+                      {formatMoney(animatedTotal)}
                     </div>
+                    <p className="text-[11px] text-white/75 mt-2">
+                      Across {filtered.length} matched scholarship{filtered.length === 1 ? "" : "s"}
+                      {profile.state && ` · incl. ${profile.state} local`}
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Summary stat tiles — same pattern as Dashboard */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-7">
+                  {[
+                    { label: "Matched", value: filtered.length, icon: Target },
+                    { label: "Saved", value: saved.length, icon: Bookmark },
+                    { label: "Submitted", value: submittedCount, icon: BookmarkCheck },
+                    { label: "Due This Month", value: deadlinesThisMonth, icon: Clock, accent: deadlinesThisMonth > 0 },
+                  ].map((stat) => {
+                    const Icon = stat.icon;
+                    return (
+                      <div
+                        key={stat.label}
+                        className="rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 p-4 hover:bg-white/20 transition-colors"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="p-2 rounded-xl bg-white/20">
+                            <Icon className="h-4 w-4 text-white" />
+                          </div>
+                          {stat.accent && (
+                            <span className="inline-flex h-2 w-2 rounded-full bg-amber-300 animate-pulse" />
+                          )}
+                        </div>
+                        <p className="text-3xl font-bold text-white leading-none">{stat.value}</p>
+                        <p className="text-[11px] sm:text-xs font-medium text-white/80 mt-1.5 uppercase tracking-wide">
+                          {stat.label}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </motion.section>
 
           {/* ─── Engagement banner ─── */}
