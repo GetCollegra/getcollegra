@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import {
   MapPin, Heart, Bookmark, BookmarkPlus, Eye, BarChart3,
   Target, Shield, TrendingUp, Sparkles, Flame, DollarSign, Star,
-  GraduationCap,
+  GraduationCap, Trophy,
 } from "lucide-react";
+import { getCollegeSports, sportEmoji } from "@/lib/collegeSports";
 import type { College } from "@/types/college";
 import { cn } from "@/lib/utils";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
@@ -112,6 +113,11 @@ export default function PremiumCollegeCard({
   const insights = getInsights(college);
   const trending = college.fitScore >= 90;
   const goodValue = isGoodValue(college);
+  const sports = getCollegeSports(college.name, college.studentBody, college.setting);
+  const sportIcons = (sports.knownFor && sports.knownFor.length > 0
+    ? sports.knownFor
+    : sports.popularSports
+  ).slice(0, 3);
   const { url: photoUrl } = useCollegePhoto(college.name, fallbackIndex ?? index, college.location);
   const [imgFailed, setImgFailed] = useState(false);
   // Always use either the real photo or our local fallback campus image,
@@ -310,6 +316,22 @@ export default function PremiumCollegeCard({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+
+          {/* Sports quick-row */}
+          {!simpleView && (
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground border-t border-border/50 pt-2.5">
+              <Trophy className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+              <span className="font-semibold text-foreground">D-{sports.division}</span>
+              <span className="truncate">• {sports.conference}</span>
+              <span className="ml-auto flex items-center gap-0.5 text-sm" aria-label="popular sports">
+                {sportIcons.map((s) => (
+                  <span key={s} title={s}>{sportEmoji(s)}</span>
+                ))}
+                {sports.cultureScore >= 4 && <span title="Strong sports culture">🔥</span>}
+              </span>
             </div>
           )}
 

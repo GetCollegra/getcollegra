@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import CollegeLifePanel from "@/components/CollegeLifePanel";
 import TravelFromHome from "@/components/TravelFromHome";
 import StudentVibeReviews from "@/components/StudentVibeReviews";
+import SportsSection from "@/components/SportsSection";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ const CollegeDetailPage = () => {
   const [homeAddress, setHomeAddress] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [showNeighborhood, setShowNeighborhood] = useState(false);
+  const [athleteInterest, setAthleteInterest] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -121,6 +123,21 @@ const CollegeDetailPage = () => {
       // Load profile for home address
       const { data: profileData } = await supabase.from("profiles").select("home_address").eq("id", user.id).single();
       if (profileData?.home_address) setHomeAddress(profileData.home_address);
+
+      // Detect athlete interest from latest quiz answers
+      const { data: quiz } = await supabase
+        .from("quiz_answers")
+        .select("answers")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (quiz?.answers) {
+        const blob = JSON.stringify(quiz.answers).toLowerCase();
+        if (/sport|athlet|football|basketball|soccer|lacrosse|baseball|volleyball|track|swim|hockey|tennis|wrestl/.test(blob)) {
+          setAthleteInterest(true);
+        }
+      }
 
       setLoading(false);
     };
@@ -360,6 +377,9 @@ const CollegeDetailPage = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Sports & Athletics */}
+              <SportsSection college={college} showRecruiting={athleteInterest} />
 
               {/* Student Vibe Reviews */}
               <StudentVibeReviews collegeName={college.name} />
