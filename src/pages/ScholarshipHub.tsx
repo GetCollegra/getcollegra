@@ -929,6 +929,17 @@ const ScholarshipHub = () => {
         </DialogContent>
       </Dialog>
 
+      <ScholarshipDetailDialog
+        scholarship={detailScholarship}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        isPremium={isSubscribed}
+        studentProfile={profile}
+        freeOutlinesUsed={freeOutlinesUsed}
+        onFreeOutlineUsed={handleFreeOutlineUsed}
+        onUpgrade={handleUpgrade}
+      />
+
       <Footer />
     </div>
   );
