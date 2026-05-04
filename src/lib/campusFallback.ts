@@ -152,29 +152,53 @@ export function getFallbackForCollege(
 
 /**
  * Create unique fallback assignments for the current college universe.
- * This removes hash collisions so different schools do not share fallback art
- * until the full image library has been exhausted.
+ * Removes hash collisions so different schools do not share fallback art
+ * until the full image library has been exhausted. When a college's location
+ * is provided, the picker prefers a region-appropriate image first and only
+ * falls outside the region bucket if every regional image is already taken.
+ *
+ * Accepts either an array of names (legacy) or an array of `{ name, location }`.
  */
-export function createUniqueFallbackIndexes(collegeNames: Array<string | undefined | null>): Map<string, number> {
+export function createUniqueFallbackIndexes(
+  colleges: Array<string | undefined | null | { name?: string | null; location?: string | null }>,
+): Map<string, number> {
   const assigned = new Map<string, number>();
   const used = new Set<number>();
 
-  for (const name of collegeNames) {
+  for (const entry of colleges) {
+    const name = typeof entry === "string" || entry == null ? entry : entry?.name;
+    const location = typeof entry === "object" && entry ? entry.location : null;
     const key = getCollegeFallbackKey(name);
     if (!key || assigned.has(key)) continue;
 
-    const base = hashString(key) % CAMPUS_FALLBACKS.length;
-    let chosen = base;
-    for (let offset = 0; offset < CAMPUS_FALLBACKS.length; offset++) {
-      const candidate = (base + offset) % CAMPUS_FALLBACKS.length;
-      if (!used.has(candidate)) {
-        chosen = candidate;
-        used.add(candidate);
-        break;
+    const region = getRegionFromLocation(location);
+    const regionalPool = region ? REGION_BUCKETS[region] : null;
+
+    let chosen: number | null = null;
+
+    // 1. Try regional pool first (rotated by stable hash)
+    if (regionalPool && regionalPool.length > 0) {
+      const start = hashString(key) % regionalPool.length;
+      for (let offset = 0; offset < regionalPool.length; offset++) {
+        const candidate = regionalPool[(start + offset) % regionalPool.length];
+        if (!used.has(candidate)) { chosen = candidate; break; }
       }
     }
+
+    // 2. Fall back to the full library if the region bucket is exhausted
+    if (chosen === null) {
+      const base = hashString(key) % CAMPUS_FALLBACKS.length;
+      for (let offset = 0; offset < CAMPUS_FALLBACKS.length; offset++) {
+        const candidate = (base + offset) % CAMPUS_FALLBACKS.length;
+        if (!used.has(candidate)) { chosen = candidate; break; }
+      }
+    }
+
+    if (chosen === null) chosen = hashString(key) % CAMPUS_FALLBACKS.length;
+    used.add(chosen);
     assigned.set(key, chosen);
   }
 
   return assigned;
 }
+
