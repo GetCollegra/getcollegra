@@ -485,6 +485,80 @@ function determineFitCategory(r: any, gpa: number, studentSAT: number | null, st
  * Academic Realism Multiplier: further penalizes schools where student
  * profile is far below average admitted student.
  */
+/**
+ * Map student-described activities (from the final quiz question) to indicators
+ * we can score against the College Scorecard data. Returns matched keywords +
+ * a 0–8 score component reflecting how well the school supports those interests.
+ */
+function parseActivities(prefs: Record<string, any>): {
+  raw: string;
+  tags: string[];
+} {
+  const raw = String((prefs as any).activities || "").toLowerCase().trim();
+  if (!raw || /^(no|none|n\/a|not really)/i.test(raw)) return { raw, tags: [] };
+  const tags: string[] = [];
+  const add = (t: string) => { if (!tags.includes(t)) tags.push(t); };
+  if (/(sport|athlet|soccer|football|basketball|baseball|volleyball|track|tennis|swim|lacrosse|hockey|d1|division\s*[i123])/i.test(raw)) add("athletics");
+  if (/(greek|sorority|fraternit|rush)/i.test(raw)) add("greek_life");
+  if (/(research|lab|stem)/i.test(raw)) add("research");
+  if (/(music|band|orchestra|choir|theatre|theater|drama|dance|art|film|design)/i.test(raw)) add("arts");
+  if (/(volunteer|service|community|nonprofit|mission|faith|religious)/i.test(raw)) add("service");
+  if (/(club|leadership|student\s*gov|government|debate|model\s*un)/i.test(raw)) add("clubs");
+  if (/(intramural|outdoor|hiking|ski|surf|club\s*sport)/i.test(raw)) add("recreation");
+  if (/(entrepreneur|startup|business)/i.test(raw)) add("entrepreneurship");
+  if (/(intern|career|pre[-\s]?med|pre[-\s]?law|professional)/i.test(raw)) add("career");
+  return { raw, tags };
+}
+
+function computeActivitiesScore(r: any, prefs: Record<string, any>): number {
+  const { tags } = parseActivities(prefs);
+  if (tags.length === 0) return 4; // neutral baseline if no answer / "no"
+  let s = 0;
+  const size = Number(r["latest.student.size"] || 0);
+  const locale = r["school.locale"];
+  const gradRate = r["latest.completion.rate_suppressed.overall"];
+
+  // Athletics & Greek life → larger schools tend to have more developed programs
+  if (tags.includes("athletics") || tags.includes("greek_life")) {
+    if (size >= 15000) s += 4;
+    else if (size >= 8000) s += 2;
+    else s += 1;
+  }
+  // Clubs / leadership / recreation → mid-to-large campuses
+  if (tags.includes("clubs") || tags.includes("recreation")) {
+    if (size >= 8000) s += 2;
+    else if (size >= 3000) s += 1;
+  }
+  // Research → favor schools with strong STEM/health program share
+  if (tags.includes("research")) {
+    const stemPct = Number(r["latest.academics.program_percentage.engineering"] || 0)
+      + Number(r["latest.academics.program_percentage.computer"] || 0)
+      + Number(r["latest.academics.program_percentage.biological"] || 0)
+      + Number(r["latest.academics.program_percentage.health"] || 0);
+    if (stemPct > 0.20) s += 3;
+    else if (stemPct > 0.10) s += 2;
+    else s += 1;
+  }
+  // Arts → favor schools with notable visual/performing share
+  if (tags.includes("arts")) {
+    const artsPct = Number(r["latest.academics.program_percentage.visual_performing"] || 0)
+      + Number(r["latest.academics.program_percentage.communication"] || 0);
+    if (artsPct > 0.08) s += 3;
+    else if (artsPct > 0.04) s += 2;
+    else s += 1;
+  }
+  // Service / faith → urban or suburban areas typically richer in opportunities
+  if (tags.includes("service") && (locale <= 23)) s += 1;
+  // Entrepreneurship / career → favor business share + good outcomes
+  if (tags.includes("entrepreneurship") || tags.includes("career")) {
+    const bizPct = Number(r["latest.academics.program_percentage.business_marketing"] || 0);
+    if (bizPct > 0.15) s += 2;
+    else if (bizPct > 0.07) s += 1;
+    if (gradRate != null && gradRate > 0.7) s += 1;
+  }
+  return Math.min(8, s);
+}
+
 function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string, adj?: Record<string, number>): number {
   const a = adj || {};
   let score = 0;
@@ -621,6 +695,9 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
   if (pellRate != null && pellRate > 0.30) recognitionScore += 1;
 
   score += Math.min(15, recognitionScore) + (a.support || 0);
+
+  // 8. Activities Continuity (8 pts max) — based on the final quiz question
+  score += computeActivitiesScore(r, prefs);
 
   // ── Academic Realism Multiplier ──
   const realismMultiplier = computeRealismMultiplier(r, prefs, fitCategory);
@@ -861,6 +938,28 @@ function ruleBasedMatch(
     }
     if (admRate != null) whyFitParts.push(`Acceptance rate: ${(admRate * 100).toFixed(0)}%.`);
     if (gradRate != null && gradRate > 0.65) whyFitParts.push(`Solid ${(gradRate * 100).toFixed(0)}% graduation rate.`);
+
+    // Tie in the student's activities answer (final quiz question)
+    const { raw: activitiesRaw, tags: activityTags } = parseActivities(prefs);
+    if (activityTags.length > 0) {
+      const sizeNum = Number(size || 0);
+      const activityBlurbs: string[] = [];
+      if (activityTags.includes("athletics") || activityTags.includes("greek_life")) {
+        activityBlurbs.push(sizeNum >= 15000
+          ? "a large athletic and Greek life scene to continue what you're involved in"
+          : "an active student community where you can stay involved in athletics or Greek life");
+      }
+      if (activityTags.includes("research")) activityBlurbs.push("strong research opportunities tied to your interests");
+      if (activityTags.includes("arts")) activityBlurbs.push("an established arts and performance scene");
+      if (activityTags.includes("service")) activityBlurbs.push("plenty of service and volunteer outlets");
+      if (activityTags.includes("clubs")) activityBlurbs.push("a wide range of student clubs and leadership roles");
+      if (activityTags.includes("entrepreneurship") || activityTags.includes("career")) activityBlurbs.push("career and entrepreneurship resources");
+      if (activityBlurbs.length > 0) {
+        whyFitParts.push(`Based on what you shared about your activities, this school offers ${activityBlurbs.slice(0, 2).join(" and ")}.`);
+      }
+    } else if (activitiesRaw && /^(no|none|n\/a|not really)/i.test(activitiesRaw)) {
+      whyFitParts.push("You said you're open on activities, so we focused on academic and lifestyle fit.");
+    }
 
     return {
       name: schoolName,
@@ -1178,9 +1277,22 @@ serve(async (req) => {
       const firstLife = String(prefs.campusLife).split(",")[0]?.trim();
       if (firstLife) priorityCandidates.push(firstLife);
     }
-    if ((prefs as any).activities) {
-      const act = String((prefs as any).activities).slice(0, 60);
-      if (act) priorityCandidates.push(`Continuing ${act}`);
+    {
+      const { tags: actTags } = parseActivities(prefs);
+      const tagLabel: Record<string, string> = {
+        athletics: "Continuing athletics",
+        greek_life: "Greek life community",
+        research: "Research opportunities",
+        arts: "Arts & performance",
+        service: "Service & volunteering",
+        clubs: "Active student clubs",
+        recreation: "Outdoor & intramurals",
+        entrepreneurship: "Entrepreneurship",
+        career: "Career & internships",
+      };
+      for (const t of actTags) {
+        if (tagLabel[t]) priorityCandidates.push(tagLabel[t]);
+      }
     }
     while (priorityCandidates.length < 3) priorityCandidates.push("Campus fit");
 
