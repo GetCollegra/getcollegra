@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import {
   MapPin, Heart, Bookmark, BookmarkPlus, Eye, BarChart3,
   Target, Shield, TrendingUp, Sparkles, Flame, DollarSign, Star,
-  GraduationCap, Trophy,
+  GraduationCap, Trophy, Users, Footprints,
 } from "lucide-react";
 import { getCollegeSports, sportEmoji } from "@/lib/collegeSports";
+import { getClassroomExperience, getWalkability } from "@/lib/collegeExperience";
 import type { College } from "@/types/college";
 import { cn } from "@/lib/utils";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
@@ -114,6 +115,8 @@ export default function PremiumCollegeCard({
   const trending = college.fitScore >= 90;
   const goodValue = isGoodValue(college);
   const sports = getCollegeSports(college.name, college.studentBody, college.setting);
+  const classroom = getClassroomExperience(college.studentFacultyRatio, college.studentBody);
+  const walk = getWalkability(college.setting, college.studentBody);
   const sportIcons = (sports.knownFor && sports.knownFor.length > 0
     ? sports.knownFor
     : sports.popularSports
@@ -331,6 +334,20 @@ export default function PremiumCollegeCard({
                   <span key={s} title={s}>{sportEmoji(s)}</span>
                 ))}
                 {sports.cultureScore >= 4 && <span title="Strong sports culture">🔥</span>}
+              </span>
+            </div>
+          )}
+
+          {/* Classroom + Walkability quick-row */}
+          {!simpleView && (
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <Users className="h-3.5 w-3.5 text-primary" />
+                <span className="font-semibold text-foreground">{classroom.ratio}</span> Faculty Ratio
+              </span>
+              <span className="inline-flex items-center gap-1 ml-auto">
+                <Footprints className="h-3.5 w-3.5 text-emerald-600" />
+                Walkability:&nbsp;<span className="font-semibold text-foreground">{walk.score}/100</span>
               </span>
             </div>
           )}
