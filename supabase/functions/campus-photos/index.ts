@@ -100,10 +100,15 @@ async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]
         if (!matchesCollege(combined, collegeName, abbreviations)) continue;
 
         const titleLower = title.toLowerCase();
-        if (titleLower.includes("logo") || titleLower.includes("seal") ||
-            titleLower.includes("map") || titleLower.includes("diagram") ||
-            titleLower.includes("chart") || titleLower.includes("icon") ||
-            titleLower.includes(".svg")) continue;
+        const descLower = desc.toLowerCase();
+        const blockedKeywords = [
+          "logo", "seal", "map", "diagram", "chart", "icon", ".svg",
+          "blueprint", "plan", "drawing", "sketch", "schematic", "floorplan",
+          "floor plan", "elevation", "rendering", "render", "illustration",
+          "engraving", "lithograph", "diagram", "coat of arms", "crest",
+          "emblem", "shield", "flag", "banner",
+        ];
+        if (blockedKeywords.some(kw => titleLower.includes(kw) || descLower.includes(kw))) continue;
 
         const photoId = `wiki-${page.pageid}`;
         if (photos.some(p => p.id === photoId)) continue;

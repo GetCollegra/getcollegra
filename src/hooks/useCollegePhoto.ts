@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const MEMORY_CACHE = new Map<string, string | null>();
 const IN_FLIGHT = new Map<string, Promise<string | null>>();
-const STORAGE_PREFIX = "collegra:photo:v3:";
+const STORAGE_PREFIX = "collegra:photo:v4:";
 const TTL_MS = 1000 * 60 * 60 * 24 * 14; // 14 days
 const REMOTE_URL_OWNER = new Map<string, string>();
 
