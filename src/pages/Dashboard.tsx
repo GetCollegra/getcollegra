@@ -511,9 +511,9 @@ const Dashboard = () => {
   const filteredSuggestions = useMemo(() => applySorting(applyFilters(suggestedColleges, filters), sort), [suggestedColleges, filters, sort]);
   const fallbackIndexes = useMemo(
     () => createUniqueFallbackIndexes([
-      ...filteredColleges.map(c => c.name),
-      ...filteredSuggestions.map(c => c.name),
-      ...savedColleges.map(s => s.college_name),
+      ...filteredColleges.map(c => ({ name: c.name, location: c.location })),
+      ...filteredSuggestions.map(c => ({ name: c.name, location: c.location })),
+      ...savedColleges.map(s => ({ name: s.college_name, location: s.college_data?.location })),
     ]),
     [filteredColleges, filteredSuggestions, savedColleges],
   );
