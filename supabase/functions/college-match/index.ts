@@ -1277,9 +1277,22 @@ serve(async (req) => {
       const firstLife = String(prefs.campusLife).split(",")[0]?.trim();
       if (firstLife) priorityCandidates.push(firstLife);
     }
-    if ((prefs as any).activities) {
-      const act = String((prefs as any).activities).slice(0, 60);
-      if (act) priorityCandidates.push(`Continuing ${act}`);
+    {
+      const { tags: actTags } = parseActivities(prefs);
+      const tagLabel: Record<string, string> = {
+        athletics: "Continuing athletics",
+        greek_life: "Greek life community",
+        research: "Research opportunities",
+        arts: "Arts & performance",
+        service: "Service & volunteering",
+        clubs: "Active student clubs",
+        recreation: "Outdoor & intramurals",
+        entrepreneurship: "Entrepreneurship",
+        career: "Career & internships",
+      };
+      for (const t of actTags) {
+        if (tagLabel[t]) priorityCandidates.push(tagLabel[t]);
+      }
     }
     while (priorityCandidates.length < 3) priorityCandidates.push("Campus fit");
 
