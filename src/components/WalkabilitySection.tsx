@@ -91,7 +91,7 @@ export default function WalkabilitySection({ college }: Props) {
           <ul className="space-y-1.5">
             {w.notices.map((n, i) => (
               <li key={i} className="text-sm text-foreground flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />{n}
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-cat-walkability shrink-0" />{n}
               </li>
             ))}
           </ul>
