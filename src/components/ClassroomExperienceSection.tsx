@@ -45,8 +45,8 @@ export default function ClassroomExperienceSection({ college }: Props) {
   const lecture = Math.min(100, Math.max(5, exp.ratioNum * 4 - 25));
 
   return (
-    <Card className="bg-card border-border/60 overflow-hidden">
-      <div className="h-1 bg-primary" />
+    <Card className="bg-card border-l-[3px] border-l-cat-academics border-border/60 overflow-hidden">
+      <div className="h-0.5 bg-cat-academics/70" />
       <CardContent className="p-5 sm:p-6 space-y-5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">

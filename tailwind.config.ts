@@ -63,6 +63,12 @@ export default {
           DEFAULT: "hsl(var(--reach))",
           foreground: "hsl(var(--reach-foreground))",
         },
+        "cat-academics": "hsl(var(--cat-academics))",
+        "cat-athletics": "hsl(var(--cat-athletics))",
+        "cat-walkability": "hsl(var(--cat-walkability))",
+        "cat-applications": "hsl(var(--cat-applications))",
+        "cat-scholarships": "hsl(var(--cat-scholarships))",
+        "cat-social": "hsl(var(--cat-social))",
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",

@@ -34,7 +34,7 @@ const RatingBar = ({ value }: { value: number }) => {
         whileInView={{ width: `${pct}%` }}
         viewport={{ once: true }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+        className="h-full bg-cat-social rounded-full"
       />
     </div>
   );
@@ -86,9 +86,9 @@ const StudentVibeReviews = ({ collegeName }: StudentVibeReviewsProps) => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-soft">
+    <div className="bg-card border border-border border-l-[3px] border-l-cat-social rounded-2xl p-5 sm:p-6 shadow-soft">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-lg bg-cat-social/10 text-cat-social flex items-center justify-center">
           <Heart className="w-4 h-4" />
         </div>
         <div>

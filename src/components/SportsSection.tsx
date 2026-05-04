@@ -43,8 +43,8 @@ export default function SportsSection({ college, showRecruiting = false, highlig
   }, [highlightSports, sports.teams]);
 
   return (
-    <Card className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border-orange-200/40 dark:border-orange-800/30 overflow-hidden relative">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-amber-500" />
+    <Card className="bg-card border-l-[3px] border-l-cat-athletics border-border/60 overflow-hidden relative">
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-cat-athletics/70" />
       <CardContent className="p-5 pt-6 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -94,7 +94,7 @@ export default function SportsSection({ college, showRecruiting = false, highlig
           <div className="mt-3">
             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-orange-500 to-amber-500"
+                className="h-full bg-cat-athletics"
                 style={{ width: `${(score / 5) * 100}%` }}
               />
             </div>
