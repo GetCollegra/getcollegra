@@ -15,20 +15,15 @@ export default function WalkabilitySection({ college }: Props) {
   );
   const [open, setOpen] = useState(false);
 
-  const ringColor =
-    w.score >= 80 ? "text-emerald-500" :
-    w.score >= 60 ? "text-primary" :
-    w.score >= 40 ? "text-amber-500" : "text-orange-500";
-
   return (
-    <Card className="bg-gradient-to-br from-card to-accent/5 border-border overflow-hidden">
-      <div className="h-1 bg-gradient-to-r from-emerald-500 via-primary to-accent" />
+    <Card className="bg-card border-border/60 overflow-hidden">
+      <div className="h-1 bg-primary" />
       <CardContent className="p-5 sm:p-6 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-emerald-500/10">
-              <Footprints className="h-5 w-5 text-emerald-600" />
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Footprints className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">Campus Walkability & Nearby Essentials</h3>
@@ -38,7 +33,7 @@ export default function WalkabilitySection({ college }: Props) {
             </div>
           </div>
           <div className="text-right">
-            <div className={`text-3xl font-extrabold tabular-nums ${ringColor}`}>
+            <div className="text-3xl font-extrabold tabular-nums text-primary">
               {w.score}<span className="text-base text-muted-foreground font-semibold">/100</span>
             </div>
             <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Walkability</div>
@@ -48,7 +43,7 @@ export default function WalkabilitySection({ college }: Props) {
         {/* Badges */}
         <div className="flex flex-wrap gap-1.5">
           {w.badges.map((b) => (
-            <Badge key={b} className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-0 font-medium">{b}</Badge>
+            <Badge key={b} variant="secondary" className="font-medium">{b}</Badge>
           ))}
           <Badge variant="outline" className="gap-1 font-medium">
             <Car className="h-3 w-3" /> Car needed: {w.carNeeded}%
@@ -61,7 +56,7 @@ export default function WalkabilitySection({ college }: Props) {
             {w.cards.map((c) => (
               <div
                 key={c.key}
-                className="shrink-0 w-44 sm:w-48 rounded-xl border border-border/60 bg-card/70 p-3.5 hover:shadow-soft transition-shadow"
+                className="shrink-0 w-44 sm:w-48 rounded-xl border border-border/60 bg-muted/20 p-3.5 hover:border-primary/40 hover:shadow-soft transition-all"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xl" aria-hidden>{c.icon}</span>
@@ -72,7 +67,7 @@ export default function WalkabilitySection({ college }: Props) {
                 <p className="text-sm font-semibold text-foreground leading-tight">{c.label}</p>
                 <p className="text-[11px] text-primary font-medium mt-0.5">{c.distance}</p>
                 <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-emerald-500 to-primary" style={{ width: `${c.score * 10}%` }} />
+                  <div className="h-full bg-primary" style={{ width: `${c.score * 10}%` }} />
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-2 leading-snug line-clamp-3">{c.description}</p>
               </div>
@@ -82,16 +77,6 @@ export default function WalkabilitySection({ college }: Props) {
 
         {/* Mini map placeholder */}
         <div className="relative rounded-xl border border-dashed border-border/70 bg-muted/30 h-24 flex items-center justify-center overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-40"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.15) 0 6px, transparent 7px)," +
-                "radial-gradient(circle at 70% 60%, hsl(var(--accent) / 0.18) 0 5px, transparent 6px)," +
-                "linear-gradient(135deg, hsl(var(--muted)) 0%, transparent 100%)",
-            }}
-            aria-hidden
-          />
           <div className="relative flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 text-primary" />
             Mini map preview — explore the full map in the Map tab
@@ -99,14 +84,14 @@ export default function WalkabilitySection({ college }: Props) {
         </div>
 
         {/* What students will notice */}
-        <div className="rounded-xl bg-gradient-to-r from-emerald-500/10 to-primary/10 border border-emerald-500/20 p-4">
-          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <div className="rounded-xl bg-primary/5 border border-primary/20 p-4">
+          <p className="text-xs font-bold text-primary uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" /> What students will notice
           </p>
           <ul className="space-y-1.5">
             {w.notices.map((n, i) => (
               <li key={i} className="text-sm text-foreground flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />{n}
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />{n}
               </li>
             ))}
           </ul>
