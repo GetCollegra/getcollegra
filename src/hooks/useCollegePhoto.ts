@@ -5,17 +5,24 @@ import { supabase } from "@/integrations/supabase/client";
  * Lightweight hook that fetches a single banner photo for a college and caches
  * it in localStorage so it loads instantly on subsequent renders.
  *
- * Falls back gracefully (returns null) when the campus-photos function
- * doesn't return anything — the consumer should display its gradient banner.
+ * Now location-aware: passing the college's location lets the edge function
+ * search Unsplash/Wikimedia with city + state context, so cards feel like
+ * realistic photos for that specific school and region.
  */
 
 const MEMORY_CACHE = new Map<string, string | null>();
 const IN_FLIGHT = new Map<string, Promise<string | null>>();
-const STORAGE_PREFIX = "collegra:photo:v2:";
+const STORAGE_PREFIX = "collegra:photo:v3:";
 const TTL_MS = 1000 * 60 * 60 * 24 * 14; // 14 days
 const REMOTE_URL_OWNER = new Map<string, string>();
 
 type CachedEntry = { url: string | null; fetchedAt: number };
+
+function buildKey(name: string, location?: string | null): string {
+  const n = name.trim().toLowerCase();
+  const l = (location || "").trim().toLowerCase();
+  return l ? `${n}@@${l}` : n;
+}
 
 function readFromStorage(key: string): string | null | undefined {
   try {
@@ -36,9 +43,7 @@ function writeToStorage(key: string, url: string | null) {
       STORAGE_PREFIX + key,
       JSON.stringify({ url, fetchedAt: Date.now() } satisfies CachedEntry),
     );
-  } catch {
-    /* quota exceeded — ignore */
-  }
+  } catch { /* quota exceeded — ignore */ }
 }
 
 function reserveUniqueRemoteUrl(key: string, url: string | null): string | null | undefined {
@@ -49,8 +54,12 @@ function reserveUniqueRemoteUrl(key: string, url: string | null): string | null 
   return url;
 }
 
-async function fetchPhoto(collegeName: string, preferredIndex = 0): Promise<string | null> {
-  const key = collegeName.trim().toLowerCase();
+async function fetchPhoto(
+  collegeName: string,
+  collegeLocation: string | undefined | null,
+  preferredIndex = 0,
+): Promise<string | null> {
+  const key = buildKey(collegeName, collegeLocation);
   if (!key) return null;
   if (MEMORY_CACHE.has(key)) return MEMORY_CACHE.get(key) ?? null;
 
@@ -68,7 +77,7 @@ async function fetchPhoto(collegeName: string, preferredIndex = 0): Promise<stri
   const promise = (async () => {
     try {
       const { data, error } = await supabase.functions.invoke("campus-photos", {
-        body: { collegeName },
+        body: { collegeName, collegeLocation: collegeLocation || undefined },
       });
       if (error) throw error;
       const photos = (data?.photos as Array<{ url?: string; thumbUrl?: string; thumbnailUrl?: string }> | undefined) || [];
@@ -90,7 +99,6 @@ async function fetchPhoto(collegeName: string, preferredIndex = 0): Promise<stri
       return url;
     } catch {
       MEMORY_CACHE.set(key, null);
-      // Don't write null to storage — let it retry on a fresh page load
       return null;
     } finally {
       IN_FLIGHT.delete(key);
@@ -101,10 +109,14 @@ async function fetchPhoto(collegeName: string, preferredIndex = 0): Promise<stri
   return promise;
 }
 
-export function useCollegePhoto(collegeName: string | undefined | null, preferredIndex = 0) {
+export function useCollegePhoto(
+  collegeName: string | undefined | null,
+  preferredIndex = 0,
+  collegeLocation?: string | null,
+) {
   const [url, setUrl] = useState<string | null>(() => {
     if (!collegeName) return null;
-    const key = collegeName.trim().toLowerCase();
+    const key = buildKey(collegeName, collegeLocation);
     if (MEMORY_CACHE.has(key)) return MEMORY_CACHE.get(key) ?? null;
     const stored = readFromStorage(key);
     if (stored !== undefined) {
@@ -118,7 +130,7 @@ export function useCollegePhoto(collegeName: string | undefined | null, preferre
   });
   const [loaded, setLoaded] = useState<boolean>(() => {
     if (!collegeName) return true;
-    return MEMORY_CACHE.has(collegeName.trim().toLowerCase());
+    return MEMORY_CACHE.has(buildKey(collegeName, collegeLocation));
   });
 
   useEffect(() => {
@@ -128,21 +140,19 @@ export function useCollegePhoto(collegeName: string | undefined | null, preferre
       return;
     }
     let cancelled = false;
-    const key = collegeName.trim().toLowerCase();
+    const key = buildKey(collegeName, collegeLocation);
     if (MEMORY_CACHE.has(key)) {
       setUrl(MEMORY_CACHE.get(key) ?? null);
       setLoaded(true);
       return;
     }
-    fetchPhoto(collegeName, preferredIndex).then(result => {
+    fetchPhoto(collegeName, collegeLocation, preferredIndex).then(result => {
       if (cancelled) return;
       setUrl(result);
       setLoaded(true);
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [collegeName, preferredIndex]);
+    return () => { cancelled = true; };
+  }, [collegeName, collegeLocation, preferredIndex]);
 
   return { url, loaded };
 }
