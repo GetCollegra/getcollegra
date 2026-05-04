@@ -150,7 +150,7 @@ function normalize(name: string): string {
     .trim();
 }
 
-function findKnown(name: string): (Partial<CollegeSports> & { conference: string; division: SportsDivision }) | null {
+function findKnown(name: string): KnownEntry | null {
   const n = normalize(name);
   if (KNOWN[n]) return KNOWN[n];
   for (const key of Object.keys(KNOWN)) {
@@ -159,12 +159,47 @@ function findKnown(name: string): (Partial<CollegeSports> & { conference: string
   return null;
 }
 
-function inferFromMeta(studentBody?: string, setting?: string): { division: SportsDivision; cultureScore: number } {
+function inferFromMeta(studentBody?: string, _setting?: string): { division: SportsDivision; cultureScore: number } {
   const sizeNum = parseInt((studentBody || "").replace(/[^0-9]/g, ""), 10) || 0;
   if (sizeNum >= 20000) return { division: "I", cultureScore: 4 };
   if (sizeNum >= 8000) return { division: "I", cultureScore: 3 };
   if (sizeNum >= 3000) return { division: "II", cultureScore: 3 };
   return { division: "III", cultureScore: 2 };
+}
+
+const ALL_TEAM_SPORTS = [
+  "Football", "Basketball", "Soccer", "Baseball",
+  "Lacrosse", "Track & Field", "Volleyball", "Tennis",
+  "Swimming", "Hockey",
+];
+
+function buildTeams(
+  division: SportsDivision,
+  knownFor: string[],
+  cultureScore: number,
+): SportsTeam[] {
+  return ALL_TEAM_SPORTS.map<SportsTeam>((sport) => {
+    const isStar = knownFor.includes(sport);
+    let competitiveness: SportsTeam["competitiveness"] = "Moderate";
+    let recruitment: SportsTeam["recruitment"] = "Competitive";
+    if (isStar) {
+      competitiveness = cultureScore >= 5 ? "Elite" : "High";
+      recruitment = "Elite";
+    } else if (cultureScore <= 2) {
+      competitiveness = "Low";
+      recruitment = "Walk-on friendly";
+    } else if (cultureScore === 3) {
+      competitiveness = "Moderate";
+      recruitment = "Walk-on friendly";
+    }
+    return {
+      sport,
+      division,
+      competitiveness,
+      recruitment,
+      ranking: isStar ? "Top 25 program" : undefined,
+    };
+  });
 }
 
 export function getCollegeSports(
@@ -179,11 +214,11 @@ export function getCollegeSports(
   const conference = known?.conference ?? (division === "III" ? "Regional D-III" : "Independent / Regional");
   const cultureScore = known?.cultureScore ?? inferred.cultureScore;
   const knownFor = known?.knownFor ?? [];
+  const mascot = known?.mascot;
+  const colors = known?.colors;
 
-  // Build popular sports list — start with knownFor, fill with defaults
   const popular = Array.from(new Set([...(knownFor || []), ...DEFAULT_SPORTS])).slice(0, 6);
 
-  // Game day description by culture score
   const gameDay =
     cultureScore >= 5
       ? "Electric, packed-stadium energy. Game days define the campus."
@@ -193,23 +228,66 @@ export function getCollegeSports(
           ? "Active sports scene with engaged student fans."
           : "Lower-key athletics — sports complement, not define, the culture.";
 
-  // Badges
   const badges: string[] = [];
   if (cultureScore >= 4) badges.push("Strong Sports Culture");
   if (cultureScore >= 5) badges.push("Big Game Atmosphere");
   if (division === "I") badges.push("Competitive Programs");
   badges.push("Student-Athlete Support");
 
+  const teams = buildTeams(division, knownFor, cultureScore);
+
+  const achievements = known?.achievements ?? (
+    knownFor.length > 0
+      ? [
+          `Multiple conference titles in ${knownFor[0]}`,
+          `Recurring NCAA tournament appearances`,
+          `Has produced professional athletes`,
+        ]
+      : [
+          `Active in ${conference} competition`,
+          `Steady program with regional success`,
+        ]
+  );
+
+  const facilities = known?.facilities ?? (
+    division === "I"
+      ? [
+          "Main stadium / arena for marquee sports",
+          "Dedicated student-athlete training center",
+          "Modern fitness & recovery facilities",
+          "Multiple practice fields and courts",
+        ]
+      : [
+          "Campus athletic center & gym",
+          "Practice fields shared across teams",
+          "Student fitness facilities",
+        ]
+  );
+
+  const experienceNotes =
+    cultureScore >= 4
+      ? "Big student section, popular tailgates, and strong school-spirit traditions. Intramural and club leagues are widely played."
+      : cultureScore === 3
+        ? "Active intramural and club scene. Game attendance grows around rivalry weeks."
+        : "Sports are casual — strong intramural and recreational options for students who want to stay active.";
+
   return {
     division,
     conference,
+    mascot,
+    colors,
     popularSports: popular,
     cultureScore,
     gameDay,
     badges,
     knownFor,
+    teams,
+    achievements,
+    facilities,
+    experienceNotes,
   };
 }
+
 
 /** Emoji for a sport name — used for compact card row */
 export function sportEmoji(sport: string): string {
