@@ -9,6 +9,8 @@ import CollegeLifePanel from "@/components/CollegeLifePanel";
 import TravelFromHome from "@/components/TravelFromHome";
 import StudentVibeReviews from "@/components/StudentVibeReviews";
 import SportsSection from "@/components/SportsSection";
+import ClassroomExperienceSection from "@/components/ClassroomExperienceSection";
+import WalkabilitySection from "@/components/WalkabilitySection";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -381,6 +383,12 @@ const CollegeDetailPage = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Classroom Experience */}
+              <ClassroomExperienceSection college={college} />
+
+              {/* Walkability */}
+              <WalkabilitySection college={college} />
 
               {/* Sports & Athletics */}
               <SportsSection college={college} showRecruiting={athleteInterest} highlightSports={sportInterests} />
