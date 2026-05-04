@@ -319,6 +319,22 @@ export default function PremiumCollegeCard({
             </div>
           )}
 
+
+          {/* Sports quick-row */}
+          {!simpleView && (
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground border-t border-border/50 pt-2.5">
+              <Trophy className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+              <span className="font-semibold text-foreground">D-{sports.division}</span>
+              <span className="truncate">• {sports.conference}</span>
+              <span className="ml-auto flex items-center gap-0.5 text-sm" aria-label="popular sports">
+                {sportIcons.map((s) => (
+                  <span key={s} title={s}>{sportEmoji(s)}</span>
+                ))}
+                {sports.cultureScore >= 4 && <span title="Strong sports culture">🔥</span>}
+              </span>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="mt-auto pt-2 grid grid-cols-2 gap-2">
             <Button
