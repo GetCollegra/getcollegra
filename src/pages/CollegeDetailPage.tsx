@@ -135,9 +135,12 @@ const CollegeDetailPage = () => {
         .maybeSingle();
       if (quiz?.answers) {
         const blob = JSON.stringify(quiz.answers).toLowerCase();
-        if (/sport|athlet|football|basketball|soccer|lacrosse|baseball|volleyball|track|swim|hockey|tennis|wrestl/.test(blob)) {
+        const SPORT_KEYS = ["football","basketball","soccer","lacrosse","baseball","softball","volleyball","track","swim","hockey","tennis","wrestl","row"];
+        const matched = SPORT_KEYS.filter((k) => blob.includes(k));
+        if (matched.length > 0 || /\bsport|athlet/.test(blob)) {
           setAthleteInterest(true);
         }
+        if (matched.length > 0) setSportInterests(matched);
       }
 
       setLoading(false);
