@@ -338,7 +338,7 @@ const CollegeDetailPage = () => {
               {/* Pros / Cons */}
               <div className="grid md:grid-cols-2 gap-4">
                 {college.prosForStudent?.length > 0 && (
-                  <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-200/40 dark:border-emerald-800/30 overflow-hidden">
+                  <Card className="bg-card border-border/60 overflow-hidden">
                     <CardContent className="p-5">
                       <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-3 flex items-center gap-1.5">
                         <ThumbsUp className="h-4 w-4" /> Pros
@@ -354,7 +354,7 @@ const CollegeDetailPage = () => {
                   </Card>
                 )}
                 {college.consForStudent?.length > 0 && (
-                  <Card className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-200/40 dark:border-rose-800/30 overflow-hidden">
+                  <Card className="bg-card border-border/60 overflow-hidden">
                     <CardContent className="p-5">
                       <p className="text-sm font-bold text-rose-700 dark:text-rose-400 mb-3 flex items-center gap-1.5">
                         <ThumbsDown className="h-4 w-4" /> Cons
