@@ -936,12 +936,13 @@ const ScholarshipHub = () => {
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 const ScholarshipCard = ({
-  s, saved, onSave, onEssay, isPremium, locked = false, delay = 0,
+  s, saved, onSave, onEssay, onOpenDetail, isPremium, locked = false, delay = 0,
 }: {
   s: Scholarship & { _matchScore?: number };
   saved: boolean;
   onSave: () => void;
   onEssay: () => void;
+  onOpenDetail: () => void;
   isPremium: boolean;
   locked?: boolean;
   delay?: number;
@@ -1004,26 +1005,31 @@ const ScholarshipCard = ({
             ))}
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              variant={saved ? "default" : "outline"}
-              size="sm"
-              onClick={onSave}
-              className="flex-1"
-            >
-              {saved ? <><BookmarkCheck className="h-3.5 w-3.5 mr-1.5" /> Saved</> : <><Bookmark className="h-3.5 w-3.5 mr-1.5" /> Save</>}
+          <div className="flex flex-col gap-2">
+            <Button variant="outline" size="sm" onClick={onOpenDetail} className="w-full">
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Success Guide
             </Button>
-            {s.application_url ? (
-              <Button asChild variant="outline" size="sm" className="flex-1">
-                <a href={s.application_url} target="_blank" rel="noopener noreferrer">
-                  Details <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                </a>
+            <div className="flex gap-2">
+              <Button
+                variant={saved ? "default" : "outline"}
+                size="sm"
+                onClick={onSave}
+                className="flex-1"
+              >
+                {saved ? <><BookmarkCheck className="h-3.5 w-3.5 mr-1.5" /> Saved</> : <><Bookmark className="h-3.5 w-3.5 mr-1.5" /> Save</>}
               </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={onEssay} className="flex-1">
-                <PenLine className="h-3.5 w-3.5 mr-1" /> Essay help
-              </Button>
-            )}
+              {s.application_url ? (
+                <Button asChild variant="outline" size="sm" className="flex-1">
+                  <a href={s.application_url} target="_blank" rel="noopener noreferrer">
+                    Apply <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                  </a>
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={onEssay} className="flex-1">
+                  <PenLine className="h-3.5 w-3.5 mr-1" /> Essay help
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
