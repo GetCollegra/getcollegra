@@ -275,20 +275,20 @@ const CollegeDetailPage = () => {
               {/* Key Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: "Acceptance Rate", value: college.acceptanceRate, icon: Target, accent: "from-blue-500/15 to-blue-600/5 border-blue-200/60 dark:border-blue-800/40" },
-                  { label: "Net Price", value: college.netPrice, icon: DollarSign, accent: "from-emerald-500/15 to-emerald-600/5 border-emerald-200/60 dark:border-emerald-800/40" },
-                  { label: "Graduation Rate", value: college.graduationRate, icon: Award, accent: "from-amber-500/15 to-amber-600/5 border-amber-200/60 dark:border-amber-800/40" },
-                  { label: "Student Body", value: college.studentBody, icon: Users, accent: "from-violet-500/15 to-violet-600/5 border-violet-200/60 dark:border-violet-800/40" },
-                  { label: "In-State Tuition", value: college.tuitionInState, icon: DollarSign, accent: "from-teal-500/15 to-teal-600/5 border-teal-200/60 dark:border-teal-800/40" },
-                  { label: "Out-of-State Tuition", value: college.tuitionOutOfState, icon: DollarSign, accent: "from-rose-500/15 to-rose-600/5 border-rose-200/60 dark:border-rose-800/40" },
-                  { label: "Financial Aid", value: college.avgFinancialAid, icon: Wallet, accent: "from-cyan-500/15 to-cyan-600/5 border-cyan-200/60 dark:border-cyan-800/40" },
-                  { label: "Avg Starting Salary", value: college.avgStartingSalary, icon: Briefcase, accent: "from-orange-500/15 to-orange-600/5 border-orange-200/60 dark:border-orange-800/40" },
+                  { label: "Acceptance Rate", value: college.acceptanceRate, icon: Target },
+                  { label: "Net Price", value: college.netPrice, icon: DollarSign },
+                  { label: "Graduation Rate", value: college.graduationRate, icon: Award },
+                  { label: "Student Body", value: college.studentBody, icon: Users },
+                  { label: "In-State Tuition", value: college.tuitionInState, icon: DollarSign },
+                  { label: "Out-of-State Tuition", value: college.tuitionOutOfState, icon: DollarSign },
+                  { label: "Financial Aid", value: college.avgFinancialAid, icon: Wallet },
+                  { label: "Avg Starting Salary", value: college.avgStartingSalary, icon: Briefcase },
                 ].filter(i => i.value && i.value !== "Premium" && i.value !== "—").map(item => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.label} className={`bg-gradient-to-br ${item.accent} rounded-xl p-4 border transition-all hover:scale-[1.02] hover:shadow-soft`}>
+                    <div key={item.label} className="bg-card rounded-xl p-4 border border-border/60 transition-all hover:border-primary/40 hover:shadow-soft">
                       <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-1.5">
-                        <Icon className="h-3.5 w-3.5" />{item.label}
+                        <Icon className="h-3.5 w-3.5 text-primary" />{item.label}
                       </div>
                       <p className="text-base font-bold text-foreground">{item.value}</p>
                     </div>
@@ -298,24 +298,24 @@ const CollegeDetailPage = () => {
 
               {/* Why It Fits + Campus Vibe + Notable Feature */}
               <div className="grid md:grid-cols-3 gap-4">
-                <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 overflow-hidden relative">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-lg" />
+                <Card className="bg-card border-border/60 overflow-hidden relative">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
                   <CardContent className="p-5 pl-6">
                     <p className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Why It's a Good Fit</p>
                     <p className="text-sm text-foreground leading-relaxed">{college.whyFit || "—"}</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-violet-500/10 to-violet-500/5 border-violet-200/40 dark:border-violet-800/30 overflow-hidden relative">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-violet-500 rounded-l-lg" />
+                <Card className="bg-card border-border/60 overflow-hidden relative">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-primary/60" />
                   <CardContent className="p-5 pl-6">
-                    <p className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-2">Campus Vibe</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Campus Vibe</p>
                     <p className="text-sm text-foreground leading-relaxed">{college.campusVibe || "—"}</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-200/40 dark:border-amber-800/30 overflow-hidden relative">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-l-lg" />
+                <Card className="bg-card border-border/60 overflow-hidden relative">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-primary/60" />
                   <CardContent className="p-5 pl-6">
-                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2">Notable Feature</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Notable Feature</p>
                     <p className="text-sm text-foreground leading-relaxed">{college.notableFeature || "—"}</p>
                   </CardContent>
                 </Card>
@@ -373,8 +373,8 @@ const CollegeDetailPage = () => {
 
               {/* How to Get In */}
               {college.howToGetIn && college.howToGetIn !== "—" && (
-                <Card className="bg-gradient-to-r from-primary/10 via-accent/5 to-primary/10 border-primary/20 overflow-hidden relative">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-accent" />
+                <Card className="bg-card border-primary/20 overflow-hidden relative">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
                   <CardContent className="p-5 pt-6">
                     <p className="text-sm font-bold text-primary mb-2 flex items-center gap-1.5">
                       <Sparkles className="h-4 w-4" /> How to Get In
