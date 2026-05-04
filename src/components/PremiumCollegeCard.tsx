@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import {
   MapPin, Heart, Bookmark, BookmarkPlus, Eye, BarChart3,
   Target, Shield, TrendingUp, Sparkles, Flame, DollarSign, Star,
-  GraduationCap,
+  GraduationCap, Trophy,
 } from "lucide-react";
+import { getCollegeSports, sportEmoji } from "@/lib/collegeSports";
 import type { College } from "@/types/college";
 import { cn } from "@/lib/utils";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
