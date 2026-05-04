@@ -16,8 +16,8 @@ export default function WalkabilitySection({ college }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
-    <Card className="bg-card border-border/60 overflow-hidden">
-      <div className="h-1 bg-cat-walkability" />
+    <Card className="bg-card border-l-[3px] border-l-cat-walkability border-border/60 overflow-hidden">
+      <div className="h-0.5 bg-cat-walkability/70" />
       <CardContent className="p-5 sm:p-6 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
