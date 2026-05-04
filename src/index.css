@@ -52,6 +52,14 @@
     --reach: 14 90% 58%;
     --reach-foreground: 0 0% 100%;
 
+    /* Category accents — subtle, role-based */
+    --cat-academics: 217 91% 60%;   /* Blue   #3B82F6 */
+    --cat-athletics: 25 95% 53%;    /* Orange #F97316 */
+    --cat-walkability: 142 71% 45%; /* Green  #22C55E */
+    --cat-applications: 258 90% 66%;/* Purple #8B5CF6 */
+    --cat-scholarships: 48 96% 53%; /* Gold   #FACC15 */
+    --cat-social: 330 81% 60%;      /* Pink   #EC4899 */
+
     /* Custom tokens */
     --gradient-hero: linear-gradient(135deg, hsl(210 90% 38%) 0%, hsl(210 80% 55%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 30% 97%) 100%);
