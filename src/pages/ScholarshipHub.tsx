@@ -495,7 +495,8 @@ const ScholarshipHub = () => {
             {/* ─── Main column ─── */}
             <div>
               {/* Filter bar */}
-              <Card className="mb-6 shadow-soft">
+              <Card className="card-premium mb-6 overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
+                <div className="h-1 bg-gradient-to-r from-brand-purple via-primary to-brand-teal" aria-hidden />
                 <CardContent className="p-4 md:p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <Filter className="h-4 w-4 text-primary" />
@@ -620,7 +621,8 @@ const ScholarshipHub = () => {
                         </div>
                       ))}
                     </div>
-                    <Card className="mt-6 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 shadow-card">
+                    <Card className="card-premium mt-6 overflow-hidden border-primary/30 bg-gradient-to-br from-primary/10 to-brand-purple/5 backdrop-blur-sm">
+                      <div className="h-1 bg-gradient-hero" aria-hidden />
                       <CardContent className="p-6 md:p-8 text-center">
                         <Crown className="h-10 w-10 text-primary mx-auto mb-3" />
                         <h3 className="text-xl font-bold text-foreground mb-2">
@@ -710,7 +712,7 @@ const ScholarshipHub = () => {
 
             {/* ─── Side panel: deadline tracker ─── */}
             <aside className="lg:sticky lg:top-24 self-start">
-              <Card className="shadow-soft">
+              <Card className="card-premium border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-primary" />
@@ -791,7 +793,7 @@ const ScholarshipHub = () => {
               </Card>
 
               {!isSubscribed && (
-                <Card className="mt-4 border-primary/30 bg-primary/5">
+                <Card className="card-premium mt-4 overflow-hidden border-primary/30 bg-gradient-to-br from-primary/10 to-brand-purple/5 backdrop-blur-sm">
                   <CardContent className="p-4 text-center">
                     <Crown className="h-6 w-6 text-primary mx-auto mb-2" />
                     <p className="text-sm font-semibold text-foreground mb-2">Go Premium</p>
