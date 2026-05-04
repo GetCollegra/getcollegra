@@ -17,13 +17,13 @@ export default function WalkabilitySection({ college }: Props) {
 
   return (
     <Card className="bg-card border-border/60 overflow-hidden">
-      <div className="h-1 bg-primary" />
+      <div className="h-1 bg-cat-walkability" />
       <CardContent className="p-5 sm:p-6 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-primary/10">
-              <Footprints className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-xl bg-cat-walkability/10">
+              <Footprints className="h-5 w-5 text-cat-walkability" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">Campus Walkability & Nearby Essentials</h3>
@@ -33,7 +33,7 @@ export default function WalkabilitySection({ college }: Props) {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-extrabold tabular-nums text-primary">
+            <div className="text-3xl font-extrabold tabular-nums text-cat-walkability">
               {w.score}<span className="text-base text-muted-foreground font-semibold">/100</span>
             </div>
             <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Walkability</div>
@@ -56,7 +56,7 @@ export default function WalkabilitySection({ college }: Props) {
             {w.cards.map((c) => (
               <div
                 key={c.key}
-                className="shrink-0 w-44 sm:w-48 rounded-xl border border-border/60 bg-muted/20 p-3.5 hover:border-primary/40 hover:shadow-soft transition-all"
+                className="shrink-0 w-44 sm:w-48 rounded-xl border border-border/60 bg-muted/20 p-3.5 hover:border-cat-walkability/40 hover:shadow-soft transition-all"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xl" aria-hidden>{c.icon}</span>
@@ -65,9 +65,9 @@ export default function WalkabilitySection({ college }: Props) {
                   </span>
                 </div>
                 <p className="text-sm font-semibold text-foreground leading-tight">{c.label}</p>
-                <p className="text-[11px] text-primary font-medium mt-0.5">{c.distance}</p>
+                <p className="text-[11px] text-cat-walkability font-medium mt-0.5">{c.distance}</p>
                 <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: `${c.score * 10}%` }} />
+                  <div className="h-full bg-cat-walkability" style={{ width: `${c.score * 10}%` }} />
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-2 leading-snug line-clamp-3">{c.description}</p>
               </div>
@@ -78,14 +78,14 @@ export default function WalkabilitySection({ college }: Props) {
         {/* Mini map placeholder */}
         <div className="relative rounded-xl border border-dashed border-border/70 bg-muted/30 h-24 flex items-center justify-center overflow-hidden">
           <div className="relative flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 text-primary" />
+            <MapPin className="h-4 w-4 text-cat-walkability" />
             Mini map preview — explore the full map in the Map tab
           </div>
         </div>
 
         {/* What students will notice */}
-        <div className="rounded-xl bg-primary/5 border border-primary/20 p-4">
-          <p className="text-xs font-bold text-primary uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <div className="rounded-xl bg-cat-walkability/10 border border-cat-walkability/30 p-4">
+          <p className="text-xs font-bold text-cat-walkability uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" /> What students will notice
           </p>
           <ul className="space-y-1.5">
@@ -112,7 +112,7 @@ export default function WalkabilitySection({ college }: Props) {
                     <p className="text-sm font-semibold text-foreground truncate">{c.label}</p>
                     <p className="text-xs text-muted-foreground">{c.distance}</p>
                   </div>
-                  <span className="text-sm font-bold text-primary tabular-nums">{c.score}/10</span>
+                  <span className="text-sm font-bold text-cat-walkability tabular-nums">{c.score}/10</span>
                 </li>
               ))}
             </ul>
