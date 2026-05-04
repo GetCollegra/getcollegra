@@ -127,6 +127,14 @@
     --reach: 14 90% 62%;
     --reach-foreground: 0 0% 100%;
 
+    /* Category accents — slightly softer in dark mode */
+    --cat-academics: 217 91% 65%;
+    --cat-athletics: 25 95% 60%;
+    --cat-walkability: 142 65% 52%;
+    --cat-applications: 258 85% 72%;
+    --cat-scholarships: 48 92% 60%;
+    --cat-social: 330 80% 68%;
+
     --gradient-hero: linear-gradient(135deg, hsl(210 85% 50%) 0%, hsl(210 70% 40%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(213 35% 10%) 0%, hsl(213 35% 12%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(213 35% 13%) 0%, hsl(213 35% 15%) 100%);
