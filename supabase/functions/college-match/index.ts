@@ -939,6 +939,28 @@ function ruleBasedMatch(
     if (admRate != null) whyFitParts.push(`Acceptance rate: ${(admRate * 100).toFixed(0)}%.`);
     if (gradRate != null && gradRate > 0.65) whyFitParts.push(`Solid ${(gradRate * 100).toFixed(0)}% graduation rate.`);
 
+    // Tie in the student's activities answer (final quiz question)
+    const { raw: activitiesRaw, tags: activityTags } = parseActivities(prefs);
+    if (activityTags.length > 0) {
+      const sizeNum = Number(size || 0);
+      const activityBlurbs: string[] = [];
+      if (activityTags.includes("athletics") || activityTags.includes("greek_life")) {
+        activityBlurbs.push(sizeNum >= 15000
+          ? "a large athletic and Greek life scene to continue what you're involved in"
+          : "an active student community where you can stay involved in athletics or Greek life");
+      }
+      if (activityTags.includes("research")) activityBlurbs.push("strong research opportunities tied to your interests");
+      if (activityTags.includes("arts")) activityBlurbs.push("an established arts and performance scene");
+      if (activityTags.includes("service")) activityBlurbs.push("plenty of service and volunteer outlets");
+      if (activityTags.includes("clubs")) activityBlurbs.push("a wide range of student clubs and leadership roles");
+      if (activityTags.includes("entrepreneurship") || activityTags.includes("career")) activityBlurbs.push("career and entrepreneurship resources");
+      if (activityBlurbs.length > 0) {
+        whyFitParts.push(`Based on what you shared about your activities, this school offers ${activityBlurbs.slice(0, 2).join(" and ")}.`);
+      }
+    } else if (activitiesRaw && /^(no|none|n\/a|not really)/i.test(activitiesRaw)) {
+      whyFitParts.push("You said you're open on activities, so we focused on academic and lifestyle fit.");
+    }
+
     return {
       name: schoolName,
       location: `${r["school.city"] || ""}, ${r["school.state"] || ""}`,
