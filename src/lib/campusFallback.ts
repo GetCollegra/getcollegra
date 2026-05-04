@@ -68,6 +68,45 @@ export const CAMPUS_FALLBACKS: string[] = [
 // Generic single fallback (kept for legacy imports).
 export const CAMPUS_FALLBACK_IMG: string = f1;
 
+// Region buckets: which fallback indexes look most appropriate for each US region.
+// Indexes refer to positions in CAMPUS_FALLBACKS above (0-based).
+// These groupings are heuristic — they bias the picker toward climate/architecture
+// that matches the school's actual region so generic fallbacks still feel believable.
+const REGION_BUCKETS: Record<string, number[]> = {
+  northeast: [0, 1, 7, 12, 18, 22, 27, 31, 36, 40, 45, 49],   // brick / ivy / autumn
+  southeast: [2, 8, 13, 19, 24, 29, 34, 38, 43, 47, 51],       // green / humid / colonial
+  midwest:   [3, 9, 14, 20, 25, 30, 35, 39, 44, 48, 52],       // limestone / open quads
+  southwest: [4, 10, 15, 21, 26, 32, 37, 41, 46, 50, 53],      // desert / adobe / sun
+  west:      [5, 11, 16, 23, 28, 33, 42],                       // coastal / modern / palm
+  mountain:  [6, 17, 33, 42],                                   // snow / pine / stone
+};
+
+const STATE_TO_REGION: Record<string, keyof typeof REGION_BUCKETS> = {
+  // Northeast
+  ME: "northeast", NH: "northeast", VT: "northeast", MA: "northeast", RI: "northeast",
+  CT: "northeast", NY: "northeast", NJ: "northeast", PA: "northeast", DE: "northeast", MD: "northeast", DC: "northeast",
+  // Southeast
+  VA: "southeast", WV: "southeast", KY: "southeast", TN: "southeast", NC: "southeast", SC: "southeast",
+  GA: "southeast", FL: "southeast", AL: "southeast", MS: "southeast", AR: "southeast", LA: "southeast",
+  // Midwest
+  OH: "midwest", MI: "midwest", IN: "midwest", IL: "midwest", WI: "midwest", MN: "midwest",
+  IA: "midwest", MO: "midwest", ND: "midwest", SD: "midwest", NE: "midwest", KS: "midwest",
+  // Southwest
+  TX: "southwest", OK: "southwest", NM: "southwest", AZ: "southwest",
+  // Mountain
+  CO: "mountain", UT: "mountain", WY: "mountain", MT: "mountain", ID: "mountain",
+  // West / Pacific
+  CA: "west", OR: "west", WA: "west", NV: "west", HI: "west", AK: "mountain",
+};
+
+function getRegionFromLocation(location?: string | null): keyof typeof REGION_BUCKETS | null {
+  if (!location) return null;
+  // location format is "City, ST" — grab the trailing 2-letter state
+  const match = location.match(/,\s*([A-Z]{2})(\b|$)/);
+  if (!match) return null;
+  return STATE_TO_REGION[match[1]] ?? null;
+}
+
 export function getCollegeFallbackKey(collegeName: string | undefined | null): string {
   return (collegeName || "").trim().toLowerCase();
 }
@@ -82,44 +121,85 @@ function hashString(input: string): number {
 }
 
 /**
- * Pick a stable fallback image for a given college name.
- * Same name → same image, with an optional collision-free list index.
+ * Pick a stable fallback image for a given college name, biased toward the
+ * school's US region so the photo feels regionally accurate (e.g. desert
+ * imagery for Arizona schools, snowy/pine for Colorado, coastal for California).
+ *
+ * Same (name, region) → same image. Falls back to a deterministic hash if no
+ * region info is available.
  */
-export function getFallbackForCollege(collegeName: string | undefined | null, preferredIndex?: number): string {
+export function getFallbackForCollege(
+  collegeName: string | undefined | null,
+  preferredIndex?: number,
+  location?: string | null,
+): string {
   if (Number.isInteger(preferredIndex) && preferredIndex! >= 0) {
     return CAMPUS_FALLBACKS[preferredIndex! % CAMPUS_FALLBACKS.length];
   }
   const key = getCollegeFallbackKey(collegeName);
   if (!key) return CAMPUS_FALLBACKS[0];
+
+  const region = getRegionFromLocation(location);
+  if (region) {
+    const bucket = REGION_BUCKETS[region];
+    const idx = bucket[hashString(key) % bucket.length];
+    return CAMPUS_FALLBACKS[idx];
+  }
+
   const idx = hashString(key) % CAMPUS_FALLBACKS.length;
   return CAMPUS_FALLBACKS[idx];
 }
 
 /**
  * Create unique fallback assignments for the current college universe.
- * This removes hash collisions so different schools do not share fallback art
- * until the full image library has been exhausted.
+ * Removes hash collisions so different schools do not share fallback art
+ * until the full image library has been exhausted. When a college's location
+ * is provided, the picker prefers a region-appropriate image first and only
+ * falls outside the region bucket if every regional image is already taken.
+ *
+ * Accepts either an array of names (legacy) or an array of `{ name, location }`.
  */
-export function createUniqueFallbackIndexes(collegeNames: Array<string | undefined | null>): Map<string, number> {
+export function createUniqueFallbackIndexes(
+  colleges: Array<string | undefined | null | { name?: string | null; location?: string | null }>,
+): Map<string, number> {
   const assigned = new Map<string, number>();
   const used = new Set<number>();
 
-  for (const name of collegeNames) {
+  for (const entry of colleges) {
+    const isObj = typeof entry === "object" && entry !== null;
+    const name = isObj ? ((entry as { name?: string | null }).name ?? null) : ((entry as string | null | undefined) ?? null);
+    const location = isObj ? ((entry as { location?: string | null }).location ?? null) : null;
     const key = getCollegeFallbackKey(name);
     if (!key || assigned.has(key)) continue;
 
-    const base = hashString(key) % CAMPUS_FALLBACKS.length;
-    let chosen = base;
-    for (let offset = 0; offset < CAMPUS_FALLBACKS.length; offset++) {
-      const candidate = (base + offset) % CAMPUS_FALLBACKS.length;
-      if (!used.has(candidate)) {
-        chosen = candidate;
-        used.add(candidate);
-        break;
+    const region = getRegionFromLocation(location);
+    const regionalPool = region ? REGION_BUCKETS[region] : null;
+
+    let chosen: number | null = null;
+
+    // 1. Try regional pool first (rotated by stable hash)
+    if (regionalPool && regionalPool.length > 0) {
+      const start = hashString(key) % regionalPool.length;
+      for (let offset = 0; offset < regionalPool.length; offset++) {
+        const candidate = regionalPool[(start + offset) % regionalPool.length];
+        if (!used.has(candidate)) { chosen = candidate; break; }
       }
     }
+
+    // 2. Fall back to the full library if the region bucket is exhausted
+    if (chosen === null) {
+      const base = hashString(key) % CAMPUS_FALLBACKS.length;
+      for (let offset = 0; offset < CAMPUS_FALLBACKS.length; offset++) {
+        const candidate = (base + offset) % CAMPUS_FALLBACKS.length;
+        if (!used.has(candidate)) { chosen = candidate; break; }
+      }
+    }
+
+    if (chosen === null) chosen = hashString(key) % CAMPUS_FALLBACKS.length;
+    used.add(chosen);
     assigned.set(key, chosen);
   }
 
   return assigned;
 }
+

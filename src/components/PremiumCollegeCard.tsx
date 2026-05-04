@@ -112,11 +112,11 @@ export default function PremiumCollegeCard({
   const insights = getInsights(college);
   const trending = college.fitScore >= 90;
   const goodValue = isGoodValue(college);
-  const { url: photoUrl } = useCollegePhoto(college.name, fallbackIndex ?? index);
+  const { url: photoUrl } = useCollegePhoto(college.name, fallbackIndex ?? index, college.location);
   const [imgFailed, setImgFailed] = useState(false);
   // Always use either the real photo or our local fallback campus image,
-  // so cards never look empty.
-  const fallbackSrc = getFallbackForCollege(college.name, fallbackIndex);
+  // so cards never look empty. Region-aware fallback when location is known.
+  const fallbackSrc = getFallbackForCollege(college.name, fallbackIndex, college.location);
   const resolvedSrc = !imgFailed ? (photoUrl || fallbackSrc) : fallbackSrc;
 
   return (

@@ -33,11 +33,9 @@ const knownAbbreviations: Record<string, string[]> = {
 
 function getAbbreviations(name: string): string[] {
   const lower = name.toLowerCase();
-  // Check known abbreviations
   for (const [key, abbrs] of Object.entries(knownAbbreviations)) {
     if (lower.includes(key)) return abbrs;
   }
-  // Generate acronym from significant words
   const words = name.split(/\s+/);
   if (words.length <= 2) return [name];
   const acronym = words
@@ -49,44 +47,38 @@ function getAbbreviations(name: string): string[] {
 
 function matchesCollege(text: string, collegeName: string, abbreviations: string[]): boolean {
   const lower = text.toLowerCase();
-  
   if (lower.includes(collegeName.toLowerCase())) return true;
-  
   for (const abbr of abbreviations) {
     if (abbr.length >= 2 && lower.includes(abbr.toLowerCase())) return true;
   }
-
-  // Match on 2+ significant words from the name
   const sigWords = collegeName.split(/\s+/)
     .filter(w => w.length > 3 && !["university", "college", "institute", "the", "and", "state"].includes(w.toLowerCase()));
   if (sigWords.length >= 2) {
     const matched = sigWords.filter(w => lower.includes(w.toLowerCase())).length;
     if (matched >= 2) return true;
   }
-  
   return false;
 }
 
-async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]) {
+async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[], city: string, state: string) {
   const photos: any[] = [];
-  
-  // Search with full name first, then abbreviations — but always with campus context
+  const locSuffix = [city, state].filter(Boolean).join(" ");
+
   const searches = [
+    `"${collegeName}" ${locSuffix}`.trim(),
     `"${collegeName}"`,
     collegeName,
-    ...abbreviations.filter(a => a.length >= 4).map(a => `"${a}" campus`),
+    ...abbreviations.filter(a => a.length >= 4).map(a => `"${a}" ${locSuffix} campus`.trim()),
   ];
 
   for (const searchTerm of searches) {
     if (photos.length >= 8) break;
     try {
       const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(searchTerm + " campus OR building OR hall")}&gsrlimit=12&prop=imageinfo&iiprop=url|extmetadata|mime&iiurlwidth=800&format=json`;
-      console.log("Wikimedia search:", searchTerm);
       const res = await fetch(url);
       if (!res.ok) { await res.text(); continue; }
       const data = await res.json();
       const pages = data?.query?.pages || {};
-      console.log(`Wikimedia returned ${Object.keys(pages).length} results for "${searchTerm}"`);
 
       for (const page of Object.values(pages) as any[]) {
         if (photos.length >= 8) break;
@@ -100,22 +92,15 @@ async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]
         const cats = ii.extmetadata?.Categories?.value || "";
         const artist = ii.extmetadata?.Artist?.value || "";
         const combined = `${title} ${desc} ${cats}`;
-
-        // STRICT US check: reject if it mentions non-US locations
         const combinedLower = combined.toLowerCase();
-        const nonUSSignals = ["lyon", "france", "germany", "japan", "china", "india", "brazil", "uk", "england", "australia", "canada"];
-        if (nonUSSignals.some(s => combinedLower.includes(s))) {
-          console.log(`Rejected (non-US): ${title}`);
-          continue;
-        }
 
-        if (!matchesCollege(combined, collegeName, abbreviations)) {
-          console.log(`Rejected (no match): ${title}`);
-          continue;
-        }
+        const nonUSSignals = ["lyon", "france", "germany", "japan", "china", "india", "brazil", "uk", "england", "australia", "canada"];
+        if (nonUSSignals.some(s => combinedLower.includes(s))) continue;
+
+        if (!matchesCollege(combined, collegeName, abbreviations)) continue;
 
         const titleLower = title.toLowerCase();
-        if (titleLower.includes("logo") || titleLower.includes("seal") || 
+        if (titleLower.includes("logo") || titleLower.includes("seal") ||
             titleLower.includes("map") || titleLower.includes("diagram") ||
             titleLower.includes("chart") || titleLower.includes("icon") ||
             titleLower.includes(".svg")) continue;
@@ -124,7 +109,7 @@ async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]
         if (photos.some(p => p.id === photoId)) continue;
 
         const cleanArtist = artist.replace(/<[^>]*>/g, "").trim() || "Wikimedia Commons";
-        
+
         let category = "Campus";
         const cl = combined.toLowerCase();
         if (cl.includes("hall") || cl.includes("building") || cl.includes("center")) category = "Buildings";
@@ -132,8 +117,6 @@ async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]
         else if (cl.includes("library")) category = "Library";
         else if (cl.includes("dorm") || cl.includes("residence")) category = "Housing";
         else if (cl.includes("entrance") || cl.includes("gate")) category = "Entrance";
-
-        console.log(`Accepted: ${title} → ${category}`);
 
         photos.push({
           id: photoId,
@@ -153,15 +136,23 @@ async function fetchWikimediaPhotos(collegeName: string, abbreviations: string[]
   return photos;
 }
 
-async function fetchUnsplashPhotos(collegeName: string, city: string) {
+async function fetchUnsplashPhotos(collegeName: string, city: string, state: string) {
   const photos: any[] = [];
-  
+  const loc = [city, state].filter(Boolean).join(", ");
+
+  // Tightly location-aware queries — try collegeName + city first, then
+  // fall back to scenic city/state imagery so the photo still feels regionally accurate.
   const queries = [
-    `"${collegeName}" campus building`,
-    city ? `${city} university area neighborhood` : null,
+    `"${collegeName}" campus`,
+    loc ? `"${collegeName}" ${city}` : null,
+    loc ? `${city} ${state} university campus` : null,
+    loc ? `${city} ${state} downtown skyline architecture` : null,
+    loc ? `${city} ${state} historic college buildings` : null,
+    state ? `${state} college campus quad` : null,
   ].filter(Boolean) as string[];
 
   for (const query of queries) {
+    if (photos.length >= 6) break;
     try {
       const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=4&orientation=landscape&order_by=relevance`;
       const res = await fetch(url, {
@@ -174,14 +165,16 @@ async function fetchUnsplashPhotos(collegeName: string, city: string) {
         const id = `unsplash-${photo.id}`;
         if (photos.some(p => p.id === id)) continue;
 
-        const isAreaQuery = query.includes("city");
-        const category = isAreaQuery ? "Surrounding Area" : "Campus";
+        const isCampusQuery = query.toLowerCase().includes(collegeName.toLowerCase()) ||
+                              query.toLowerCase().includes("campus") ||
+                              query.toLowerCase().includes("university");
+        const category = isCampusQuery ? "Campus" : "Surrounding Area";
 
         photos.push({
           id,
           url: photo.urls?.regular || photo.urls?.small,
           thumbUrl: photo.urls?.small || photo.urls?.thumb,
-          alt: photo.alt_description || `${isAreaQuery ? city : collegeName} photo`,
+          alt: photo.alt_description || `${collegeName} ${loc} photo`,
           photographer: photo.user?.name || "Unknown",
           photographerUrl: `${photo.user?.links?.html || "https://unsplash.com"}?utm_source=collegra&utm_medium=referral`,
           category,
@@ -193,6 +186,12 @@ async function fetchUnsplashPhotos(collegeName: string, city: string) {
   }
 
   return photos;
+}
+
+function parseLocation(loc?: string): { city: string; state: string } {
+  if (!loc || typeof loc !== "string") return { city: "", state: "" };
+  const parts = loc.split(",").map(p => p.trim()).filter(Boolean);
+  return { city: parts[0] || "", state: parts[1] || "" };
 }
 
 serve(async (req) => {
@@ -211,18 +210,15 @@ serve(async (req) => {
     }
 
     const abbreviations = getAbbreviations(collegeName);
-    const city = typeof collegeLocation === "string"
-      ? collegeLocation.split(",")[0].trim()
-      : "";
+    const { city, state } = parseLocation(collegeLocation);
 
-    console.log(`Fetching photos for: ${collegeName} (abbrs: ${abbreviations.join(", ")}), city: ${city}`);
+    console.log(`Fetching photos for: ${collegeName} (abbrs: ${abbreviations.join(", ")}), city: ${city}, state: ${state}`);
 
     const [wikiPhotos, unsplashPhotos] = await Promise.all([
-      fetchWikimediaPhotos(collegeName, abbreviations),
-      fetchUnsplashPhotos(collegeName, city),
+      fetchWikimediaPhotos(collegeName, abbreviations, city, state),
+      fetchUnsplashPhotos(collegeName, city, state),
     ]);
 
-    // Prioritize Wikimedia (verified) then Unsplash (supplementary)
     const allPhotos = [...wikiPhotos, ...unsplashPhotos];
     const seen = new Set<string>();
     const unique = allPhotos.filter(p => {

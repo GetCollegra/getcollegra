@@ -105,10 +105,10 @@ const COMPARISON_ROWS: ComparisonRow[] = [
 ];
 
 /** Compact photo+gradient banner used at the top of each compare column card. */
-function CompareBanner({ collegeName, index, fallbackIndex, isCompact }: { collegeName: string; index: number; fallbackIndex?: number; isCompact: boolean }) {
-  const { url } = useCollegePhoto(collegeName, fallbackIndex ?? index);
+function CompareBanner({ collegeName, collegeLocation, index, fallbackIndex, isCompact }: { collegeName: string; collegeLocation?: string; index: number; fallbackIndex?: number; isCompact: boolean }) {
+  const { url } = useCollegePhoto(collegeName, fallbackIndex ?? index, collegeLocation);
   const [imgFailed, setImgFailed] = useState(false);
-  const fallbackSrc = getFallbackForCollege(collegeName, fallbackIndex);
+  const fallbackSrc = getFallbackForCollege(collegeName, fallbackIndex, collegeLocation);
   const resolvedSrc = !imgFailed ? (url || fallbackSrc) : fallbackSrc;
   const bannerClass = `bg-banner-${(index % 6) + 1}`;
   return (
@@ -210,7 +210,10 @@ export default function CollegeComparison({
     return bests;
   }, [unmaskedCompared]);
   const fallbackIndexes = useMemo(
-    () => createUniqueFallbackIndexes([...savedColleges.map(s => s.college_name), ...matchedColleges.map(c => c.name)]),
+    () => createUniqueFallbackIndexes([
+      ...savedColleges.map(s => ({ name: s.college_name, location: s.college_data?.location })),
+      ...matchedColleges.map(c => ({ name: c.name, location: c.location })),
+    ]),
     [savedColleges, matchedColleges],
   );
 
@@ -302,6 +305,7 @@ export default function CollegeComparison({
                   <Card className="card-premium overflow-hidden h-full border-border/60 bg-card/80 backdrop-blur-sm">
                     <CompareBanner
                       collegeName={c.college_name}
+                      collegeLocation={college?.location}
                       index={i}
                       fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(c.college_name))}
                       isCompact={isCompact}
