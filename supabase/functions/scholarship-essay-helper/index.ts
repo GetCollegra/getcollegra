@@ -16,6 +16,12 @@ const MODES: Record<string, string> = {
     "Write ONE strong, vivid opening paragraph (4-6 sentences) for this scholarship essay. Make it specific, sensory, and emotionally honest. Then briefly explain in 2 bullets why this opening works.",
   proofread:
     "Proofread and improve the student's draft. Return: (1) a polished version, (2) a short bullet list of the most important edits you made and why.",
+  outline_personalized:
+    "Create a personalized 7-section application outline using the student's profile. Sections (use these exact H3 headings): 1) Hook / Personal Introduction, 2) Why This Scholarship Fits Me, 3) My Academic Strengths, 4) My Leadership & Activities, 5) My Future Goals, 6) Why I Deserve This Opportunity, 7) Closing Statement. Under each heading provide 3 specific bullet points that reference the student's actual GPA, major, activities, leadership, volunteer work, sports, and career goals where given. End with a 1-line note: 'This outline is guidance — your authentic voice matters most.'",
+  best_angle:
+    "Read the student's profile and produce a SHORT personalized recommendation (3-5 sentences) titled '**Your Best Angle**' that names their 1-2 strongest themes (e.g. leadership, athletics, service, academics, entrepreneurship) and explains how to weave them into this scholarship application. Be concrete, encouraging, and never invent facts not in the profile.",
+  improve:
+    "Improve the student's draft to sound more personal, vivid, and specific while keeping their voice. Return: (1) the improved version, (2) 3 bullets explaining what you changed and why.",
 };
 
 Deno.serve(async (req) => {
@@ -35,6 +41,7 @@ Deno.serve(async (req) => {
     const scholarship = String(body.scholarship ?? "").slice(0, 200);
     const prompt = String(body.prompt ?? "").slice(0, 2000);
     const draft = String(body.draft ?? "").slice(0, 6000);
+    const studentProfile = body.studentProfile && typeof body.studentProfile === "object" ? body.studentProfile : null;
 
     if (!MODES[mode]) {
       return new Response(JSON.stringify({ error: "Invalid mode" }), {
@@ -42,22 +49,42 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!prompt && mode !== "proofread") {
+    const promptOptional = mode === "proofread" || mode === "best_angle" || mode === "outline_personalized" || mode === "improve";
+    if (!prompt && !promptOptional) {
       return new Response(JSON.stringify({ error: "Prompt required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (mode === "proofread" && !draft) {
-      return new Response(JSON.stringify({ error: "Draft required for proofread" }), {
+    if ((mode === "proofread" || mode === "improve") && !draft) {
+      return new Response(JSON.stringify({ error: "Draft required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    let profileBlock = "";
+    if (studentProfile) {
+      const fields = [
+        ["GPA", studentProfile.gpa],
+        ["Intended major", studentProfile.intended_major],
+        ["Grade level", studentProfile.grade_level],
+        ["State", studentProfile.state],
+        ["Activities", Array.isArray(studentProfile.activities) ? studentProfile.activities.join(", ") : studentProfile.activities],
+        ["Leadership", studentProfile.leadership],
+        ["Volunteer work", studentProfile.volunteer],
+        ["Sports", Array.isArray(studentProfile.sports) ? studentProfile.sports.join(", ") : studentProfile.sports],
+        ["Career goals", studentProfile.career_goals],
+      ].filter(([_, v]) => v !== undefined && v !== null && String(v).trim() !== "");
+      if (fields.length) {
+        profileBlock = "Student profile:\n" + fields.map(([k, v]) => `- ${k}: ${v}`).join("\n");
+      }
+    }
+
     const userMsg = [
       scholarship ? `Scholarship: ${scholarship}` : "",
       prompt ? `Essay prompt: ${prompt}` : "",
+      profileBlock,
       draft ? `Student draft:\n${draft}` : "",
       `Task: ${MODES[mode]}`,
     ]

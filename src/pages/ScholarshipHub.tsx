@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { startCheckout } from "@/lib/checkout";
 import { capture } from "@/lib/posthog";
+import ScholarshipDetailDialog from "@/components/ScholarshipDetailDialog";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type Scholarship = {
@@ -55,6 +56,11 @@ type StudentProfile = {
   intended_major?: string;
   gpa?: number;
   grade_level?: string;
+  activities?: string[];
+  leadership?: string;
+  volunteer?: string;
+  sports?: string[];
+  career_goals?: string;
 };
 
 const FREE_VIEW_LIMIT = 5;
@@ -143,6 +149,29 @@ const ScholarshipHub = () => {
   const [essayLoading, setEssayLoading] = useState(false);
   const [essayResult, setEssayResult] = useState("");
 
+  // Scholarship detail dialog
+  const [detailScholarship, setDetailScholarship] = useState<Scholarship | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [freeOutlinesUsed, setFreeOutlinesUsed] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    const v = Number(localStorage.getItem("scholarship-free-outlines-used") ?? 0);
+    return Number.isFinite(v) ? v : 0;
+  });
+
+  const openDetailFor = (s: Scholarship) => {
+    setDetailScholarship(s);
+    setDetailOpen(true);
+    capture("scholarship_detail_opened", { scholarship_id: s.id });
+  };
+
+  const handleFreeOutlineUsed = () => {
+    setFreeOutlinesUsed((n) => {
+      const next = n + 1;
+      try { localStorage.setItem("scholarship-free-outlines-used", String(next)); } catch {}
+      return next;
+    });
+  };
+
   // Auth gate
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -178,11 +207,22 @@ const ScholarshipHub = () => {
         const home = profRes.data?.home_address ?? "";
         // Try to detect state from home_address (last 2-letter token)
         const stateMatch = home?.match(/\b([A-Z]{2})\b\s*\d{0,5}\s*$/);
+        const arrify = (v: any): string[] | undefined => {
+          if (!v) return undefined;
+          if (Array.isArray(v)) return v.filter(Boolean).map(String);
+          if (typeof v === "string" && v.trim()) return [v];
+          return undefined;
+        };
         setProfile({
           state: stateMatch?.[1] ?? meta.state ?? quizAns.state ?? undefined,
           intended_major: meta.intended_major ?? quizAns.intendedMajor ?? quizAns.intended_major ?? quizAns.major ?? undefined,
           gpa: typeof quizAns.gpa === "number" ? quizAns.gpa : Number(quizAns.gpa) || undefined,
           grade_level: meta.grade_level ?? quizAns.gradeLevel ?? quizAns.grade_level ?? "12",
+          activities: arrify(quizAns.activities ?? quizAns.extracurriculars),
+          leadership: quizAns.leadership ?? quizAns.leadershipExperience ?? undefined,
+          volunteer: quizAns.volunteer ?? quizAns.communityService ?? quizAns.volunteerWork ?? undefined,
+          sports: arrify(quizAns.sports ?? quizAns.athletics),
+          career_goals: quizAns.careerGoals ?? quizAns.career_goals ?? quizAns.futureGoals ?? quizAns.openEnded ?? undefined,
         });
       } catch (e) {
         console.error(e);
@@ -595,6 +635,7 @@ const ScholarshipHub = () => {
                           saved={savedIds.has(s.id)}
                           onSave={() => handleSave(s)}
                           onEssay={() => openEssayFor(s)}
+                          onOpenDetail={() => openDetailFor(s)}
                           isPremium={isSubscribed}
                           delay={i * 0.04}
                         />
@@ -614,6 +655,7 @@ const ScholarshipHub = () => {
                             saved={false}
                             onSave={() => {}}
                             onEssay={() => {}}
+                            onOpenDetail={() => {}}
                             isPremium={false}
                             locked
                             delay={0}
@@ -675,6 +717,7 @@ const ScholarshipHub = () => {
                         saved={savedIds.has(s.id)}
                         onSave={() => handleSave(s)}
                         onEssay={() => openEssayFor(s)}
+                        onOpenDetail={() => openDetailFor(s)}
                         isPremium={isSubscribed}
                         delay={i * 0.04}
                       />
@@ -886,6 +929,17 @@ const ScholarshipHub = () => {
         </DialogContent>
       </Dialog>
 
+      <ScholarshipDetailDialog
+        scholarship={detailScholarship}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        isPremium={isSubscribed}
+        studentProfile={profile}
+        freeOutlinesUsed={freeOutlinesUsed}
+        onFreeOutlineUsed={handleFreeOutlineUsed}
+        onUpgrade={handleUpgrade}
+      />
+
       <Footer />
     </div>
   );
@@ -893,12 +947,13 @@ const ScholarshipHub = () => {
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 const ScholarshipCard = ({
-  s, saved, onSave, onEssay, isPremium, locked = false, delay = 0,
+  s, saved, onSave, onEssay, onOpenDetail, isPremium, locked = false, delay = 0,
 }: {
   s: Scholarship & { _matchScore?: number };
   saved: boolean;
   onSave: () => void;
   onEssay: () => void;
+  onOpenDetail: () => void;
   isPremium: boolean;
   locked?: boolean;
   delay?: number;
@@ -961,26 +1016,31 @@ const ScholarshipCard = ({
             ))}
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              variant={saved ? "default" : "outline"}
-              size="sm"
-              onClick={onSave}
-              className="flex-1"
-            >
-              {saved ? <><BookmarkCheck className="h-3.5 w-3.5 mr-1.5" /> Saved</> : <><Bookmark className="h-3.5 w-3.5 mr-1.5" /> Save</>}
+          <div className="flex flex-col gap-2">
+            <Button variant="outline" size="sm" onClick={onOpenDetail} className="w-full">
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Success Guide
             </Button>
-            {s.application_url ? (
-              <Button asChild variant="outline" size="sm" className="flex-1">
-                <a href={s.application_url} target="_blank" rel="noopener noreferrer">
-                  Details <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                </a>
+            <div className="flex gap-2">
+              <Button
+                variant={saved ? "default" : "outline"}
+                size="sm"
+                onClick={onSave}
+                className="flex-1"
+              >
+                {saved ? <><BookmarkCheck className="h-3.5 w-3.5 mr-1.5" /> Saved</> : <><Bookmark className="h-3.5 w-3.5 mr-1.5" /> Save</>}
               </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={onEssay} className="flex-1">
-                <PenLine className="h-3.5 w-3.5 mr-1" /> Essay help
-              </Button>
-            )}
+              {s.application_url ? (
+                <Button asChild variant="outline" size="sm" className="flex-1">
+                  <a href={s.application_url} target="_blank" rel="noopener noreferrer">
+                    Apply <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                  </a>
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={onEssay} className="flex-1">
+                  <PenLine className="h-3.5 w-3.5 mr-1" /> Essay help
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
