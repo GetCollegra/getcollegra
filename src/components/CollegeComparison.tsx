@@ -210,7 +210,10 @@ export default function CollegeComparison({
     return bests;
   }, [unmaskedCompared]);
   const fallbackIndexes = useMemo(
-    () => createUniqueFallbackIndexes([...savedColleges.map(s => s.college_name), ...matchedColleges.map(c => c.name)]),
+    () => createUniqueFallbackIndexes([
+      ...savedColleges.map(s => ({ name: s.college_name, location: s.college_data?.location })),
+      ...matchedColleges.map(c => ({ name: c.name, location: c.location })),
+    ]),
     [savedColleges, matchedColleges],
   );
 
