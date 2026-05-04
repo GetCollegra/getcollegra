@@ -302,6 +302,7 @@ export default function CollegeComparison({
                   <Card className="card-premium overflow-hidden h-full border-border/60 bg-card/80 backdrop-blur-sm">
                     <CompareBanner
                       collegeName={c.college_name}
+                      collegeLocation={college?.location}
                       index={i}
                       fallbackIndex={fallbackIndexes.get(getCollegeFallbackKey(c.college_name))}
                       isCompact={isCompact}
