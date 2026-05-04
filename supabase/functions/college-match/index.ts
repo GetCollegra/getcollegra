@@ -622,6 +622,9 @@ function computeFitScore(r: any, prefs: Record<string, any>, fitCategory: string
 
   score += Math.min(15, recognitionScore) + (a.support || 0);
 
+  // 8. Activities Continuity (8 pts max) — based on the final quiz question
+  score += computeActivitiesScore(r, prefs);
+
   // ── Academic Realism Multiplier ──
   const realismMultiplier = computeRealismMultiplier(r, prefs, fitCategory);
   score = Math.round(score * realismMultiplier);
