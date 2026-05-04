@@ -685,7 +685,8 @@ const ScholarshipHub = () => {
 
               {/* Essay assistant card */}
               <section className="mb-10">
-                <Card className="border-primary/20 shadow-card overflow-hidden">
+                <Card className="card-premium overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm">
+                  <div className="h-1 bg-gradient-hero" aria-hidden />
                   <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -913,7 +914,7 @@ const ScholarshipCard = ({
       transition={{ duration: 0.35, delay }}
       className={locked ? "relative" : ""}
     >
-      <Card className={`h-full transition-shadow hover:shadow-card ${locked ? "blur-sm pointer-events-none select-none" : ""}`}>
+      <Card className={`card-premium h-full overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm transition-all hover:shadow-card ${locked ? "blur-sm pointer-events-none select-none" : ""}`}>
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
