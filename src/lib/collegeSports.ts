@@ -43,7 +43,7 @@ type KnownEntry = {
 };
 
 
-const KNOWN: Record<string, Partial<CollegeSports> & { conference: string; division: SportsDivision }> = {
+const KNOWN: Record<string, KnownEntry> = {
   // SEC
   "alabama": { division: "I", conference: "SEC", knownFor: ["Football"], cultureScore: 5 },
   "georgia": { division: "I", conference: "SEC", knownFor: ["Football"], cultureScore: 5 },
