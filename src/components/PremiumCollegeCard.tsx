@@ -113,6 +113,11 @@ export default function PremiumCollegeCard({
   const insights = getInsights(college);
   const trending = college.fitScore >= 90;
   const goodValue = isGoodValue(college);
+  const sports = getCollegeSports(college.name, college.studentBody, college.setting);
+  const sportIcons = (sports.knownFor && sports.knownFor.length > 0
+    ? sports.knownFor
+    : sports.popularSports
+  ).slice(0, 3);
   const { url: photoUrl } = useCollegePhoto(college.name, fallbackIndex ?? index, college.location);
   const [imgFailed, setImgFailed] = useState(false);
   // Always use either the real photo or our local fallback campus image,
