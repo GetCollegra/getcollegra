@@ -635,6 +635,7 @@ const ScholarshipHub = () => {
                           saved={savedIds.has(s.id)}
                           onSave={() => handleSave(s)}
                           onEssay={() => openEssayFor(s)}
+                          onOpenDetail={() => openDetailFor(s)}
                           isPremium={isSubscribed}
                           delay={i * 0.04}
                         />
@@ -654,6 +655,7 @@ const ScholarshipHub = () => {
                             saved={false}
                             onSave={() => {}}
                             onEssay={() => {}}
+                            onOpenDetail={() => {}}
                             isPremium={false}
                             locked
                             delay={0}
@@ -715,6 +717,7 @@ const ScholarshipHub = () => {
                         saved={savedIds.has(s.id)}
                         onSave={() => handleSave(s)}
                         onEssay={() => openEssayFor(s)}
+                        onOpenDetail={() => openDetailFor(s)}
                         isPremium={isSubscribed}
                         delay={i * 0.04}
                       />
