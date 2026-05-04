@@ -166,8 +166,9 @@ export function createUniqueFallbackIndexes(
   const used = new Set<number>();
 
   for (const entry of colleges) {
-    const name = typeof entry === "string" || entry == null ? entry : entry?.name;
-    const location = typeof entry === "object" && entry ? entry.location : null;
+    const isObj = typeof entry === "object" && entry !== null;
+    const name = isObj ? ((entry as { name?: string | null }).name ?? null) : ((entry as string | null | undefined) ?? null);
+    const location = isObj ? ((entry as { location?: string | null }).location ?? null) : null;
     const key = getCollegeFallbackKey(name);
     if (!key || assigned.has(key)) continue;
 
