@@ -66,6 +66,7 @@ const CollegeDetailPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showNeighborhood, setShowNeighborhood] = useState(false);
   const [athleteInterest, setAthleteInterest] = useState(false);
+  const [sportInterests, setSportInterests] = useState<string[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
