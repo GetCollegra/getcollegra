@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import CollegeLifePanel from "@/components/CollegeLifePanel";
 import TravelFromHome from "@/components/TravelFromHome";
 import StudentVibeReviews from "@/components/StudentVibeReviews";
+import SportsSection from "@/components/SportsSection";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
