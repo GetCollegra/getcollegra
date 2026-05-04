@@ -383,7 +383,7 @@ const CollegeDetailPage = () => {
               )}
 
               {/* Sports & Athletics */}
-              <SportsSection college={college} showRecruiting={athleteInterest} />
+              <SportsSection college={college} showRecruiting={athleteInterest} highlightSports={sportInterests} />
 
               {/* Student Vibe Reviews */}
               <StudentVibeReviews collegeName={college.name} />
