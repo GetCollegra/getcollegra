@@ -219,6 +219,35 @@ serve(async (req) => {
 
     console.log(`Fetching photos for: ${collegeName} (abbrs: ${abbreviations.join(", ")}), city: ${city}, state: ${state}`);
 
+    // Curated overrides for schools where Wikimedia/Unsplash search returns
+    // poor results (blueprints, logos, off-topic shots). Hand-picked photos.
+    const CURATED: Record<string, { url: string; alt: string }[]> = {
+      "university of miami": [
+        {
+          url: "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=1200&q=80",
+          alt: "Palm trees and tropical campus architecture in Coral Gables, Florida",
+        },
+      ],
+    };
+    const curatedKey = collegeName.trim().toLowerCase();
+    const curatedHit = CURATED[curatedKey];
+    if (curatedHit && curatedHit.length > 0) {
+      const photos = curatedHit.map((p, i) => ({
+        id: `curated-${curatedKey}-${i}`,
+        url: p.url,
+        thumbUrl: p.url,
+        alt: p.alt,
+        photographer: "Unsplash",
+        photographerUrl: "https://unsplash.com/?utm_source=collegra&utm_medium=referral",
+        category: "Campus",
+      }));
+      console.log(`Returning curated photo for ${collegeName}`);
+      return new Response(
+        JSON.stringify({ photos }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const [wikiPhotos, unsplashPhotos] = await Promise.all([
       fetchWikimediaPhotos(collegeName, abbreviations, city, state),
       fetchUnsplashPhotos(collegeName, city, state),
