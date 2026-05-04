@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { startCheckout } from "@/lib/checkout";
 import { capture } from "@/lib/posthog";
+import ScholarshipDetailDialog from "@/components/ScholarshipDetailDialog";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type Scholarship = {
@@ -55,6 +56,11 @@ type StudentProfile = {
   intended_major?: string;
   gpa?: number;
   grade_level?: string;
+  activities?: string[];
+  leadership?: string;
+  volunteer?: string;
+  sports?: string[];
+  career_goals?: string;
 };
 
 const FREE_VIEW_LIMIT = 5;
