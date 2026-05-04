@@ -149,6 +149,29 @@ const ScholarshipHub = () => {
   const [essayLoading, setEssayLoading] = useState(false);
   const [essayResult, setEssayResult] = useState("");
 
+  // Scholarship detail dialog
+  const [detailScholarship, setDetailScholarship] = useState<Scholarship | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [freeOutlinesUsed, setFreeOutlinesUsed] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    const v = Number(localStorage.getItem("scholarship-free-outlines-used") ?? 0);
+    return Number.isFinite(v) ? v : 0;
+  });
+
+  const openDetailFor = (s: Scholarship) => {
+    setDetailScholarship(s);
+    setDetailOpen(true);
+    capture("scholarship_detail_opened", { scholarship_id: s.id });
+  };
+
+  const handleFreeOutlineUsed = () => {
+    setFreeOutlinesUsed((n) => {
+      const next = n + 1;
+      try { localStorage.setItem("scholarship-free-outlines-used", String(next)); } catch {}
+      return next;
+    });
+  };
+
   // Auth gate
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
