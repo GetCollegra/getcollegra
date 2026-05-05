@@ -172,7 +172,7 @@ type CollegeMapProps = {
   selectedCollege?: string | null;
 };
 
-export default function CollegeMap({
+function CollegeMapComponent({
   matchedColleges,
   savedColleges,
   homeLocation,
