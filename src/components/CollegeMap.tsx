@@ -215,8 +215,9 @@ export default function CollegeMap({
     return result;
   }, [matchedColleges, savedColleges, homePos]);
 
+  const MAX_PINS = 25;
   const filteredMarkers = useMemo(() => {
-    return markers.filter(m => {
+    const filtered = markers.filter(m => {
       if (!filterCategories.has(m.college.fitCategory)) return false;
       if (distanceFilter !== "all" && m.distance !== null) {
         const maxMiles = parseInt(distanceFilter);
@@ -224,6 +225,7 @@ export default function CollegeMap({
       }
       return true;
     });
+    return filtered.slice(0, MAX_PINS);
   }, [markers, filterCategories, distanceFilter]);
 
   const toggleCategory = (cat: string) => {
