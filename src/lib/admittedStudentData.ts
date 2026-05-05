@@ -35,6 +35,7 @@ export type SampleProfile = {
   sat: number;
   act: number;
   major: string;
+  residency: "In-State" | "Out-of-State";
   activities: string;
   note: string;
 };
