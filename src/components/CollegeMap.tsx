@@ -346,60 +346,13 @@ function CollegeMapComponent({
           )}
 
           {/* College markers (clustered) */}
-          <MarkerClusterGroup
-            chunkedLoading
-            showCoverageOnHover={false}
-            maxClusterRadius={50}
-            spiderfyOnMaxZoom
-          >
-            {filteredMarkers.map((m, i) => (
-              <Marker
-                key={`${m.college.name}-${i}`}
-                position={m.pos}
-                icon={createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match)}
-                eventHandlers={{
-                  click: () => {
-                    setPanTarget(m.pos);
-                    if (onCollegeSelect) onCollegeSelect(m.college);
-                  },
-                }}
-              >
-                <Popup minWidth={220} maxWidth={300} autoPan={true} autoPanPadding={L.point(50, 50)} className="college-popup">
-                  <div className="p-1">
-                    <p className="font-bold text-sm mb-0.5">{m.college.name}</p>
-                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                      <span>📍</span> {m.college.location}
-                    </p>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-2 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">Fit:</span>
-                        <p className="font-semibold text-foreground">{m.college.fitScore}/100</p>
-                      </div>
-                      {m.distance !== null && (
-                        <div>
-                          <span className="text-muted-foreground">Distance:</span>
-                          <p className="font-semibold text-foreground">~{m.distance.toLocaleString()} mi</p>
-                        </div>
-                      )}
-                    </div>
-                    <Badge
-                      variant="secondary"
-                      className={`text-[10px] ${
-                        m.college.fitCategory === "Safety"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : m.college.fitCategory === "Reach"
-                          ? "bg-orange-100 text-orange-700"
-                          : "bg-primary/10 text-primary"
-                      }`}
-                    >
-                      {m.college.fitCategory}
-                    </Badge>
-                    <p className="text-[10px] text-muted-foreground mt-2">↓ Details shown below the map</p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MarkerClusterGroup>
+          <ClusteredMarkers
+            markers={filteredMarkers}
+            onSelect={(c, pos) => {
+              setPanTarget(pos);
+              if (onCollegeSelect) onCollegeSelect(c);
+            }}
+          />
         </MapContainer>
       </div>
     </div>
