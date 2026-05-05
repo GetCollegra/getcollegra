@@ -217,6 +217,7 @@ function ClusteredMarkers({ markers, onSelect }: {
   return null;
 }
 
+function CollegeMapComponent({
   matchedColleges,
   savedColleges,
   homeLocation,
