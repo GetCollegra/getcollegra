@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, memo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+// @ts-ignore - package has no TS types
+import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 // leaflet CSS loaded via index.html CDN link
 import { MapPin, Filter, Navigation } from "lucide-react";
