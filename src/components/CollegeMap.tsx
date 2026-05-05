@@ -346,10 +346,14 @@ export default function CollegeMap({
             </Marker>
           )}
 
-          {/* College markers */}
-          {filteredMarkers.map((m, i) => {
-            const isSelected = selectedCollege === m.college.name;
-            return (
+          {/* College markers (clustered) */}
+          <MarkerClusterGroup
+            chunkedLoading
+            showCoverageOnHover={false}
+            maxClusterRadius={50}
+            spiderfyOnMaxZoom
+          >
+            {filteredMarkers.map((m, i) => (
               <Marker
                 key={`${m.college.name}-${i}`}
                 position={m.pos}
@@ -395,8 +399,8 @@ export default function CollegeMap({
                   </div>
                 </Popup>
               </Marker>
-            );
-          })}
+            ))}
+          </MarkerClusterGroup>
         </MapContainer>
       </div>
     </div>
