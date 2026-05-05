@@ -56,6 +56,60 @@ const PERSONALITIES = [
     description: "You light up every room. Greek life, athletics, school spirit — you want a campus buzzing with energy and connection.",
   },
   {
+    id: "innovator",
+    name: "The STEM Innovator",
+    emoji: "🔬",
+    description: "Code, labs, and logic — you want a school where engineering, computer science, and research culture run deep.",
+  },
+  {
+    id: "healer",
+    name: "The Future Healer",
+    emoji: "🩺",
+    description: "Pre-med, nursing, or public health — you're driven to care for others and want a college with serious health science chops.",
+  },
+  {
+    id: "entrepreneur",
+    name: "The Entrepreneur",
+    emoji: "💼",
+    description: "You think in pitches and possibilities. You want a campus that turns ambition into action — business clubs, internships, and startup energy.",
+  },
+  {
+    id: "athlete",
+    name: "The Student Athlete",
+    emoji: "🏆",
+    description: "Game days, training, and team culture matter to you. You want a school that takes both athletics and academics seriously.",
+  },
+  {
+    id: "globalist",
+    name: "The Global Citizen",
+    emoji: "🌐",
+    description: "Languages, study abroad, and diverse perspectives excite you. You want a college that sees the world as your classroom.",
+  },
+  {
+    id: "changemaker",
+    name: "The Changemaker",
+    emoji: "🌱",
+    description: "Service, advocacy, and impact drive you. You want a community where students lead causes and build a better world.",
+  },
+  {
+    id: "performer",
+    name: "The Performer",
+    emoji: "🎭",
+    description: "Stage, screen, or stadium — you thrive when the lights are on. You want a campus rich with theater, music, and creative performance.",
+  },
+  {
+    id: "outdoorist",
+    name: "The Outdoor Adventurer",
+    emoji: "🏔️",
+    description: "Mountains, trails, and fresh air call your name. You want a school where the outdoors is part of the lifestyle.",
+  },
+  {
+    id: "techie",
+    name: "The Quiet Builder",
+    emoji: "🛠️",
+    description: "You'd rather build something real than chase the spotlight. You want a focused environment with hands-on projects and makers.",
+  },
+  {
     id: "dreamer",
     name: "The Big Dreamer",
     emoji: "✨",
@@ -154,7 +208,10 @@ export function derivePersonality(
   // ── Score each archetype ──
   const scores: Record<string, number> = {
     trailblazer: 0, scholar: 0, explorer: 0, strategist: 0,
-    homegrown: 0, adventurer: 0, creative: 0, connector: 0, dreamer: 1,
+    homegrown: 0, adventurer: 0, creative: 0, connector: 0,
+    innovator: 0, healer: 0, entrepreneur: 0, athlete: 0,
+    globalist: 0, changemaker: 0, performer: 0, outdoorist: 0, techie: 0,
+    dreamer: 1,
   };
 
   // Trailblazer: competitive schools + high GPA + reach
@@ -208,6 +265,58 @@ export function derivePersonality(
   if (hasAthletics) scores.connector += 2;
   if (hasSchoolSpirit) scores.connector += 2;
   if (isLargeCampus) scores.connector += 1;
+
+  // STEM Innovator: STEM study + research + competitive
+  if (isSTEM) scores.innovator += 5;
+  if (hasResearch) scores.innovator += 2;
+  if (isAcademicFocused) scores.innovator += 1;
+  if (isCompetitive) scores.innovator += 1;
+
+  // Future Healer: pre-med / health
+  if (isPreMed) scores.healer += 6;
+  if (hasResearch) scores.healer += 1;
+  if (isAcademicFocused) scores.healer += 1;
+  if (hasCommunityService) scores.healer += 1;
+
+  // Entrepreneur: business + internships + big city
+  if (isBusiness) scores.entrepreneur += 4;
+  if (hasInternships) scores.entrepreneur += 3;
+  if (wantsBigCity) scores.entrepreneur += 1;
+  if (!isCostConscious && hasClubs) scores.entrepreneur += 1;
+
+  // Student Athlete: athletics + sports vibe + spirit (distinct from connector via D1/competition signal)
+  if (hasAthletics) scores.athlete += 4;
+  if (isSportsSpirit) scores.athlete += 3;
+  if (hasSchoolSpirit) scores.athlete += 2;
+  if (isLargeCampus) scores.athlete += 1;
+
+  // Global Citizen: study abroad + humanities + far from home
+  if (hasStudyAbroad) scores.globalist += 5;
+  if (isHumanities) scores.globalist += 2;
+  if (wantsFarFromHome) scores.globalist += 2;
+  if (wantsBigCity) scores.globalist += 1;
+
+  // Changemaker: community service + tight-knit + humanities
+  if (hasCommunityService) scores.changemaker += 5;
+  if (isTightKnit) scores.changemaker += 2;
+  if (isHumanities) scores.changemaker += 1;
+
+  // Performer: fine arts + student media + creative + school spirit
+  if (hasFineArts) scores.performer += 4;
+  if (hasStudentMedia) scores.performer += 3;
+  if (isCreativeArtsy) scores.performer += 2;
+  if (isCreativeStudy) scores.performer += 2;
+
+  // Outdoor Adventurer: far from home + NOT big city + tight-knit small campus vibe
+  if (wantsFarFromHome && !wantsBigCity) scores.outdoorist += 4;
+  if (!wantsBigCity && (isSmallCampus || isTightKnit)) scores.outdoorist += 2;
+  if (hasAthletics && !isSportsSpirit) scores.outdoorist += 1;
+
+  // Quiet Builder: STEM/creative study + small campus + quiet vibe + cost conscious
+  if (isQuietAcademic) scores.techie += 3;
+  if (isSmallCampus) scores.techie += 2;
+  if (isSTEM || isCreativeStudy) scores.techie += 2;
+  if (isCostConscious) scores.techie += 1;
 
   // Pick highest
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
