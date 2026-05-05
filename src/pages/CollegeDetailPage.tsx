@@ -427,7 +427,7 @@ const CollegeDetailPage = () => {
               <div>
                 {!showNeighborhood ? (
                   <Button variant="outline" className="w-full gap-2" onClick={() => { setShowNeighborhood(true); trackCollegeAction(college.name, "click_neighborhood"); }}>
-                    <MapPin className="h-4 w-4" /> Explore Campus Neighborhood
+                    <MapPin className="h-4 w-4" /> Open Campus Area Explorer
                   </Button>
                 ) : (
                   <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
