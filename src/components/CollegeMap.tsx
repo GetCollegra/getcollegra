@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useRef, memo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import "leaflet.markercluster";
 // leaflet CSS loaded via index.html CDN link
 import { MapPin, Filter, Navigation } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +151,22 @@ function SmoothPanTo({ position }: { position: [number, number] | null }) {
   return null;
 }
 
+function createClusterIcon(count: number) {
+  return L.divIcon({
+    className: "college-cluster-marker",
+    html: `<div style="
+      width: 42px; height: 42px; border-radius: 999px;
+      background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+      border: 3px solid white; box-shadow: 0 4px 14px rgba(15,23,42,0.28);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 13px;
+    ">${count}</div>`,
+    iconSize: [42, 42],
+    iconAnchor: [21, 21],
+    popupAnchor: [0, -18],
+  });
+}
+
 export type MarkerData = {
   pos: [number, number];
   college: College;
@@ -176,45 +191,88 @@ function ClusteredMarkers({ markers, onSelect }: {
   onSelect: (college: College, pos: [number, number]) => void;
 }) {
   const map = useMap();
+  const [zoom, setZoom] = useState(() => map.getZoom());
+
   useEffect(() => {
-    // @ts-ignore - markerClusterGroup added by leaflet.markercluster
-    const group = (L as any).markerClusterGroup({
-      chunkedLoading: true,
-      showCoverageOnHover: false,
-      maxClusterRadius: 50,
-      spiderfyOnMaxZoom: true,
+    const handleZoom = () => setZoom(map.getZoom());
+    map.on("zoomend", handleZoom);
+    return () => { map.off("zoomend", handleZoom); };
+  }, [map]);
+
+  const clustered = useMemo(() => {
+    if (zoom >= 7) return markers.map((marker) => ({ markers: [marker], pos: marker.pos }));
+    const bucketSize = zoom <= 4 ? 3.5 : zoom <= 5 ? 2.2 : 1.15;
+    const buckets = new Map<string, MarkerData[]>();
+    markers.forEach((marker) => {
+      const key = `${Math.round(marker.pos[0] / bucketSize)}:${Math.round(marker.pos[1] / bucketSize)}`;
+      buckets.set(key, [...(buckets.get(key) || []), marker]);
     });
-    markers.forEach((m) => {
-      const marker = L.marker(m.pos, {
-        icon: createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match),
-      });
-      const distLine = m.distance !== null
-        ? `<div><span style="color:#64748b">Distance:</span> <b>~${m.distance.toLocaleString()} mi</b></div>`
-        : "";
-      const catColor = m.college.fitCategory === "Safety"
-        ? "background:#d1fae5;color:#047857"
-        : m.college.fitCategory === "Reach"
-        ? "background:#ffedd5;color:#c2410c"
-        : "background:rgba(17,114,196,0.1);color:#1172c4";
-      marker.bindPopup(
-        `<div style="padding:4px;min-width:200px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:2px">${m.college.name}</div>
-          <div style="font-size:11px;color:#64748b;margin-bottom:6px">📍 ${m.college.location}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;margin-bottom:6px">
-            <div><span style="color:#64748b">Fit:</span> <b>${m.college.fitScore}/100</b></div>
-            ${distLine}
-          </div>
-          <span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;${catColor}">${m.college.fitCategory}</span>
-          <div style="font-size:10px;color:#64748b;margin-top:6px">↓ Details shown below the map</div>
-        </div>`
-      );
-      marker.on("click", () => onSelect(m.college, m.pos));
-      group.addLayer(marker);
-    });
-    map.addLayer(group);
-    return () => { map.removeLayer(group); };
-  }, [markers, map, onSelect]);
-  return null;
+    return Array.from(buckets.values()).map((group) => ({
+      markers: group,
+      pos: [
+        group.reduce((sum, marker) => sum + marker.pos[0], 0) / group.length,
+        group.reduce((sum, marker) => sum + marker.pos[1], 0) / group.length,
+      ] as [number, number],
+    }));
+  }, [markers, zoom]);
+
+  return (
+    <>
+      {clustered.map((group) => {
+        if (group.markers.length === 1) {
+          const marker = group.markers[0];
+          return (
+            <Marker
+              key={marker.college.name}
+              position={marker.pos}
+              icon={createColorIcon(FIT_COLORS[marker.college.fitCategory] || FIT_COLORS.Match)}
+              eventHandlers={{ click: () => onSelect(marker.college, marker.pos) }}
+            >
+              <Popup>
+                <div className="p-1 min-w-[200px]">
+                  <div className="font-bold text-sm mb-0.5">{marker.college.name}</div>
+                  <div className="text-xs text-muted-foreground mb-2">📍 {marker.college.location}</div>
+                  <div className="grid grid-cols-2 gap-1 text-xs mb-2">
+                    <div><span className="text-muted-foreground">Fit:</span> <b>{marker.college.fitScore}/100</b></div>
+                    {marker.distance !== null && <div><span className="text-muted-foreground">Distance:</span> <b>~{marker.distance.toLocaleString()} mi</b></div>}
+                  </div>
+                  <Badge variant="secondary" className="text-[10px]">{marker.college.fitCategory}</Badge>
+                  <div className="text-[10px] text-muted-foreground mt-2">↓ Details shown below the map</div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        }
+
+        return (
+          <Marker
+            key={group.markers.map((marker) => marker.college.name).join("|")}
+            position={group.pos}
+            icon={createClusterIcon(group.markers.length)}
+            eventHandlers={{ click: () => map.flyTo(group.pos, Math.min(zoom + 2, 8), { duration: 0.45 }) }}
+          >
+            <Popup>
+              <div className="p-1 min-w-[210px]">
+                <div className="font-bold text-sm mb-2">{group.markers.length} colleges nearby</div>
+                <div className="space-y-1">
+                  {group.markers.slice(0, 5).map((marker) => (
+                    <button
+                      key={marker.college.name}
+                      type="button"
+                      className="block w-full text-left text-xs hover:text-primary"
+                      onClick={() => onSelect(marker.college, marker.pos)}
+                    >
+                      {marker.college.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
+    </>
+  );
 }
 
 function CollegeMapComponent({
