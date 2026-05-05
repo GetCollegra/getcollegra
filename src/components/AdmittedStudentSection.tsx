@@ -222,7 +222,7 @@ function ProfileItem({ icon: Icon, label, value, hint }: { icon: any; label: str
   );
 }
 
-function SampleCard({ s }: { s: { outcome: string; gpa: number; sat: number; act: number; major: string; activities: string; note: string } }) {
+function SampleCard({ s }: { s: import("@/lib/admittedStudentData").SampleProfile }) {
   const tone =
     s.outcome === "Admitted" ? "border-emerald-500/30 bg-emerald-500/5" :
     s.outcome === "Waitlisted" ? "border-amber-500/30 bg-amber-500/5" :
