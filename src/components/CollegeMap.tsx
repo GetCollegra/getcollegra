@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState, useRef, memo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-// @ts-ignore - package has no TS types
-import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
+import "leaflet.markercluster";
 // leaflet CSS loaded via index.html CDN link
 import { MapPin, Filter, Navigation } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -171,6 +170,52 @@ type CollegeMapProps = {
   onCollegeSelect?: (college: College) => void;
   selectedCollege?: string | null;
 };
+
+function ClusteredMarkers({ markers, onSelect }: {
+  markers: MarkerData[];
+  onSelect: (college: College, pos: [number, number]) => void;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    // @ts-ignore - markerClusterGroup added by leaflet.markercluster
+    const group = (L as any).markerClusterGroup({
+      chunkedLoading: true,
+      showCoverageOnHover: false,
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+    });
+    markers.forEach((m) => {
+      const marker = L.marker(m.pos, {
+        icon: createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match),
+      });
+      const distLine = m.distance !== null
+        ? `<div><span style="color:#64748b">Distance:</span> <b>~${m.distance.toLocaleString()} mi</b></div>`
+        : "";
+      const catColor = m.college.fitCategory === "Safety"
+        ? "background:#d1fae5;color:#047857"
+        : m.college.fitCategory === "Reach"
+        ? "background:#ffedd5;color:#c2410c"
+        : "background:rgba(17,114,196,0.1);color:#1172c4";
+      marker.bindPopup(
+        `<div style="padding:4px;min-width:200px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px">${m.college.name}</div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:6px">📍 ${m.college.location}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;margin-bottom:6px">
+            <div><span style="color:#64748b">Fit:</span> <b>${m.college.fitScore}/100</b></div>
+            ${distLine}
+          </div>
+          <span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;${catColor}">${m.college.fitCategory}</span>
+          <div style="font-size:10px;color:#64748b;margin-top:6px">↓ Details shown below the map</div>
+        </div>`
+      );
+      marker.on("click", () => onSelect(m.college, m.pos));
+      group.addLayer(marker);
+    });
+    map.addLayer(group);
+    return () => { map.removeLayer(group); };
+  }, [markers, map, onSelect]);
+  return null;
+}
 
 function CollegeMapComponent({
   matchedColleges,
@@ -347,60 +392,13 @@ function CollegeMapComponent({
           )}
 
           {/* College markers (clustered) */}
-          <MarkerClusterGroup
-            chunkedLoading
-            showCoverageOnHover={false}
-            maxClusterRadius={50}
-            spiderfyOnMaxZoom
-          >
-            {filteredMarkers.map((m, i) => (
-              <Marker
-                key={`${m.college.name}-${i}`}
-                position={m.pos}
-                icon={createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match)}
-                eventHandlers={{
-                  click: () => {
-                    setPanTarget(m.pos);
-                    if (onCollegeSelect) onCollegeSelect(m.college);
-                  },
-                }}
-              >
-                <Popup minWidth={220} maxWidth={300} autoPan={true} autoPanPadding={L.point(50, 50)} className="college-popup">
-                  <div className="p-1">
-                    <p className="font-bold text-sm mb-0.5">{m.college.name}</p>
-                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                      <span>📍</span> {m.college.location}
-                    </p>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-2 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">Fit:</span>
-                        <p className="font-semibold text-foreground">{m.college.fitScore}/100</p>
-                      </div>
-                      {m.distance !== null && (
-                        <div>
-                          <span className="text-muted-foreground">Distance:</span>
-                          <p className="font-semibold text-foreground">~{m.distance.toLocaleString()} mi</p>
-                        </div>
-                      )}
-                    </div>
-                    <Badge
-                      variant="secondary"
-                      className={`text-[10px] ${
-                        m.college.fitCategory === "Safety"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : m.college.fitCategory === "Reach"
-                          ? "bg-orange-100 text-orange-700"
-                          : "bg-primary/10 text-primary"
-                      }`}
-                    >
-                      {m.college.fitCategory}
-                    </Badge>
-                    <p className="text-[10px] text-muted-foreground mt-2">↓ Details shown below the map</p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MarkerClusterGroup>
+          <ClusteredMarkers
+            markers={filteredMarkers}
+            onSelect={(c, pos) => {
+              setPanTarget(pos);
+              if (onCollegeSelect) onCollegeSelect(c);
+            }}
+          />
         </MapContainer>
       </div>
     </div>
