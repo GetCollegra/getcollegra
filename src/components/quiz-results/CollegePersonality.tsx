@@ -208,7 +208,10 @@ export function derivePersonality(
   // ── Score each archetype ──
   const scores: Record<string, number> = {
     trailblazer: 0, scholar: 0, explorer: 0, strategist: 0,
-    homegrown: 0, adventurer: 0, creative: 0, connector: 0, dreamer: 1,
+    homegrown: 0, adventurer: 0, creative: 0, connector: 0,
+    innovator: 0, healer: 0, entrepreneur: 0, athlete: 0,
+    globalist: 0, changemaker: 0, performer: 0, outdoorist: 0, techie: 0,
+    dreamer: 1,
   };
 
   // Trailblazer: competitive schools + high GPA + reach
