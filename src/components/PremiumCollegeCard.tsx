@@ -354,6 +354,16 @@ export default function PremiumCollegeCard({
             </div>
           )}
 
+          {/* Admitted student range preview */}
+          {!simpleView && (
+            <div className="text-[11px] text-muted-foreground border-t border-border/50 pt-2.5">
+              <span className="font-semibold text-cat-applications uppercase tracking-wider text-[10px]">Admitted Range</span>
+              <div className="text-foreground tabular-nums mt-0.5">
+                GPA {admitted.gpaLow.toFixed(1)}–{admitted.gpaHigh.toFixed(1)} · SAT {admitted.sat25}–{admitted.sat75}
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="mt-auto pt-2 grid grid-cols-2 gap-2">
             <Button
