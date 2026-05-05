@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { getCollegeSports, sportEmoji } from "@/lib/collegeSports";
 import { getClassroomExperience, getWalkability } from "@/lib/collegeExperience";
+import { getAdmittedRanges } from "@/lib/admittedStudentData";
 import type { College } from "@/types/college";
 import { cn } from "@/lib/utils";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
@@ -117,6 +118,7 @@ export default function PremiumCollegeCard({
   const sports = getCollegeSports(college.name, college.studentBody, college.setting);
   const classroom = getClassroomExperience(college.studentFacultyRatio, college.studentBody);
   const walk = getWalkability(college.setting, college.studentBody);
+  const admitted = getAdmittedRanges({ acceptanceRate: college.acceptanceRate });
   const sportIcons = (sports.knownFor && sports.knownFor.length > 0
     ? sports.knownFor
     : sports.popularSports
@@ -349,6 +351,16 @@ export default function PremiumCollegeCard({
                 <Footprints className="h-3.5 w-3.5 text-emerald-600" />
                 Walkability:&nbsp;<span className="font-semibold text-foreground">{walk.score}/100</span>
               </span>
+            </div>
+          )}
+
+          {/* Admitted student range preview */}
+          {!simpleView && (
+            <div className="text-[11px] text-muted-foreground border-t border-border/50 pt-2.5">
+              <span className="font-semibold text-cat-applications uppercase tracking-wider text-[10px]">Admitted Range</span>
+              <div className="text-foreground tabular-nums mt-0.5">
+                GPA {admitted.gpaLow.toFixed(1)}–{admitted.gpaHigh.toFixed(1)} · SAT {admitted.sat25}–{admitted.sat75}
+              </div>
             </div>
           )}
 

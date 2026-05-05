@@ -11,6 +11,7 @@ import StudentVibeReviews from "@/components/StudentVibeReviews";
 import SportsSection from "@/components/SportsSection";
 import ClassroomExperienceSection from "@/components/ClassroomExperienceSection";
 import WalkabilitySection from "@/components/WalkabilitySection";
+import AdmittedStudentSection from "@/components/AdmittedStudentSection";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -383,6 +384,9 @@ const CollegeDetailPage = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Admitted Student Data */}
+              <AdmittedStudentSection college={college} />
 
               {/* Classroom Experience */}
               <ClassroomExperienceSection college={college} />
