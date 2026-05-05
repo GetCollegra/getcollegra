@@ -154,9 +154,11 @@ export default function AdmittedStudentSection({ college }: Props) {
           <TabsContent value="samples" className="mt-4 space-y-2.5">
             {!isSubscribed && <PremiumLock onClick={() => navigate("/profile?upgrade=1")} />}
             <div className={isSubscribed ? "space-y-2.5" : "blur-sm pointer-events-none select-none space-y-2.5"}>
-              {samples.map((s, i) => (
-                <SampleCard key={i} s={s} />
-              ))}
+              <SampleFilters
+                samples={samples}
+                topPrograms={college.topPrograms || []}
+                ranges={ranges}
+              />
               <p className="text-[11px] text-muted-foreground italic pt-1">
                 Sample profiles based on typical admitted student patterns — not real students.
               </p>
