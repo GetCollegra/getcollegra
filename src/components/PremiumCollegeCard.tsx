@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { getCollegeSports, sportEmoji } from "@/lib/collegeSports";
 import { getClassroomExperience, getWalkability } from "@/lib/collegeExperience";
+import { getAdmittedRanges } from "@/lib/admittedStudentData";
 import type { College } from "@/types/college";
 import { cn } from "@/lib/utils";
 import { useCollegePhoto } from "@/hooks/useCollegePhoto";
@@ -117,6 +118,7 @@ export default function PremiumCollegeCard({
   const sports = getCollegeSports(college.name, college.studentBody, college.setting);
   const classroom = getClassroomExperience(college.studentFacultyRatio, college.studentBody);
   const walk = getWalkability(college.setting, college.studentBody);
+  const admitted = getAdmittedRanges({ acceptanceRate: college.acceptanceRate });
   const sportIcons = (sports.knownFor && sports.knownFor.length > 0
     ? sports.knownFor
     : sports.popularSports
