@@ -238,7 +238,8 @@ function SampleCard({ s }: { s: { outcome: string; gpa: number; sat: number; act
         </span>
         <span className="text-[11px] tabular-nums text-muted-foreground">GPA {s.gpa} · SAT {s.sat} · ACT {s.act}</span>
       </div>
-      <p className="text-sm text-foreground"><span className="font-semibold">{s.major}</span> · {s.activities}</p>
+      <p className="text-sm text-foreground">
+        <span className="font-semibold">{s.major}</span> · <span className="text-muted-foreground">{s.residency}</span> · {s.activities}</p>
       <p className="text-[11px] text-muted-foreground italic mt-1">{s.note}</p>
     </div>
   );
