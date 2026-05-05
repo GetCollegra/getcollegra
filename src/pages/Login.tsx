@@ -91,6 +91,10 @@ const Login = () => {
               </div>
             </div>
 
+            <div className="text-right">
+              <Link to="/forgot-password" className="text-sm text-primary hover:underline">Forgot password?</Link>
+            </div>
+
             <Button type="submit" className="w-full" size="lg" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

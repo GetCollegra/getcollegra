@@ -171,6 +171,10 @@ const Signup = () => {
               Already have an account?{" "}
               <Link to="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
             </p>
+            <p className="text-center text-sm text-muted-foreground">
+              Forgot your password?{" "}
+              <Link to="/forgot-password" className="text-primary font-semibold hover:underline">Reset it</Link>
+            </p>
           </form>
         </div>
       </div>
