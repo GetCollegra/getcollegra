@@ -266,6 +266,58 @@ export function derivePersonality(
   if (hasSchoolSpirit) scores.connector += 2;
   if (isLargeCampus) scores.connector += 1;
 
+  // STEM Innovator: STEM study + research + competitive
+  if (isSTEM) scores.innovator += 5;
+  if (hasResearch) scores.innovator += 2;
+  if (isAcademicFocused) scores.innovator += 1;
+  if (isCompetitive) scores.innovator += 1;
+
+  // Future Healer: pre-med / health
+  if (isPreMed) scores.healer += 6;
+  if (hasResearch) scores.healer += 1;
+  if (isAcademicFocused) scores.healer += 1;
+  if (hasCommunityService) scores.healer += 1;
+
+  // Entrepreneur: business + internships + big city
+  if (isBusiness) scores.entrepreneur += 4;
+  if (hasInternships) scores.entrepreneur += 3;
+  if (wantsBigCity) scores.entrepreneur += 1;
+  if (!isCostConscious && hasClubs) scores.entrepreneur += 1;
+
+  // Student Athlete: athletics + sports vibe + spirit (distinct from connector via D1/competition signal)
+  if (hasAthletics) scores.athlete += 4;
+  if (isSportsSpirit) scores.athlete += 3;
+  if (hasSchoolSpirit) scores.athlete += 2;
+  if (isLargeCampus) scores.athlete += 1;
+
+  // Global Citizen: study abroad + humanities + far from home
+  if (hasStudyAbroad) scores.globalist += 5;
+  if (isHumanities) scores.globalist += 2;
+  if (wantsFarFromHome) scores.globalist += 2;
+  if (wantsBigCity) scores.globalist += 1;
+
+  // Changemaker: community service + tight-knit + humanities
+  if (hasCommunityService) scores.changemaker += 5;
+  if (isTightKnit) scores.changemaker += 2;
+  if (isHumanities) scores.changemaker += 1;
+
+  // Performer: fine arts + student media + creative + school spirit
+  if (hasFineArts) scores.performer += 4;
+  if (hasStudentMedia) scores.performer += 3;
+  if (isCreativeArtsy) scores.performer += 2;
+  if (isCreativeStudy) scores.performer += 2;
+
+  // Outdoor Adventurer: far from home + NOT big city + tight-knit small campus vibe
+  if (wantsFarFromHome && !wantsBigCity) scores.outdoorist += 4;
+  if (!wantsBigCity && (isSmallCampus || isTightKnit)) scores.outdoorist += 2;
+  if (hasAthletics && !isSportsSpirit) scores.outdoorist += 1;
+
+  // Quiet Builder: STEM/creative study + small campus + quiet vibe + cost conscious
+  if (isQuietAcademic) scores.techie += 3;
+  if (isSmallCampus) scores.techie += 2;
+  if (isSTEM || isCreativeStudy) scores.techie += 2;
+  if (isCostConscious) scores.techie += 1;
+
   // Pick highest
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const winnerId = sorted[0][1] > 1 ? sorted[0][0] : "dreamer";
