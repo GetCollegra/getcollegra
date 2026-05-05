@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, memo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+// @ts-ignore - package has no TS types
+import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 // leaflet CSS loaded via index.html CDN link
 import { MapPin, Filter, Navigation } from "lucide-react";
@@ -170,7 +172,7 @@ type CollegeMapProps = {
   selectedCollege?: string | null;
 };
 
-export default function CollegeMap({
+function CollegeMapComponent({
   matchedColleges,
   savedColleges,
   homeLocation,
@@ -213,8 +215,9 @@ export default function CollegeMap({
     return result;
   }, [matchedColleges, savedColleges, homePos]);
 
+  const MAX_PINS = 25;
   const filteredMarkers = useMemo(() => {
-    return markers.filter(m => {
+    const filtered = markers.filter(m => {
       if (!filterCategories.has(m.college.fitCategory)) return false;
       if (distanceFilter !== "all" && m.distance !== null) {
         const maxMiles = parseInt(distanceFilter);
@@ -222,6 +225,7 @@ export default function CollegeMap({
       }
       return true;
     });
+    return filtered.slice(0, MAX_PINS);
   }, [markers, filterCategories, distanceFilter]);
 
   const toggleCategory = (cat: string) => {
@@ -342,10 +346,14 @@ export default function CollegeMap({
             </Marker>
           )}
 
-          {/* College markers */}
-          {filteredMarkers.map((m, i) => {
-            const isSelected = selectedCollege === m.college.name;
-            return (
+          {/* College markers (clustered) */}
+          <MarkerClusterGroup
+            chunkedLoading
+            showCoverageOnHover={false}
+            maxClusterRadius={50}
+            spiderfyOnMaxZoom
+          >
+            {filteredMarkers.map((m, i) => (
               <Marker
                 key={`${m.college.name}-${i}`}
                 position={m.pos}
@@ -391,10 +399,13 @@ export default function CollegeMap({
                   </div>
                 </Popup>
               </Marker>
-            );
-          })}
+            ))}
+          </MarkerClusterGroup>
         </MapContainer>
       </div>
     </div>
   );
 }
+
+const CollegeMap = memo(CollegeMapComponent);
+export default CollegeMap;

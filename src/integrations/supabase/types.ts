@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      campus_area_cache: {
+        Row: {
+          college_name: string
+          created_at: string
+          id: string
+          nearby: Json
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          college_name: string
+          created_at?: string
+          id?: string
+          nearby?: Json
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          college_name?: string
+          created_at?: string
+          id?: string
+          nearby?: Json
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cohort_college_signals: {
         Row: {
           accepted_count: number
