@@ -171,7 +171,52 @@ type CollegeMapProps = {
   selectedCollege?: string | null;
 };
 
-function CollegeMapComponent({
+function ClusteredMarkers({ markers, onSelect }: {
+  markers: MarkerData[];
+  onSelect: (college: College, pos: [number, number]) => void;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    // @ts-ignore - markerClusterGroup added by leaflet.markercluster
+    const group = (L as any).markerClusterGroup({
+      chunkedLoading: true,
+      showCoverageOnHover: false,
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+    });
+    markers.forEach((m) => {
+      const marker = L.marker(m.pos, {
+        icon: createColorIcon(FIT_COLORS[m.college.fitCategory] || FIT_COLORS.Match),
+      });
+      const distLine = m.distance !== null
+        ? `<div><span style="color:#64748b">Distance:</span> <b>~${m.distance.toLocaleString()} mi</b></div>`
+        : "";
+      const catColor = m.college.fitCategory === "Safety"
+        ? "background:#d1fae5;color:#047857"
+        : m.college.fitCategory === "Reach"
+        ? "background:#ffedd5;color:#c2410c"
+        : "background:rgba(17,114,196,0.1);color:#1172c4";
+      marker.bindPopup(
+        `<div style="padding:4px;min-width:200px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px">${m.college.name}</div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:6px">📍 ${m.college.location}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;margin-bottom:6px">
+            <div><span style="color:#64748b">Fit:</span> <b>${m.college.fitScore}/100</b></div>
+            ${distLine}
+          </div>
+          <span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;${catColor}">${m.college.fitCategory}</span>
+          <div style="font-size:10px;color:#64748b;margin-top:6px">↓ Details shown below the map</div>
+        </div>`
+      );
+      marker.on("click", () => onSelect(m.college, m.pos));
+      group.addLayer(marker);
+    });
+    map.addLayer(group);
+    return () => { map.removeLayer(group); };
+  }, [markers, map, onSelect]);
+  return null;
+}
+
   matchedColleges,
   savedColleges,
   homeLocation,
