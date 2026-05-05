@@ -406,3 +406,6 @@ function CollegeMapComponent({
     </div>
   );
 }
+
+const CollegeMap = memo(CollegeMapComponent);
+export default CollegeMap;
