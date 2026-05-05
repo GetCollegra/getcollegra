@@ -116,6 +116,8 @@ export function getSampleProfiles(r: AdmittedRanges, topMajor?: string): SampleP
   const major = topMajor && topMajor !== "—" && topMajor !== "Premium" ? topMajor : "Undecided";
   const satMid = Math.round((r.sat25 + r.sat75) / 2);
   const actMid = Math.round((r.act25 + r.act75) / 2);
+  const altMajors = ["Computer Science", "Business", "Biology", "Engineering", "Psychology", "English"];
+  const pickAlt = (i: number) => altMajors[i % altMajors.length];
   return [
     {
       outcome: "Admitted",
@@ -123,6 +125,7 @@ export function getSampleProfiles(r: AdmittedRanges, topMajor?: string): SampleP
       sat: r.sat75,
       act: r.act75,
       major,
+      residency: "In-State",
       activities: "Varsity sport, leadership role, community volunteering",
       note: "Strong rigor, top-tier essays, and consistent leadership.",
     },
@@ -132,8 +135,19 @@ export function getSampleProfiles(r: AdmittedRanges, topMajor?: string): SampleP
       sat: satMid,
       act: actMid,
       major,
+      residency: "Out-of-State",
       activities: "Club officer, part-time job, summer program",
       note: "Solid academics paired with a clear, focused story.",
+    },
+    {
+      outcome: "Admitted",
+      gpa: +Math.min(4.0, r.avgGpa + 0.05).toFixed(2),
+      sat: Math.round((satMid + r.sat75) / 2),
+      act: Math.round((actMid + r.act75) / 2),
+      major: pickAlt(0),
+      residency: "Out-of-State",
+      activities: "Research assistant, debate team captain",
+      note: "Demonstrated depth in a focused academic interest.",
     },
     {
       outcome: "Waitlisted",
@@ -141,8 +155,29 @@ export function getSampleProfiles(r: AdmittedRanges, topMajor?: string): SampleP
       sat: Math.max(900, r.sat25 - 40),
       act: Math.max(16, r.act25 - 1),
       major,
+      residency: "In-State",
       activities: "NHS, part-time job",
       note: "Right academic ballpark; essays/activities could be sharper.",
+    },
+    {
+      outcome: "Waitlisted",
+      gpa: +Math.max(2.7, r.gpaLow + 0.05).toFixed(2),
+      sat: Math.max(900, r.sat25 + 10),
+      act: Math.max(16, r.act25),
+      major: pickAlt(1),
+      residency: "Out-of-State",
+      activities: "Yearbook editor, tutoring",
+      note: "Competitive but limited standout activities.",
+    },
+    {
+      outcome: "Denied",
+      gpa: +Math.max(2.5, r.gpaLow - 0.2).toFixed(2),
+      sat: Math.max(880, r.sat25 - 90),
+      act: Math.max(15, r.act25 - 3),
+      major: pickAlt(2),
+      residency: "Out-of-State",
+      activities: "Limited extracurricular involvement",
+      note: "Below typical academic profile for this school.",
     },
   ];
 }
