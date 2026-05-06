@@ -321,6 +321,11 @@ export default function CollegeLifePanel({ college }: Props) {
 
   if (!data) return null;
 
+  const weatherSummary = computeWeatherSummary(data.weather);
+  const safetySummary = computeSafetySummary(data.naturalDisasters);
+  const costSummary = computeCostSummary(data.costOfLiving);
+  const areaSummary = computeAreaSummary(data.areaLifestyle);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
