@@ -41,6 +41,7 @@ import PremiumCollegeCard from "@/components/PremiumCollegeCard";
 import PremiumSavedRow from "@/components/PremiumSavedRow";
 import PremiumCardBanner from "@/components/PremiumCardBanner";
 import { createUniqueFallbackIndexes, getCollegeFallbackKey } from "@/lib/campusFallback";
+import LazyChunkBoundary from "@/components/LazyChunkBoundary";
 const CollegeMap = lazy(() => import("@/components/CollegeMap"));
 const CampusNeighborhood = lazy(() => import("@/components/CampusNeighborhood"));
 
@@ -1601,6 +1602,7 @@ const Dashboard = () => {
             <motion.div initial="hidden" animate="visible" variants={fadeIn} custom={1}>
               {isSubscribed ? (
                 <div className="space-y-0">
+                  <LazyChunkBoundary label="the college map">
                   <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
                     <CollegeMap
                       matchedColleges={colleges}
@@ -1613,6 +1615,7 @@ const Dashboard = () => {
                       selectedCollege={mapSelectedCollege?.name || null}
                     />
                   </Suspense>
+                  </LazyChunkBoundary>
                   <AnimatePresence>
                     {mapSelectedCollege && (() => {
                       const college = mapSelectedCollege;
@@ -1767,12 +1770,14 @@ const Dashboard = () => {
                           </Card>
 
                           {/* Neighborhood amenities */}
-                          <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
-                            <CampusNeighborhood
-                              college={college}
-                              onClose={() => setMapSelectedCollege(null)}
-                            />
-                          </Suspense>
+                          <LazyChunkBoundary label="the neighborhood panel" compact>
+                            <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                              <CampusNeighborhood
+                                college={college}
+                                onClose={() => setMapSelectedCollege(null)}
+                              />
+                            </Suspense>
+                          </LazyChunkBoundary>
                         </motion.div>
                       );
                     })()}
