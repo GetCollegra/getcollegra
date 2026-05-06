@@ -300,6 +300,15 @@ const CollegeDetailPage = () => {
                 })}
               </div>
 
+              {/* Visual summary: Snapshot radar + Why You Matched bars */}
+              <div className="grid lg:grid-cols-2 gap-4">
+                <CollegeFitSnapshotRadar college={college} />
+                <WhyYouMatchedBars college={college} />
+              </div>
+
+              {/* Cost & ROI bar chart */}
+              <CostRoiBarChart college={college} />
+
               {/* Why It Fits + Campus Vibe + Notable Feature */}
               <div className="grid md:grid-cols-3 gap-4">
                 <Card className="bg-card border-border/60 overflow-hidden relative">
