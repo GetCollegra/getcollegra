@@ -697,6 +697,32 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Area & Lifestyle — Enhanced */}
         <TabsContent value="area" className="mt-4">
           <div className="space-y-4">
+            {/* Location & Lifestyle Summary */}
+            <Card className="border-primary/10">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-violet-600" />
+                    <h4 className="text-sm font-bold text-foreground">Location & Lifestyle</h4>
+                    <Badge className="text-[10px] bg-violet-500/10 text-violet-700 border-violet-200">{areaSummary.campusType}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-bold text-foreground">{areaSummary.walkScore}</span>/100 walkable
+                  </div>
+                </div>
+                <Progress value={areaSummary.walkScore} className="h-2 mb-3" />
+                <div className="text-xs text-muted-foreground mb-3 flex items-start gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+                  <span><span className="font-semibold text-foreground">Downtown:</span> {areaSummary.downtown}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {areaSummary.tags.map((tag) => (
+                    <Badge key={tag} className="text-[10px] bg-primary/5 text-primary border-primary/20">{tag}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* General Vibe Hero */}
             <Card className="bg-gradient-to-br from-violet-500/10 via-card to-pink-500/10 border-primary/10 overflow-hidden">
               <CardContent className="p-5">
