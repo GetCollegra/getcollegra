@@ -19,6 +19,7 @@ import {
   type FitVerdict,
 } from "@/lib/admittedStudentData";
 import type { College } from "@/types/college";
+import AdmittedStudentRadar from "@/components/AdmittedStudentRadar";
 
 type Props = { college: College };
 
@@ -97,6 +98,14 @@ export default function AdmittedStudentSection({ college }: Props) {
           <Stat label="ACT (mid 50%)" value={`${ranges.act25}–${ranges.act75}`} />
           <Stat label="Acceptance Rate" value={ranges.acceptanceRatePct != null ? `${ranges.acceptanceRatePct}%` : (college.acceptanceRate || "—")} />
         </div>
+
+        {/* Visual radar summary */}
+        <AdmittedStudentRadar
+          ranges={ranges}
+          studentGpa={studentGpa}
+          studentSat={studentSat}
+          studentAct={studentAct}
+        />
 
         <Tabs defaultValue="fit" className="w-full">
           <TabsList className="grid grid-cols-3 w-full bg-muted/50 p-1 rounded-lg h-auto">

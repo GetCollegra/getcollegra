@@ -181,3 +181,64 @@ export function getSampleProfiles(r: AdmittedRanges, topMajor?: string): SampleP
     },
   ];
 }
+
+/** Map a qualitative label to a 0–100 score for the radar chart. */
+function levelScore(level: "Very High" | "High" | "Moderate"): number {
+  return level === "Very High" ? 92 : level === "High" ? 78 : 62;
+}
+
+function tierScore(tier: AdmittedRanges["selectivity"]): number {
+  switch (tier) {
+    case "Ultra-Selective": return 96;
+    case "Highly Selective": return 88;
+    case "Selective": return 76;
+    case "Moderately Selective": return 64;
+    case "Accessible": return 52;
+  }
+}
+
+export type RadarAxis =
+  | "GPA Strength" | "Test Scores" | "Course Rigor"
+  | "Extracurriculars" | "Leadership" | "Essay Strength" | "Competitiveness";
+
+/** 0–100 profile of the typical admitted student for radar visualization. */
+export function getAdmittedRadar(r: AdmittedRanges): Record<RadarAxis, number> {
+  const gpa = Math.round(Math.max(0, Math.min(100, ((r.avgGpa - 2.5) / (4.0 - 2.5)) * 100)));
+  const satMid = (r.sat25 + r.sat75) / 2;
+  const test = Math.round(Math.max(0, Math.min(100, ((satMid - 900) / (1600 - 900)) * 100)));
+  const tier = tierScore(r.selectivity);
+  return {
+    "GPA Strength": gpa,
+    "Test Scores": test,
+    "Course Rigor": levelScore(r.rigor),
+    "Extracurriculars": Math.round(tier * 0.9),
+    "Leadership": Math.round(tier * 0.85),
+    "Essay Strength": levelScore(r.essayImportance),
+    "Competitiveness": tier,
+  };
+}
+
+/**
+ * Build a radar profile for the user from quiz inputs. Only axes that can be
+ * derived directly from the student's data are filled; the others are left
+ * undefined so the overlay shows a partial honest comparison instead of fake
+ * scores.
+ */
+export function getStudentRadar(input: {
+  gpa?: number | null; sat?: number | null; act?: number | null;
+}): Partial<Record<RadarAxis, number>> {
+  const out: Partial<Record<RadarAxis, number>> = {};
+  if (input.gpa != null) {
+    out["GPA Strength"] = Math.round(Math.max(0, Math.min(100, ((input.gpa - 2.5) / (4.0 - 2.5)) * 100)));
+  }
+  // Convert ACT to SAT-equivalent (~simple concordance) when SAT missing.
+  let sat = input.sat ?? null;
+  if (sat == null && input.act != null) {
+    const map: Record<number, number> = { 36: 1590, 35: 1540, 34: 1500, 33: 1460, 32: 1430, 31: 1400, 30: 1370, 29: 1340, 28: 1310, 27: 1280, 26: 1240, 25: 1210, 24: 1180, 23: 1140, 22: 1110, 21: 1080, 20: 1040, 19: 1010, 18: 970, 17: 930, 16: 890, 15: 850 };
+    sat = map[Math.round(input.act)] ?? null;
+  }
+  if (sat != null) {
+    out["Test Scores"] = Math.round(Math.max(0, Math.min(100, ((sat - 900) / (1600 - 900)) * 100)));
+  }
+  return out;
+}
