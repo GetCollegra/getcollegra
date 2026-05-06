@@ -371,6 +371,27 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Weather & Climate */}
         <TabsContent value="weather" className="mt-4">
           <div className="space-y-4">
+            {/* Climate & Comfort Summary */}
+            <Card className="border-primary/10">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Sun className="h-4 w-4 text-amber-500" />
+                    <h4 className="text-sm font-bold text-foreground">Climate & Comfort</h4>
+                    <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{weatherSummary.climateType}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-bold text-foreground">{weatherSummary.comfort}</span>/100 comfort
+                  </div>
+                </div>
+                <Progress value={weatherSummary.comfort} className="h-2 mb-3" />
+                <div className="flex items-center gap-2 text-xs text-foreground/90 italic">
+                  <span className="text-base">💬</span>
+                  <span>"{weatherSummary.insight}"</span>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Climate Hero */}
             <Card className="bg-gradient-to-br from-sky-500/10 via-card to-amber-500/10 border-primary/10 overflow-hidden">
               <CardContent className="p-5">
