@@ -12,7 +12,155 @@ import {
   Users, Zap, Waves, Flame, Mountain, ChevronLeft, ChevronRight, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import type { College } from "@/types/college";
+
+// ---------- Insight helpers (computed client-side from AI data) ----------
+
+const parseDollar = (s?: string): number | null => {
+  if (!s) return null;
+  const m = s.replace(/[, ]/g, "").match(/\$?(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+};
+const parseRange = (s?: string): number | null => {
+  // "$350-450" -> midpoint 400
+  if (!s) return null;
+  const nums = (s.match(/\d+/g) || []).map((n) => parseInt(n, 10));
+  if (!nums.length) return null;
+  if (nums.length === 1) return nums[0];
+  return Math.round((nums[0] + nums[nums.length - 1]) / 2);
+};
+
+function computeWeatherSummary(weather: any) {
+  const seasons = weather?.seasons || {};
+  const highs = Object.values(seasons).map((s: any) => s.avgHigh as number).filter(Number.isFinite);
+  const lows = Object.values(seasons).map((s: any) => s.avgLow as number).filter(Number.isFinite);
+  const avgHigh = highs.length ? highs.reduce((a, b) => a + b, 0) / highs.length : 70;
+  const avgLow = lows.length ? lows.reduce((a, b) => a + b, 0) / lows.length : 50;
+  const mean = (avgHigh + avgLow) / 2;
+
+  // Comfort: highest near 65°F, falls off toward extremes
+  const comfort = Math.max(20, Math.min(98, Math.round(100 - Math.abs(mean - 65) * 2.2)));
+  let climateType = "Mild";
+  if (mean >= 72) climateType = "Warm";
+  else if (mean <= 52) climateType = "Cold";
+
+  const winter = seasons.winter as any;
+  const summer = seasons.summer as any;
+  const fall = seasons.fall as any;
+
+  const sunny = weather?.sunnyDaysPerYear ?? 200;
+  const parts: string[] = [];
+  if (winter && winter.avgLow <= 30) parts.push("Cold winters");
+  else if (winter && winter.avgHigh >= 65) parts.push("Mild winters");
+  if (summer && summer.avgHigh >= 88) parts.push("hot summers");
+  if (fall && fall.avgHigh >= 60 && fall.avgHigh <= 78) parts.push("great fall weather");
+  if (sunny >= 230) parts.push("plenty of sunshine");
+  const insight = parts.length
+    ? parts.join(" with ").replace(/^./, (c) => c.toUpperCase())
+    : "Balanced weather year-round";
+
+  return { comfort, climateType, insight, avgHigh: Math.round(avgHigh), avgLow: Math.round(avgLow) };
+}
+
+function computeSafetySummary(disasters: Record<string, { risk: string; description: string }>) {
+  const risks = Object.values(disasters || {});
+  const score =
+    risks.length === 0
+      ? 80
+      : Math.round(
+          100 -
+            (risks.reduce((acc, r) => acc + (r.risk === "Low" ? 8 : r.risk === "Moderate" ? 22 : 38), 0) /
+              risks.length) *
+              1.6,
+        );
+  const safetyScore = Math.max(45, Math.min(96, score));
+  // Heuristic: campus typically a bit safer than surrounding
+  const campus = Math.min(98, safetyScore + 6);
+  const surrounding = Math.max(35, safetyScore - 6);
+  const day = Math.min(98, safetyScore + 8);
+  const night = Math.max(35, safetyScore - 12);
+
+  let insight = "Campus generally feels safe for students";
+  if (night < 60) insight = "Campus feels safe, but be cautious at night in some areas";
+  else if (surrounding < 60) insight = "Campus feels safe; surrounding area takes some getting used to";
+  else if (safetyScore >= 85) insight = "Both campus and surrounding area feel notably safe";
+
+  return { safetyScore, campus, surrounding, day, night, insight };
+}
+
+function computeCostSummary(cost: any) {
+  const housing = parseDollar(cost?.avgRent1Bedroom) ?? 1000;
+  const food = parseRange(cost?.monthlyFood) ?? 400;
+  const transport = parseRange(cost?.transportation) ?? 100;
+  const entertainment = Math.round((food + transport) * 0.35); // estimate
+  const monthly = housing + food + transport + entertainment;
+
+  const rating = (cost?.overallRating || "Moderate").toString();
+  let band: "Affordable" | "Average" | "Expensive" = "Average";
+  if (/low|cheap|afford/i.test(rating) || monthly < 1500) band = "Affordable";
+  else if (/high|expens/i.test(rating) || monthly > 2400) band = "Expensive";
+
+  // Bar percent (relative to a $3000 ceiling)
+  const pct = (n: number) => Math.min(100, Math.round((n / 3000) * 100));
+
+  let insight = "Most students keep costs in check with on-campus housing";
+  if (band === "Expensive") insight = "Most students share apartments to reduce costs";
+  else if (band === "Affordable") insight = "Budget-friendly area — easy to live well as a student";
+
+  return {
+    housing,
+    food,
+    transport,
+    entertainment,
+    monthly,
+    band,
+    insight,
+    bars: { housing: pct(housing), food: pct(food), transport: pct(transport), entertainment: pct(entertainment) },
+  };
+}
+
+function computeAreaSummary(area: any) {
+  const setting = (area?.setting || "Suburban").toString();
+  let campusType = "Suburban";
+  if (/urban|city|metropol/i.test(setting)) campusType = "Urban";
+  else if (/town|college/i.test(setting)) campusType = "College Town";
+  else if (/rural/i.test(setting)) campusType = "Rural";
+
+  // Walkability score from text + needsCar
+  const walkText = (area?.walkability || "").toString().toLowerCase();
+  let walkScore = 60;
+  if (walkText.includes("very walkable")) walkScore = 88;
+  else if (walkText.includes("walkable")) walkScore = 72;
+  else if (walkText.includes("limited") || walkText.includes("not walk")) walkScore = 35;
+  if (area?.needsCar === false) walkScore = Math.max(walkScore, 70);
+  if (area?.needsCar === true) walkScore = Math.min(walkScore, 55);
+
+  // Distance to downtown — pull first nearby attraction with a time
+  const attractions: string[] = area?.nearbyAttractions || [];
+  const downtown =
+    attractions.find((a) => /downtown|center|district/i.test(a)) ||
+    attractions[0] ||
+    "Nearby city center accessible";
+
+  const tags: string[] = [];
+  if (campusType === "College Town") tags.push("College town feel");
+  if (campusType === "Urban") tags.push("City access");
+  if (walkScore >= 75) tags.push("Walkable");
+  if (area?.needsCar === false) tags.push("No car needed");
+  if (/night|bar|live music/i.test((area?.nightlife || "").toString())) tags.push("Social scene");
+  if (campusType === "Rural" || /quiet|peaceful/i.test((area?.generalVibe || "").toString())) tags.push("Quiet area");
+  if (tags.length === 0) tags.push("Balanced lifestyle");
+
+  return { campusType, walkScore, downtown, tags };
+}
+
+const essentialIcons: Record<string, typeof Coffee> = {
+  Food: Utensils,
+  Coffee: Coffee,
+  Grocery: ShoppingBag,
+  Hospital: Heart,
+};
 
 type SeasonData = {
   avgHigh: number;
@@ -173,6 +321,11 @@ export default function CollegeLifePanel({ college }: Props) {
 
   if (!data) return null;
 
+  const weatherSummary = computeWeatherSummary(data.weather);
+  const safetySummary = computeSafetySummary(data.naturalDisasters);
+  const costSummary = computeCostSummary(data.costOfLiving);
+  const areaSummary = computeAreaSummary(data.areaLifestyle);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -218,6 +371,27 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Weather & Climate */}
         <TabsContent value="weather" className="mt-4">
           <div className="space-y-4">
+            {/* Climate & Comfort Summary */}
+            <Card className="border-primary/10">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Sun className="h-4 w-4 text-amber-500" />
+                    <h4 className="text-sm font-bold text-foreground">Climate & Comfort</h4>
+                    <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{weatherSummary.climateType}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-bold text-foreground">{weatherSummary.comfort}</span>/100 comfort
+                  </div>
+                </div>
+                <Progress value={weatherSummary.comfort} className="h-2 mb-3" />
+                <div className="flex items-center gap-2 text-xs text-foreground/90 italic">
+                  <span className="text-base">💬</span>
+                  <span>"{weatherSummary.insight}"</span>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Climate Hero */}
             <Card className="bg-gradient-to-br from-sky-500/10 via-card to-amber-500/10 border-primary/10 overflow-hidden">
               <CardContent className="p-5">
@@ -296,7 +470,42 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Natural Disaster Risks — Enhanced */}
         <TabsContent value="risks" className="mt-4">
           <div className="space-y-4">
-            {/* Safety Summary */}
+            {/* Safety & Surroundings Summary */}
+            <Card className="border-primary/10">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-emerald-600" />
+                    <h4 className="text-sm font-bold text-foreground">Safety & Surroundings</h4>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-bold text-foreground">{safetySummary.safetyScore}</span>/100 overall
+                  </div>
+                </div>
+                <Progress value={safetySummary.safetyScore} className="h-2 mb-4" />
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Campus", value: safetySummary.campus },
+                    { label: "Surrounding area", value: safetySummary.surrounding },
+                    { label: "Day", value: safetySummary.day },
+                    { label: "Night", value: safetySummary.night },
+                  ].map((row) => (
+                    <div key={row.label}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">{row.label}</span>
+                        <span className="font-semibold text-foreground">{row.value}</span>
+                      </div>
+                      <Progress value={row.value} className="h-1.5" />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-foreground/90 italic">
+                  <span className="text-base">💬</span>
+                  <span>"{safetySummary.insight}"</span>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="bg-gradient-to-br from-emerald-500/10 via-card to-amber-500/10 border-primary/10">
               <CardContent className="p-5">
                 <div className="flex items-start gap-3 mb-4">
@@ -364,6 +573,53 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Cost of Living — Enhanced */}
         <TabsContent value="cost" className="mt-4">
           <div className="space-y-4">
+            {/* Monthly Cost Breakdown Summary */}
+            <Card className="border-primary/10">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                    <h4 className="text-sm font-bold text-foreground">Monthly Estimate</h4>
+                    <Badge className={`text-[10px] ${
+                      costSummary.band === "Affordable" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                      costSummary.band === "Expensive" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                      "bg-amber-50 text-amber-700 border-amber-200"
+                    }`}>{costSummary.band}</Badge>
+                  </div>
+                  <div className="text-sm font-extrabold text-foreground">
+                    ~${costSummary.monthly.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">/mo</span>
+                  </div>
+                </div>
+                <div className="space-y-2.5">
+                  {[
+                    { label: "Housing", icon: Home, value: costSummary.housing, pct: costSummary.bars.housing, color: "bg-blue-500" },
+                    { label: "Food", icon: Utensils, value: costSummary.food, pct: costSummary.bars.food, color: "bg-orange-500" },
+                    { label: "Transportation", icon: Car, value: costSummary.transport, pct: costSummary.bars.transport, color: "bg-emerald-500" },
+                    { label: "Entertainment", icon: Coffee, value: costSummary.entertainment, pct: costSummary.bars.entertainment, color: "bg-violet-500" },
+                  ].map((row) => {
+                    const Icon = row.icon;
+                    return (
+                      <div key={row.label}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Icon className="h-3.5 w-3.5" /> {row.label}
+                          </span>
+                          <span className="font-semibold text-foreground">${row.value.toLocaleString()}</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className={`h-full ${row.color} rounded-full transition-all`} style={{ width: `${row.pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-foreground/90 italic">
+                  <span className="text-base">💬</span>
+                  <span>"{costSummary.insight}"</span>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Cost Hero */}
             <Card className="bg-gradient-to-br from-green-500/10 via-card to-emerald-500/5 border-primary/10 overflow-hidden">
               <CardContent className="p-5">
@@ -441,6 +697,32 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Area & Lifestyle — Enhanced */}
         <TabsContent value="area" className="mt-4">
           <div className="space-y-4">
+            {/* Location & Lifestyle Summary */}
+            <Card className="border-primary/10">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-violet-600" />
+                    <h4 className="text-sm font-bold text-foreground">Location & Lifestyle</h4>
+                    <Badge className="text-[10px] bg-violet-500/10 text-violet-700 border-violet-200">{areaSummary.campusType}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-bold text-foreground">{areaSummary.walkScore}</span>/100 walkable
+                  </div>
+                </div>
+                <Progress value={areaSummary.walkScore} className="h-2 mb-3" />
+                <div className="text-xs text-muted-foreground mb-3 flex items-start gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+                  <span><span className="font-semibold text-foreground">Downtown:</span> {areaSummary.downtown}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {areaSummary.tags.map((tag) => (
+                    <Badge key={tag} className="text-[10px] bg-primary/5 text-primary border-primary/20">{tag}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* General Vibe Hero */}
             <Card className="bg-gradient-to-br from-violet-500/10 via-card to-pink-500/10 border-primary/10 overflow-hidden">
               <CardContent className="p-5">
