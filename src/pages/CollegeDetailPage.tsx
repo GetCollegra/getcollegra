@@ -309,15 +309,8 @@ const CollegeDetailPage = () => {
               {/* Cost & ROI bar chart */}
               <CostRoiBarChart college={college} />
 
-              {/* Why It Fits + Campus Vibe + Notable Feature */}
-              <div className="grid md:grid-cols-3 gap-4">
-                <Card className="bg-card border-border/60 overflow-hidden relative">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-                  <CardContent className="p-5 pl-6">
-                    <p className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Why It's a Good Fit</p>
-                    <p className="text-sm text-foreground leading-relaxed">{college.whyFit || "—"}</p>
-                  </CardContent>
-                </Card>
+              {/* Campus Vibe + Notable Feature (Why It Fits is covered by the bars above) */}
+              <div className="grid md:grid-cols-2 gap-4">
                 <Card className="bg-card border-border/60 overflow-hidden relative">
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary/60" />
                   <CardContent className="p-5 pl-6">
