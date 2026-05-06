@@ -470,7 +470,42 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Natural Disaster Risks — Enhanced */}
         <TabsContent value="risks" className="mt-4">
           <div className="space-y-4">
-            {/* Safety Summary */}
+            {/* Safety & Surroundings Summary */}
+            <Card className="border-primary/10">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-emerald-600" />
+                    <h4 className="text-sm font-bold text-foreground">Safety & Surroundings</h4>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-bold text-foreground">{safetySummary.safetyScore}</span>/100 overall
+                  </div>
+                </div>
+                <Progress value={safetySummary.safetyScore} className="h-2 mb-4" />
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Campus", value: safetySummary.campus },
+                    { label: "Surrounding area", value: safetySummary.surrounding },
+                    { label: "Day", value: safetySummary.day },
+                    { label: "Night", value: safetySummary.night },
+                  ].map((row) => (
+                    <div key={row.label}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">{row.label}</span>
+                        <span className="font-semibold text-foreground">{row.value}</span>
+                      </div>
+                      <Progress value={row.value} className="h-1.5" />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-foreground/90 italic">
+                  <span className="text-base">💬</span>
+                  <span>"{safetySummary.insight}"</span>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="bg-gradient-to-br from-emerald-500/10 via-card to-amber-500/10 border-primary/10">
               <CardContent className="p-5">
                 <div className="flex items-start gap-3 mb-4">
