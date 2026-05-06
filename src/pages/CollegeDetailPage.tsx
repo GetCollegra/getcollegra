@@ -12,6 +12,9 @@ import SportsSection from "@/components/SportsSection";
 import ClassroomExperienceSection from "@/components/ClassroomExperienceSection";
 import WalkabilitySection from "@/components/WalkabilitySection";
 import AdmittedStudentSection from "@/components/AdmittedStudentSection";
+import CollegeFitSnapshotRadar from "@/components/charts/CollegeFitSnapshotRadar";
+import CostRoiBarChart from "@/components/charts/CostRoiBarChart";
+import WhyYouMatchedBars from "@/components/charts/WhyYouMatchedBars";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -297,15 +300,17 @@ const CollegeDetailPage = () => {
                 })}
               </div>
 
-              {/* Why It Fits + Campus Vibe + Notable Feature */}
-              <div className="grid md:grid-cols-3 gap-4">
-                <Card className="bg-card border-border/60 overflow-hidden relative">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-                  <CardContent className="p-5 pl-6">
-                    <p className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Why It's a Good Fit</p>
-                    <p className="text-sm text-foreground leading-relaxed">{college.whyFit || "—"}</p>
-                  </CardContent>
-                </Card>
+              {/* Visual summary: Snapshot radar + Why You Matched bars */}
+              <div className="grid lg:grid-cols-2 gap-4">
+                <CollegeFitSnapshotRadar college={college} />
+                <WhyYouMatchedBars college={college} />
+              </div>
+
+              {/* Cost & ROI bar chart */}
+              <CostRoiBarChart college={college} />
+
+              {/* Campus Vibe + Notable Feature (Why It Fits is covered by the bars above) */}
+              <div className="grid md:grid-cols-2 gap-4">
                 <Card className="bg-card border-border/60 overflow-hidden relative">
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary/60" />
                   <CardContent className="p-5 pl-6">
