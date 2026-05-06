@@ -573,6 +573,53 @@ export default function CollegeLifePanel({ college }: Props) {
         {/* Cost of Living — Enhanced */}
         <TabsContent value="cost" className="mt-4">
           <div className="space-y-4">
+            {/* Monthly Cost Breakdown Summary */}
+            <Card className="border-primary/10">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                    <h4 className="text-sm font-bold text-foreground">Monthly Estimate</h4>
+                    <Badge className={`text-[10px] ${
+                      costSummary.band === "Affordable" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                      costSummary.band === "Expensive" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                      "bg-amber-50 text-amber-700 border-amber-200"
+                    }`}>{costSummary.band}</Badge>
+                  </div>
+                  <div className="text-sm font-extrabold text-foreground">
+                    ~${costSummary.monthly.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">/mo</span>
+                  </div>
+                </div>
+                <div className="space-y-2.5">
+                  {[
+                    { label: "Housing", icon: Home, value: costSummary.housing, pct: costSummary.bars.housing, color: "bg-blue-500" },
+                    { label: "Food", icon: Utensils, value: costSummary.food, pct: costSummary.bars.food, color: "bg-orange-500" },
+                    { label: "Transportation", icon: Car, value: costSummary.transport, pct: costSummary.bars.transport, color: "bg-emerald-500" },
+                    { label: "Entertainment", icon: Coffee, value: costSummary.entertainment, pct: costSummary.bars.entertainment, color: "bg-violet-500" },
+                  ].map((row) => {
+                    const Icon = row.icon;
+                    return (
+                      <div key={row.label}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Icon className="h-3.5 w-3.5" /> {row.label}
+                          </span>
+                          <span className="font-semibold text-foreground">${row.value.toLocaleString()}</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className={`h-full ${row.color} rounded-full transition-all`} style={{ width: `${row.pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-foreground/90 italic">
+                  <span className="text-base">💬</span>
+                  <span>"{costSummary.insight}"</span>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Cost Hero */}
             <Card className="bg-gradient-to-br from-green-500/10 via-card to-emerald-500/5 border-primary/10 overflow-hidden">
               <CardContent className="p-5">
