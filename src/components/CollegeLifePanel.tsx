@@ -12,7 +12,155 @@ import {
   Users, Zap, Waves, Flame, Mountain, ChevronLeft, ChevronRight, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import type { College } from "@/types/college";
+
+// ---------- Insight helpers (computed client-side from AI data) ----------
+
+const parseDollar = (s?: string): number | null => {
+  if (!s) return null;
+  const m = s.replace(/[, ]/g, "").match(/\$?(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+};
+const parseRange = (s?: string): number | null => {
+  // "$350-450" -> midpoint 400
+  if (!s) return null;
+  const nums = (s.match(/\d+/g) || []).map((n) => parseInt(n, 10));
+  if (!nums.length) return null;
+  if (nums.length === 1) return nums[0];
+  return Math.round((nums[0] + nums[nums.length - 1]) / 2);
+};
+
+function computeWeatherSummary(weather: any) {
+  const seasons = weather?.seasons || {};
+  const highs = Object.values(seasons).map((s: any) => s.avgHigh as number).filter(Number.isFinite);
+  const lows = Object.values(seasons).map((s: any) => s.avgLow as number).filter(Number.isFinite);
+  const avgHigh = highs.length ? highs.reduce((a, b) => a + b, 0) / highs.length : 70;
+  const avgLow = lows.length ? lows.reduce((a, b) => a + b, 0) / lows.length : 50;
+  const mean = (avgHigh + avgLow) / 2;
+
+  // Comfort: highest near 65°F, falls off toward extremes
+  const comfort = Math.max(20, Math.min(98, Math.round(100 - Math.abs(mean - 65) * 2.2)));
+  let climateType = "Mild";
+  if (mean >= 72) climateType = "Warm";
+  else if (mean <= 52) climateType = "Cold";
+
+  const winter = seasons.winter as any;
+  const summer = seasons.summer as any;
+  const fall = seasons.fall as any;
+
+  const sunny = weather?.sunnyDaysPerYear ?? 200;
+  const parts: string[] = [];
+  if (winter && winter.avgLow <= 30) parts.push("Cold winters");
+  else if (winter && winter.avgHigh >= 65) parts.push("Mild winters");
+  if (summer && summer.avgHigh >= 88) parts.push("hot summers");
+  if (fall && fall.avgHigh >= 60 && fall.avgHigh <= 78) parts.push("great fall weather");
+  if (sunny >= 230) parts.push("plenty of sunshine");
+  const insight = parts.length
+    ? parts.join(" with ").replace(/^./, (c) => c.toUpperCase())
+    : "Balanced weather year-round";
+
+  return { comfort, climateType, insight, avgHigh: Math.round(avgHigh), avgLow: Math.round(avgLow) };
+}
+
+function computeSafetySummary(disasters: Record<string, { risk: string; description: string }>) {
+  const risks = Object.values(disasters || {});
+  const score =
+    risks.length === 0
+      ? 80
+      : Math.round(
+          100 -
+            (risks.reduce((acc, r) => acc + (r.risk === "Low" ? 8 : r.risk === "Moderate" ? 22 : 38), 0) /
+              risks.length) *
+              1.6,
+        );
+  const safetyScore = Math.max(45, Math.min(96, score));
+  // Heuristic: campus typically a bit safer than surrounding
+  const campus = Math.min(98, safetyScore + 6);
+  const surrounding = Math.max(35, safetyScore - 6);
+  const day = Math.min(98, safetyScore + 8);
+  const night = Math.max(35, safetyScore - 12);
+
+  let insight = "Campus generally feels safe for students";
+  if (night < 60) insight = "Campus feels safe, but be cautious at night in some areas";
+  else if (surrounding < 60) insight = "Campus feels safe; surrounding area takes some getting used to";
+  else if (safetyScore >= 85) insight = "Both campus and surrounding area feel notably safe";
+
+  return { safetyScore, campus, surrounding, day, night, insight };
+}
+
+function computeCostSummary(cost: any) {
+  const housing = parseDollar(cost?.avgRent1Bedroom) ?? 1000;
+  const food = parseRange(cost?.monthlyFood) ?? 400;
+  const transport = parseRange(cost?.transportation) ?? 100;
+  const entertainment = Math.round((food + transport) * 0.35); // estimate
+  const monthly = housing + food + transport + entertainment;
+
+  const rating = (cost?.overallRating || "Moderate").toString();
+  let band: "Affordable" | "Average" | "Expensive" = "Average";
+  if (/low|cheap|afford/i.test(rating) || monthly < 1500) band = "Affordable";
+  else if (/high|expens/i.test(rating) || monthly > 2400) band = "Expensive";
+
+  // Bar percent (relative to a $3000 ceiling)
+  const pct = (n: number) => Math.min(100, Math.round((n / 3000) * 100));
+
+  let insight = "Most students keep costs in check with on-campus housing";
+  if (band === "Expensive") insight = "Most students share apartments to reduce costs";
+  else if (band === "Affordable") insight = "Budget-friendly area — easy to live well as a student";
+
+  return {
+    housing,
+    food,
+    transport,
+    entertainment,
+    monthly,
+    band,
+    insight,
+    bars: { housing: pct(housing), food: pct(food), transport: pct(transport), entertainment: pct(entertainment) },
+  };
+}
+
+function computeAreaSummary(area: any) {
+  const setting = (area?.setting || "Suburban").toString();
+  let campusType = "Suburban";
+  if (/urban|city|metropol/i.test(setting)) campusType = "Urban";
+  else if (/town|college/i.test(setting)) campusType = "College Town";
+  else if (/rural/i.test(setting)) campusType = "Rural";
+
+  // Walkability score from text + needsCar
+  const walkText = (area?.walkability || "").toString().toLowerCase();
+  let walkScore = 60;
+  if (walkText.includes("very walkable")) walkScore = 88;
+  else if (walkText.includes("walkable")) walkScore = 72;
+  else if (walkText.includes("limited") || walkText.includes("not walk")) walkScore = 35;
+  if (area?.needsCar === false) walkScore = Math.max(walkScore, 70);
+  if (area?.needsCar === true) walkScore = Math.min(walkScore, 55);
+
+  // Distance to downtown — pull first nearby attraction with a time
+  const attractions: string[] = area?.nearbyAttractions || [];
+  const downtown =
+    attractions.find((a) => /downtown|center|district/i.test(a)) ||
+    attractions[0] ||
+    "Nearby city center accessible";
+
+  const tags: string[] = [];
+  if (campusType === "College Town") tags.push("College town feel");
+  if (campusType === "Urban") tags.push("City access");
+  if (walkScore >= 75) tags.push("Walkable");
+  if (area?.needsCar === false) tags.push("No car needed");
+  if (/night|bar|live music/i.test((area?.nightlife || "").toString())) tags.push("Social scene");
+  if (campusType === "Rural" || /quiet|peaceful/i.test((area?.generalVibe || "").toString())) tags.push("Quiet area");
+  if (tags.length === 0) tags.push("Balanced lifestyle");
+
+  return { campusType, walkScore, downtown, tags };
+}
+
+const essentialIcons: Record<string, typeof Coffee> = {
+  Food: Utensils,
+  Coffee: Coffee,
+  Grocery: ShoppingBag,
+  Hospital: Heart,
+};
 
 type SeasonData = {
   avgHigh: number;
