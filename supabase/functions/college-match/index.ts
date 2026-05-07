@@ -251,6 +251,21 @@ function buildScorecardQuery(prefs: Record<string, any>): string {
 
 const MIN_RESULTS = 15;
 
+/**
+ * Returns the set of FIPS codes the user explicitly constrained to via region/weather.
+ * When non-empty, these are treated as a HARD constraint: results outside these states
+ * must be discarded, and broadening steps must not drop the state filter.
+ */
+function getHardRegionFips(prefs: Record<string, any>): Set<string> {
+  const region = String(prefs.weatherRegion || "").toLowerCase();
+  if (!region || region.includes("no preference")) return new Set();
+  const out: string[] = [];
+  for (const [rName, rStates] of Object.entries(regionStatesMap)) {
+    if (region.includes(rName)) out.push(...rStates);
+  }
+  return new Set(out);
+}
+
 async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: string; count: number; raw: any[] }> {
   const apiKey = Deno.env.get("COLLEGE_SCORECARD_API_KEY");
   if (!apiKey || apiKey.trim().length < 10) {
@@ -262,6 +277,12 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
   const baseUrl = "https://api.data.gov/ed/collegescorecard/v1/schools";
   console.log("Scorecard query params:", baseQuery.replace(/api_key=[^&]+/, 'api_key=REDACTED'));
 
+  const hardRegionFips = getHardRegionFips(prefs);
+  const hasHardRegion = hardRegionFips.size > 0;
+  if (hasHardRegion) {
+    console.log(`[college-match] HARD region constraint active (${hardRegionFips.size} states): ${[...hardRegionFips].join(",")}`);
+  }
+
   const runQuery = async (q: string): Promise<any[]> => {
     const resp = await fetch(`${baseUrl}?${q}`);
     if (!resp.ok) {
@@ -272,29 +293,50 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
     return json.results || [];
   };
 
-  const broadeningSteps: Array<{ label: string; transform: (q: string) => string }> = [
-    { label: "drop state filter", transform: (q) => q.replace(/&school\.state_fips=[^&]*/g, "") },
+  // Build broadening steps. Skip "drop state filter" if user has a hard region preference.
+  const broadeningSteps: Array<{ label: string; transform: (q: string) => string }> = [];
+  if (!hasHardRegion) {
+    broadeningSteps.push({ label: "drop state filter", transform: (q) => q.replace(/&school\.state_fips=[^&]*/g, "") });
+  }
+  broadeningSteps.push(
     { label: "drop size filter", transform: (q) => q.replace(/&latest\.student\.size__range=[^&]*/g, "") },
     { label: "widen acceptance rate to 0-50%", transform: (q) => q.replace(/latest\.admissions\.admission_rate\.overall__range=[^&]*/g, "latest.admissions.admission_rate.overall__range=0..0.50") },
     { label: "widen acceptance rate to full range", transform: (q) => q.replace(/latest\.admissions\.admission_rate\.overall__range=[^&]*/g, "latest.admissions.admission_rate.overall__range=0..1") },
     { label: "drop cost filter", transform: (q) => q.replace(/&latest\.cost\.avg_net_price\.overall__range=[^&]*/g, "") },
     { label: "drop locale filter", transform: (q) => q.replace(/&school\.locale__range=[^&]*/g, "") },
-  ];
+  );
 
-  let results = await runQuery(baseQuery);
+  // Filter results to enforce the hard region constraint. The Scorecard `state_fips`
+  // param should already restrict, but we double-enforce here in case a broadening
+  // step or distance/state intersection produced unexpected outliers.
+  const enforceRegion = (rows: any[]): any[] => {
+    if (!hasHardRegion) return rows;
+    const stateAbbrToFips: Record<string, string> = {};
+    for (const [name, abbr] of Object.entries(stateAbbrMap)) {
+      const fips = stateFipsMap[name];
+      if (fips) stateAbbrToFips[abbr.toUpperCase()] = fips;
+    }
+    return rows.filter((r) => {
+      const stAbbr = String(r["school.state"] || "").toUpperCase();
+      const fips = stateAbbrToFips[stAbbr];
+      return fips ? hardRegionFips.has(fips) : false;
+    });
+  };
+
+  let results = enforceRegion(await runQuery(baseQuery));
   let currentQuery = baseQuery;
-  console.log(`Initial query got ${results.length} colleges`);
+  console.log(`Initial query got ${results.length} colleges${hasHardRegion ? " (after region enforcement)" : ""}`);
 
   for (const step of broadeningSteps) {
     if (results.length >= MIN_RESULTS) break;
     const broader = step.transform(currentQuery);
     if (broader === currentQuery) continue;
     console.log(`Too few results (${results.length}), broadening: ${step.label}`);
-    const broaderResults = await runQuery(broader);
+    const broaderResults = enforceRegion(await runQuery(broader));
     if (broaderResults.length > results.length) {
       results = broaderResults;
       currentQuery = broader;
-      console.log(`After broadening got ${results.length} results`);
+      console.log(`After broadening got ${results.length} results${hasHardRegion ? " (after region enforcement)" : ""}`);
     }
   }
 
