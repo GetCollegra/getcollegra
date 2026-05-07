@@ -70,13 +70,14 @@ ${prioritiesLine}
 ${interestsLine}
 
 REQUIREMENTS — make groups DIRECTLY reflect the user's quiz inputs:
-1. At least one group MUST be specific to the intended major "${safeProfile.major}" (e.g. "Students with a ${safeProfile.gpa} GPA pursuing ${safeProfile.major}"). Pick colleges with strong programs in that major.
-2. At least one group should reflect their top priorities or ideal school type (e.g. campus size, location, academic intensity).
-3. The third group can vary the angle (geography, GPA band, or test score profile).
+1. ONLY use real colleges and universities located in the United States. Never include schools outside the US.
+2. At least one group MUST be specific to the intended major "${safeProfile.major}" (e.g. "Students with a ${safeProfile.gpa} GPA pursuing ${safeProfile.major}"). Pick US colleges with strong programs in that major.
+3. At least one group should reflect their top priorities or ideal school type (e.g. campus size, location, academic intensity).
+4. The third group can vary the angle (geography, GPA band, or test score profile).
 
 For each group return:
 - "headline": short anonymous descriptor that names a concrete dimension from the profile (GPA, major, state, priorities). Avoid generic phrasing.
-- "colleges": 4 realistic US colleges this profile would plausibly get into — mix of safety/match/reach. Use real college names. Colleges in major-focused groups must actually be known for that major.
+- "colleges": 4 realistic US colleges this profile would plausibly get into — mix of safety/match/reach. Use real US college names only. Colleges in major-focused groups must actually be known for that major.
 - "note": one short, specific confidence-building line that references the user's profile (e.g. "Strong match for ${safeProfile.major} programs in the ${safeProfile.state} region.").
 
 These represent estimated community trends, not real student records. No gendered pronouns.`;
