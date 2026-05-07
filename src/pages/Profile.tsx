@@ -591,7 +591,7 @@ const Profile = () => {
                   <p className="text-sm text-muted-foreground">
                     You're on the free plan. Upgrade to Collegra Premium for full access to Compare, Notes, Insights, and Map.
                   </p>
-                  <Button onClick={() => startCheckout(toast)} className="gap-2">
+                  <Button onClick={() => startCheckout(toast, { isSubscribed })} className="gap-2">
                     <CreditCard className="h-4 w-4" /> Upgrade to Premium — $9.99/mo
                   </Button>
                 </>
