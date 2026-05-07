@@ -311,14 +311,9 @@ async function fetchFromScorecard(prefs: Record<string, any>): Promise<{ data: s
   // step or distance/state intersection produced unexpected outliers.
   const enforceRegion = (rows: any[]): any[] => {
     if (!hasHardRegion) return rows;
-    const stateAbbrToFips: Record<string, string> = {};
-    for (const [name, abbr] of Object.entries(stateAbbrMap)) {
-      const fips = stateFipsMap[name];
-      if (fips) stateAbbrToFips[abbr.toUpperCase()] = fips;
-    }
     return rows.filter((r) => {
-      const stAbbr = String(r["school.state"] || "").toUpperCase();
-      const fips = stateAbbrToFips[stAbbr];
+      const stAbbr = String(r["school.state"] || "").toLowerCase();
+      const fips = stateAbbrMap[stAbbr];
       return fips ? hardRegionFips.has(fips) : false;
     });
   };
