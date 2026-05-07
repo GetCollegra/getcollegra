@@ -264,19 +264,37 @@ const Profile = () => {
 
   const handleManageBilling = async () => {
     setOpeningPortal(true);
+    // Open window synchronously to avoid popup blockers (must happen during click handler)
+    const portalWindow = window.open("about:blank", "_blank");
     try {
       const { data, error } = await supabase.functions.invoke("customer-portal");
       if (error) throw error;
       if (data?.no_customer) {
+        portalWindow?.close();
         toast({
           title: "No billing account yet",
           description: "Subscribe to Premium first to manage billing.",
         });
         return;
       }
-      if (data?.url) window.open(data.url, "_blank");
-    } catch {
-      toast({ title: "Error", description: "Could not open billing portal.", variant: "destructive" });
+      if (data?.url) {
+        if (portalWindow) {
+          portalWindow.location.href = data.url;
+        } else {
+          // Popup blocked — fall back to same-tab navigation
+          window.location.href = data.url;
+        }
+      } else {
+        portalWindow?.close();
+        throw new Error("No portal URL returned");
+      }
+    } catch (err) {
+      portalWindow?.close();
+      toast({
+        title: "Could not open billing portal",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
     }
     setOpeningPortal(false);
   };
@@ -573,7 +591,7 @@ const Profile = () => {
                   <p className="text-sm text-muted-foreground">
                     You're on the free plan. Upgrade to Collegra Premium for full access to Compare, Notes, Insights, and Map.
                   </p>
-                  <Button onClick={() => startCheckout(toast)} className="gap-2">
+                  <Button onClick={() => startCheckout(toast, { isSubscribed })} className="gap-2">
                     <CreditCard className="h-4 w-4" /> Upgrade to Premium — $9.99/mo
                   </Button>
                 </>
