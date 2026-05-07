@@ -36,6 +36,7 @@ Write a summary of who the student is, what they value most, and what environmen
 Example: "You are a balanced explorer who values strong academics while still wanting an active social environment..."
 
 RULES:
+- ONLY recommend or reference colleges and universities located in the United States. Never include schools outside the US (no Canada, UK, Europe, Australia, or other countries).
 - Address the student directly as "you/your". Use their first name if provided. NEVER use "he/she/they/the student".
 - Quote the student's own words from their preferences when relevant.
 - Be specific, not generic. Avoid repeating the same explanation across colleges.
