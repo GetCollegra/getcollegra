@@ -152,45 +152,107 @@ const Survey = () => {
         capture("quiz_started");
         console.log("Tally payload:", JSON.stringify(parsed, null, 2));
 
-        // Keyword-based mapping
-        const keywordMap: Array<{ keywords: string[]; paramKey: string }> = [
-          { keywords: ["first name", "name"], paramKey: "first_name" },
-          { keywords: ["email"], paramKey: "email" },
-          { keywords: ["city", "state"], paramKey: "city_state" },
-          { keywords: ["gpa"], paramKey: "gpa" },
-          { keywords: ["sat", "score"], paramKey: "sat_score" },
-          { keywords: ["act", "score"], paramKey: "act_score" },
-          { keywords: ["test", "score"], paramKey: "test_score" },
-          { keywords: ["campus size", "size"], paramKey: "campus_size" },
-          { keywords: ["vibe"], paramKey: "campus_vibe" },
-          { keywords: ["campus environment"], paramKey: "campus_vibe" },
-          { keywords: ["location", "type of location"], paramKey: "location_type" },
-          { keywords: ["weather", "region"], paramKey: "weather_region" },
-          { keywords: ["types of colleges", "looking to apply"], paramKey: "list_mode" },
-          { keywords: ["maximum", "pay", "cost", "willing to pay"], paramKey: "max_cost" },
-          { keywords: ["acceptance rate"], paramKey: "acceptance_rate_pref" },
-          { keywords: ["financial aid", "scholarships"], paramKey: "financial_aid" },
-          { keywords: ["campus life", "outside of academics"], paramKey: "campus_life" },
-          { keywords: ["how important", "academics"], paramKey: "academic_importance" },
-          { keywords: ["far", "home", "distance"], paramKey: "distance_from_home" },
-          { keywords: ["academic areas", "interest you the most"], paramKey: "area_of_study" },
-          { keywords: ["area of study", "study", "major"], paramKey: "area_of_study" },
-          { keywords: ["major", "isn't listed"], paramKey: "custom_major" },
-          { keywords: ["major", "not listed"], paramKey: "custom_major" },
-          { keywords: ["type it here"], paramKey: "custom_major" },
-          { keywords: ["activities", "planning to go"], paramKey: "activities" },
-          { keywords: ["are you in any activities"], paramKey: "activities" },
+        // ── Scored keyword mapping ──
+        // Each rule lists weighted phrases. The rule with the highest score wins,
+        // and we require a minimum score so weak partial matches don't mis-route.
+        // Order in `rules` is also the tie-break order (more specific first).
+        type Rule = { paramKey: string; phrases: Array<[string, number]>; minScore?: number };
+        const rules: Rule[] = [
+          // Custom-major must come BEFORE area_of_study so "type your major" wins.
+          { paramKey: "custom_major", phrases: [
+            ["isn't listed", 6], ["isn t listed", 6], ["not listed", 6],
+            ["type it here", 6], ["type your major", 5], ["type the major", 5],
+            ["other major", 4], ["specify", 3],
+          ], minScore: 4 },
+          { paramKey: "first_name", phrases: [["first name", 6], ["your name", 4], ["what's your name", 4], ["whats your name", 4]] },
+          { paramKey: "email", phrases: [["email", 6]] },
+          { paramKey: "city_state", phrases: [
+            ["city and state", 8], ["city, state", 8], ["city/state", 8],
+            ["where do you live", 6], ["hometown", 5], ["city", 3], ["state", 2],
+          ], minScore: 5 },
+          { paramKey: "gpa", phrases: [["gpa", 8], ["grade point", 6]] },
+          { paramKey: "sat_score", phrases: [["sat score", 8], ["sat ", 6], [" sat", 6]] },
+          { paramKey: "act_score", phrases: [["act score", 8], ["act ", 6], [" act", 6]] },
+          { paramKey: "test_score", phrases: [
+            ["which test", 6], ["sat or act", 8], ["test did you take", 6],
+            ["standardized test", 5], ["test score", 4],
+          ], minScore: 4 },
+          { paramKey: "campus_size", phrases: [
+            ["campus size", 8], ["school size", 8], ["student body size", 7],
+            ["how big", 5], ["size of", 4],
+          ], minScore: 4 },
+          { paramKey: "campus_vibe", phrases: [
+            ["campus vibe", 8], ["campus environment", 8], ["campus feel", 7],
+            ["vibe", 4], ["atmosphere", 4], ["personality", 3],
+          ], minScore: 4 },
+          { paramKey: "location_type", phrases: [
+            ["type of location", 9], ["urban or rural", 8], ["urban, suburban", 8],
+            ["setting", 5], ["location type", 7], ["location", 3],
+          ], minScore: 4 },
+          { paramKey: "weather_region", phrases: [
+            ["weather", 5], ["climate", 5], ["region", 4],
+            ["part of the country", 6], ["northeast", 3], ["midwest", 3], ["south", 2], ["west", 2],
+          ], minScore: 4 },
+          { paramKey: "list_mode", phrases: [
+            ["types of colleges", 8], ["looking to apply", 6], ["list mode", 8],
+            ["safe", 2], ["dream", 2], ["balanced", 2], ["ambitious", 2], ["practical", 2],
+            ["mix of colleges", 6], ["kind of list", 6],
+          ], minScore: 5 },
+          { paramKey: "max_cost", phrases: [
+            ["willing to pay", 8], ["maximum cost", 8], ["max cost", 8],
+            ["budget", 6], ["how much", 4], ["cost", 3], ["pay", 2],
+          ], minScore: 5 },
+          { paramKey: "acceptance_rate_pref", phrases: [
+            ["acceptance rate", 8], ["selectivity", 7], ["how selective", 7],
+            ["selective", 4],
+          ], minScore: 4 },
+          { paramKey: "financial_aid", phrases: [
+            ["financial aid", 8], ["scholarship", 6], ["aid", 3],
+          ], minScore: 4 },
+          { paramKey: "campus_life", phrases: [
+            ["campus life", 8], ["outside of academics", 7], ["outside academics", 7],
+            ["social life", 6], ["student life", 6],
+          ], minScore: 4 },
+          { paramKey: "academic_importance", phrases: [
+            ["how important", 5], ["academics", 5], ["academic rigor", 8],
+            ["rigor", 5], ["important are academics", 9],
+          ], minScore: 6 },
+          { paramKey: "distance_from_home", phrases: [
+            ["far from home", 9], ["distance from home", 9], ["how far", 6],
+            ["from home", 5], ["distance", 4],
+          ], minScore: 5 },
+          { paramKey: "area_of_study", phrases: [
+            ["area of study", 9], ["areas of study", 9], ["academic areas", 8],
+            ["interest you the most", 7], ["field of study", 8], ["intended major", 8],
+            ["what do you want to study", 8], ["major", 4], ["study", 2],
+          ], minScore: 5 },
+          { paramKey: "activities", phrases: [
+            ["are you in any activities", 9], ["planning to go", 6], ["extracurricular", 8],
+            ["activities", 5], ["clubs or sports", 7], ["hobbies", 4],
+          ], minScore: 4 },
         ];
 
+        const scoreRule = (title: string, phrases: Array<[string, number]>): number => {
+          let total = 0;
+          for (const [phrase, weight] of phrases) {
+            if (title.includes(phrase)) total += weight;
+          }
+          return total;
+        };
+
         const findParamKey = (title: string): string | null => {
-          const lower = title.toLowerCase();
-          for (const { keywords, paramKey } of keywordMap) {
-            if (keywords.every((kw) => lower.includes(kw))) return paramKey;
+          const lower = " " + title.toLowerCase().replace(/[^\w\s/]/g, " ").replace(/\s+/g, " ") + " ";
+          let bestKey: string | null = null;
+          let bestScore = 0;
+          for (const rule of rules) {
+            const s = scoreRule(lower, rule.phrases);
+            const min = rule.minScore ?? 4;
+            if (s >= min && s > bestScore) {
+              bestScore = s;
+              bestKey = rule.paramKey;
+            }
           }
-          for (const { keywords, paramKey } of keywordMap) {
-            if (keywords.some((kw) => lower.includes(kw))) return paramKey;
-          }
-          return null;
+          return bestKey;
         };
 
         const extractText = (v: any): string => {
