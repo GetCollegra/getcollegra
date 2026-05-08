@@ -124,37 +124,96 @@ const Profile = () => {
   }, [cityState, gradYear, gpaRange, intendedMajor, prefDistance, prefCampusSize, prefRegion, prefBudget,
     notifDeadlines, notifScholarships, notifRecommendations, notifEmail, notifDashboard]);
 
+  // ---- Centralized settings-action error reporting ----
+  // Every settings button funnels failures through here so the console
+  // shows the exact action, payload, and underlying error/status code.
+  const reportActionError = (
+    action: string,
+    err: unknown,
+    extra?: Record<string, unknown>,
+  ) => {
+    const e = err as any;
+    const details = {
+      action,
+      message: e?.message ?? String(err),
+      name: e?.name,
+      code: e?.code,
+      status: e?.status ?? e?.statusCode,
+      hint: e?.hint,
+      details: e?.details,
+      cause: e?.cause,
+      ...extra,
+    };
+    console.error(`[settings:${action}] FAILED`, details, err);
+    toast({
+      title: `Couldn't ${action}`,
+      description: `${details.message}${details.code ? ` (code: ${details.code})` : ""}${details.status ? ` [HTTP ${details.status}]` : ""}`,
+      variant: "destructive",
+    });
+  };
+
+  const logAction = (action: string, payload?: Record<string, unknown>) => {
+    console.log(`[settings:${action}] →`, payload ?? {});
+  };
+
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      console.warn("[settings:save-profile] skipped — no user");
+      toast({ title: "Not signed in", description: "Please sign in again.", variant: "destructive" });
+      return;
+    }
     setSavingProfile(true);
+    const payload = { first_name: firstName, home_address: homeAddress };
+    logAction("save-profile", { user_id: user.id, ...payload });
     try {
-      await supabase.from("profiles").update({
-        first_name: firstName,
-        home_address: homeAddress,
-      } as any).eq("id", user.id);
-      saveProfilePrefsToLocal();
-      toast({ title: "Profile saved", description: "Your information has been updated." });
-    } catch {
-      toast({ title: "Error", description: "Could not save profile.", variant: "destructive" });
+      const { error, status } = await supabase
+        .from("profiles")
+        .update(payload as any)
+        .eq("id", user.id);
+      if (error) {
+        reportActionError("save-profile", error, { status, payload });
+      } else {
+        console.log(`[settings:save-profile] ✓ ok (status=${status})`);
+        saveProfilePrefsToLocal();
+        toast({ title: "Profile saved", description: "Your information has been updated." });
+      }
+    } catch (err) {
+      reportActionError("save-profile", err, { payload });
     }
     setSavingProfile(false);
   };
 
   const handleSavePreferences = () => {
     setSavingPrefs(true);
-    saveProfilePrefsToLocal();
-    setTimeout(() => {
+    const payload = { prefDistance, prefCampusSize, prefRegion, prefBudget };
+    logAction("save-preferences", payload);
+    try {
+      saveProfilePrefsToLocal();
+      console.log("[settings:save-preferences] ✓ persisted to localStorage");
+      setTimeout(() => {
+        setSavingPrefs(false);
+        toast({ title: "Preferences saved", description: "Your college preferences have been updated. Re-run matches from the Dashboard to see updated results." });
+      }, 500);
+    } catch (err) {
       setSavingPrefs(false);
-      toast({ title: "Preferences saved", description: "Your college preferences have been updated. Re-run matches from the Dashboard to see updated results." });
-    }, 500);
+      reportActionError("save-preferences", err, { payload });
+    }
   };
 
   const handleSaveNotifications = () => {
-    saveProfilePrefsToLocal();
-    toast({ title: "Notification preferences saved", description: "Your notification settings have been updated." });
+    const payload = { notifDeadlines, notifScholarships, notifRecommendations, notifEmail, notifDashboard };
+    logAction("save-notifications", payload);
+    try {
+      saveProfilePrefsToLocal();
+      console.log("[settings:save-notifications] ✓ persisted to localStorage");
+      toast({ title: "Notification preferences saved", description: "Your notification settings have been updated." });
+    } catch (err) {
+      reportActionError("save-notifications", err, { payload });
+    }
   };
 
   const handleChangePassword = async () => {
+    logAction("change-password", { newPasswordLength: newPassword.length });
     if (newPassword.length < 6) {
       toast({ title: "Password too short", description: "Password must be at least 6 characters.", variant: "destructive" });
       return;
@@ -166,12 +225,16 @@ const Profile = () => {
     setChangingPassword(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
-      setNewPassword("");
-      setConfirmPassword("");
-      toast({ title: "Password updated", description: "Your password has been changed successfully." });
+      if (error) {
+        reportActionError("change-password", error);
+      } else {
+        console.log("[settings:change-password] ✓ ok");
+        setNewPassword("");
+        setConfirmPassword("");
+        toast({ title: "Password updated", description: "Your password has been changed successfully." });
+      }
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Could not change password.", variant: "destructive" });
+      reportActionError("change-password", err);
     }
     setChangingPassword(false);
   };
@@ -179,11 +242,20 @@ const Profile = () => {
   const handleClearSavedColleges = async () => {
     if (!user) return;
     setClearingData(true);
+    logAction("clear-saved-colleges", { user_id: user.id });
     try {
-      await supabase.from("saved_colleges").delete().eq("user_id", user.id);
-      toast({ title: "Saved colleges cleared", description: "All saved colleges have been removed." });
-    } catch {
-      toast({ title: "Error", description: "Could not clear data.", variant: "destructive" });
+      const { error, status, count } = await supabase
+        .from("saved_colleges")
+        .delete({ count: "exact" })
+        .eq("user_id", user.id);
+      if (error) {
+        reportActionError("clear-saved-colleges", error, { status });
+      } else {
+        console.log(`[settings:clear-saved-colleges] ✓ deleted ${count ?? "?"} rows (status=${status})`);
+        toast({ title: "Saved colleges cleared", description: `Removed ${count ?? "all"} saved college${count === 1 ? "" : "s"}.` });
+      }
+    } catch (err) {
+      reportActionError("clear-saved-colleges", err);
     }
     setClearingData(false);
   };
