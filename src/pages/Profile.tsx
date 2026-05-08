@@ -124,37 +124,96 @@ const Profile = () => {
   }, [cityState, gradYear, gpaRange, intendedMajor, prefDistance, prefCampusSize, prefRegion, prefBudget,
     notifDeadlines, notifScholarships, notifRecommendations, notifEmail, notifDashboard]);
 
+  // ---- Centralized settings-action error reporting ----
+  // Every settings button funnels failures through here so the console
+  // shows the exact action, payload, and underlying error/status code.
+  const reportActionError = (
+    action: string,
+    err: unknown,
+    extra?: Record<string, unknown>,
+  ) => {
+    const e = err as any;
+    const details = {
+      action,
+      message: e?.message ?? String(err),
+      name: e?.name,
+      code: e?.code,
+      status: e?.status ?? e?.statusCode,
+      hint: e?.hint,
+      details: e?.details,
+      cause: e?.cause,
+      ...extra,
+    };
+    console.error(`[settings:${action}] FAILED`, details, err);
+    toast({
+      title: `Couldn't ${action}`,
+      description: `${details.message}${details.code ? ` (code: ${details.code})` : ""}${details.status ? ` [HTTP ${details.status}]` : ""}`,
+      variant: "destructive",
+    });
+  };
+
+  const logAction = (action: string, payload?: Record<string, unknown>) => {
+    console.log(`[settings:${action}] →`, payload ?? {});
+  };
+
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      console.warn("[settings:save-profile] skipped — no user");
+      toast({ title: "Not signed in", description: "Please sign in again.", variant: "destructive" });
+      return;
+    }
     setSavingProfile(true);
+    const payload = { first_name: firstName, home_address: homeAddress };
+    logAction("save-profile", { user_id: user.id, ...payload });
     try {
-      await supabase.from("profiles").update({
-        first_name: firstName,
-        home_address: homeAddress,
-      } as any).eq("id", user.id);
-      saveProfilePrefsToLocal();
-      toast({ title: "Profile saved", description: "Your information has been updated." });
-    } catch {
-      toast({ title: "Error", description: "Could not save profile.", variant: "destructive" });
+      const { error, status } = await supabase
+        .from("profiles")
+        .update(payload as any)
+        .eq("id", user.id);
+      if (error) {
+        reportActionError("save-profile", error, { status, payload });
+      } else {
+        console.log(`[settings:save-profile] ✓ ok (status=${status})`);
+        saveProfilePrefsToLocal();
+        toast({ title: "Profile saved", description: "Your information has been updated." });
+      }
+    } catch (err) {
+      reportActionError("save-profile", err, { payload });
     }
     setSavingProfile(false);
   };
 
   const handleSavePreferences = () => {
     setSavingPrefs(true);
-    saveProfilePrefsToLocal();
-    setTimeout(() => {
+    const payload = { prefDistance, prefCampusSize, prefRegion, prefBudget };
+    logAction("save-preferences", payload);
+    try {
+      saveProfilePrefsToLocal();
+      console.log("[settings:save-preferences] ✓ persisted to localStorage");
+      setTimeout(() => {
+        setSavingPrefs(false);
+        toast({ title: "Preferences saved", description: "Your college preferences have been updated. Re-run matches from the Dashboard to see updated results." });
+      }, 500);
+    } catch (err) {
       setSavingPrefs(false);
-      toast({ title: "Preferences saved", description: "Your college preferences have been updated. Re-run matches from the Dashboard to see updated results." });
-    }, 500);
+      reportActionError("save-preferences", err, { payload });
+    }
   };
 
   const handleSaveNotifications = () => {
-    saveProfilePrefsToLocal();
-    toast({ title: "Notification preferences saved", description: "Your notification settings have been updated." });
+    const payload = { notifDeadlines, notifScholarships, notifRecommendations, notifEmail, notifDashboard };
+    logAction("save-notifications", payload);
+    try {
+      saveProfilePrefsToLocal();
+      console.log("[settings:save-notifications] ✓ persisted to localStorage");
+      toast({ title: "Notification preferences saved", description: "Your notification settings have been updated." });
+    } catch (err) {
+      reportActionError("save-notifications", err, { payload });
+    }
   };
 
   const handleChangePassword = async () => {
+    logAction("change-password", { newPasswordLength: newPassword.length });
     if (newPassword.length < 6) {
       toast({ title: "Password too short", description: "Password must be at least 6 characters.", variant: "destructive" });
       return;
@@ -166,12 +225,16 @@ const Profile = () => {
     setChangingPassword(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
-      setNewPassword("");
-      setConfirmPassword("");
-      toast({ title: "Password updated", description: "Your password has been changed successfully." });
+      if (error) {
+        reportActionError("change-password", error);
+      } else {
+        console.log("[settings:change-password] ✓ ok");
+        setNewPassword("");
+        setConfirmPassword("");
+        toast({ title: "Password updated", description: "Your password has been changed successfully." });
+      }
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Could not change password.", variant: "destructive" });
+      reportActionError("change-password", err);
     }
     setChangingPassword(false);
   };
@@ -179,11 +242,20 @@ const Profile = () => {
   const handleClearSavedColleges = async () => {
     if (!user) return;
     setClearingData(true);
+    logAction("clear-saved-colleges", { user_id: user.id });
     try {
-      await supabase.from("saved_colleges").delete().eq("user_id", user.id);
-      toast({ title: "Saved colleges cleared", description: "All saved colleges have been removed." });
-    } catch {
-      toast({ title: "Error", description: "Could not clear data.", variant: "destructive" });
+      const { error, status, count } = await supabase
+        .from("saved_colleges")
+        .delete({ count: "exact" })
+        .eq("user_id", user.id);
+      if (error) {
+        reportActionError("clear-saved-colleges", error, { status });
+      } else {
+        console.log(`[settings:clear-saved-colleges] ✓ deleted ${count ?? "?"} rows (status=${status})`);
+        toast({ title: "Saved colleges cleared", description: `Removed ${count ?? "all"} saved college${count === 1 ? "" : "s"}.` });
+      }
+    } catch (err) {
+      reportActionError("clear-saved-colleges", err);
     }
     setClearingData(false);
   };
@@ -191,11 +263,18 @@ const Profile = () => {
   const handleExportCSV = async () => {
     if (!user) return;
     setExportingData(true);
+    logAction("export-csv", { user_id: user.id });
     try {
-      const { data } = await supabase
+      const { data, error, status } = await supabase
         .from("saved_colleges")
         .select("*")
         .eq("user_id", user.id);
+      if (error) {
+        reportActionError("export-csv", error, { status });
+        setExportingData(false);
+        return;
+      }
+      console.log(`[settings:export-csv] fetched ${data?.length ?? 0} rows`);
       if (!data || data.length === 0) {
         toast({ title: "No data", description: "You don't have any saved colleges to export." });
         setExportingData(false);
@@ -222,9 +301,10 @@ const Profile = () => {
       a.download = "collegra-saved-colleges.csv";
       a.click();
       URL.revokeObjectURL(url);
+      console.log("[settings:export-csv] ✓ download triggered");
       toast({ title: "Exported!", description: "Your college list has been downloaded as CSV." });
-    } catch {
-      toast({ title: "Error", description: "Could not export data.", variant: "destructive" });
+    } catch (err) {
+      reportActionError("export-csv", err);
     }
     setExportingData(false);
   };
@@ -232,17 +312,23 @@ const Profile = () => {
   const handleExportPDF = async () => {
     if (!user) return;
     setExportingData(true);
+    logAction("export-pdf", { user_id: user.id });
     try {
-      const { data } = await supabase
+      const { data, error, status } = await supabase
         .from("saved_colleges")
         .select("*")
         .eq("user_id", user.id);
+      if (error) {
+        reportActionError("export-pdf", error, { status });
+        setExportingData(false);
+        return;
+      }
+      console.log(`[settings:export-pdf] fetched ${data?.length ?? 0} rows`);
       if (!data || data.length === 0) {
         toast({ title: "No data", description: "You don't have any saved colleges to export." });
         setExportingData(false);
         return;
       }
-      // Generate a printable HTML and trigger print dialog
       const esc = (s: any) => String(s ?? '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       const rows = data.map(d => {
         const c = d.college_data as any;
@@ -250,51 +336,58 @@ const Profile = () => {
       }).join("");
       const html = `<html><head><title>Collegra - Saved Colleges</title><style>body{font-family:Arial,sans-serif;padding:24px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px}th{background:#f5f5f5;font-weight:600}h1{font-size:20px;color:#333}</style></head><body><h1>Collegra™ — My Saved Colleges</h1><p>Exported on ${new Date().toLocaleDateString()}</p><table><tr><th>College</th><th>Status</th><th>Location</th><th>Acceptance Rate</th><th>Annual Price</th><th>Fit Score</th></tr>${rows}</table></body></html>`;
       const w = window.open("", "_blank");
-      if (w) {
-        w.document.write(html);
-        w.document.close();
-        w.print();
+      if (!w) {
+        console.warn("[settings:export-pdf] popup blocked");
+        toast({ title: "Popup blocked", description: "Allow popups for this site to export PDF.", variant: "destructive" });
+        setExportingData(false);
+        return;
       }
+      w.document.write(html);
+      w.document.close();
+      w.print();
+      console.log("[settings:export-pdf] ✓ print dialog opened");
       toast({ title: "PDF ready", description: "Use the print dialog to save as PDF." });
-    } catch {
-      toast({ title: "Error", description: "Could not generate PDF.", variant: "destructive" });
+    } catch (err) {
+      reportActionError("export-pdf", err);
     }
     setExportingData(false);
   };
 
   const handleManageBilling = async () => {
     setOpeningPortal(true);
-    // Open window synchronously to avoid popup blockers (must happen during click handler)
+    logAction("manage-billing");
     const portalWindow = window.open("about:blank", "_blank");
+    if (!portalWindow) {
+      console.warn("[settings:manage-billing] popup blocked");
+      toast({ title: "Popup blocked", description: "Allow popups for this site to open the billing portal.", variant: "destructive" });
+      setOpeningPortal(false);
+      return;
+    }
     try {
       const { data, error } = await supabase.functions.invoke("customer-portal");
-      if (error) throw error;
+      console.log("[settings:manage-billing] customer-portal response:", { data, error });
+      if (error) {
+        portalWindow.close();
+        reportActionError("manage-billing", error, { fn: "customer-portal" });
+        setOpeningPortal(false);
+        return;
+      }
       if (data?.no_customer) {
-        portalWindow?.close();
-        toast({
-          title: "No billing account yet",
-          description: "Subscribe to Premium first to manage billing.",
-        });
+        portalWindow.close();
+        toast({ title: "No billing account yet", description: "Subscribe to Premium first to manage billing." });
+        setOpeningPortal(false);
         return;
       }
       if (data?.url) {
-        if (portalWindow) {
-          portalWindow.location.href = data.url;
-        } else {
-          // Popup blocked — fall back to same-tab navigation
-          window.location.href = data.url;
-        }
+        portalWindow.location.href = data.url;
+        console.log("[settings:manage-billing] ✓ redirected popup to portal");
       } else {
-        portalWindow?.close();
-        throw new Error("No portal URL returned");
+        portalWindow.close();
+        reportActionError("manage-billing", new Error("No portal URL returned"), { data });
       }
     } catch (err) {
-      portalWindow?.close();
-      toast({
-        title: "Could not open billing portal",
-        description: err instanceof Error ? err.message : "Please try again.",
-        variant: "destructive",
-      });
+      portalWindow.close();
+      reportActionError("manage-billing", err);
     }
     setOpeningPortal(false);
   };
