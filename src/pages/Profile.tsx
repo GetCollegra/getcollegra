@@ -263,11 +263,18 @@ const Profile = () => {
   const handleExportCSV = async () => {
     if (!user) return;
     setExportingData(true);
+    logAction("export-csv", { user_id: user.id });
     try {
-      const { data } = await supabase
+      const { data, error, status } = await supabase
         .from("saved_colleges")
         .select("*")
         .eq("user_id", user.id);
+      if (error) {
+        reportActionError("export-csv", error, { status });
+        setExportingData(false);
+        return;
+      }
+      console.log(`[settings:export-csv] fetched ${data?.length ?? 0} rows`);
       if (!data || data.length === 0) {
         toast({ title: "No data", description: "You don't have any saved colleges to export." });
         setExportingData(false);
@@ -294,9 +301,10 @@ const Profile = () => {
       a.download = "collegra-saved-colleges.csv";
       a.click();
       URL.revokeObjectURL(url);
+      console.log("[settings:export-csv] ✓ download triggered");
       toast({ title: "Exported!", description: "Your college list has been downloaded as CSV." });
-    } catch {
-      toast({ title: "Error", description: "Could not export data.", variant: "destructive" });
+    } catch (err) {
+      reportActionError("export-csv", err);
     }
     setExportingData(false);
   };
@@ -304,17 +312,23 @@ const Profile = () => {
   const handleExportPDF = async () => {
     if (!user) return;
     setExportingData(true);
+    logAction("export-pdf", { user_id: user.id });
     try {
-      const { data } = await supabase
+      const { data, error, status } = await supabase
         .from("saved_colleges")
         .select("*")
         .eq("user_id", user.id);
+      if (error) {
+        reportActionError("export-pdf", error, { status });
+        setExportingData(false);
+        return;
+      }
+      console.log(`[settings:export-pdf] fetched ${data?.length ?? 0} rows`);
       if (!data || data.length === 0) {
         toast({ title: "No data", description: "You don't have any saved colleges to export." });
         setExportingData(false);
         return;
       }
-      // Generate a printable HTML and trigger print dialog
       const esc = (s: any) => String(s ?? '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       const rows = data.map(d => {
         const c = d.college_data as any;
@@ -322,51 +336,58 @@ const Profile = () => {
       }).join("");
       const html = `<html><head><title>Collegra - Saved Colleges</title><style>body{font-family:Arial,sans-serif;padding:24px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px}th{background:#f5f5f5;font-weight:600}h1{font-size:20px;color:#333}</style></head><body><h1>Collegra™ — My Saved Colleges</h1><p>Exported on ${new Date().toLocaleDateString()}</p><table><tr><th>College</th><th>Status</th><th>Location</th><th>Acceptance Rate</th><th>Annual Price</th><th>Fit Score</th></tr>${rows}</table></body></html>`;
       const w = window.open("", "_blank");
-      if (w) {
-        w.document.write(html);
-        w.document.close();
-        w.print();
+      if (!w) {
+        console.warn("[settings:export-pdf] popup blocked");
+        toast({ title: "Popup blocked", description: "Allow popups for this site to export PDF.", variant: "destructive" });
+        setExportingData(false);
+        return;
       }
+      w.document.write(html);
+      w.document.close();
+      w.print();
+      console.log("[settings:export-pdf] ✓ print dialog opened");
       toast({ title: "PDF ready", description: "Use the print dialog to save as PDF." });
-    } catch {
-      toast({ title: "Error", description: "Could not generate PDF.", variant: "destructive" });
+    } catch (err) {
+      reportActionError("export-pdf", err);
     }
     setExportingData(false);
   };
 
   const handleManageBilling = async () => {
     setOpeningPortal(true);
-    // Open window synchronously to avoid popup blockers (must happen during click handler)
+    logAction("manage-billing");
     const portalWindow = window.open("about:blank", "_blank");
+    if (!portalWindow) {
+      console.warn("[settings:manage-billing] popup blocked");
+      toast({ title: "Popup blocked", description: "Allow popups for this site to open the billing portal.", variant: "destructive" });
+      setOpeningPortal(false);
+      return;
+    }
     try {
       const { data, error } = await supabase.functions.invoke("customer-portal");
-      if (error) throw error;
+      console.log("[settings:manage-billing] customer-portal response:", { data, error });
+      if (error) {
+        portalWindow.close();
+        reportActionError("manage-billing", error, { fn: "customer-portal" });
+        setOpeningPortal(false);
+        return;
+      }
       if (data?.no_customer) {
-        portalWindow?.close();
-        toast({
-          title: "No billing account yet",
-          description: "Subscribe to Premium first to manage billing.",
-        });
+        portalWindow.close();
+        toast({ title: "No billing account yet", description: "Subscribe to Premium first to manage billing." });
+        setOpeningPortal(false);
         return;
       }
       if (data?.url) {
-        if (portalWindow) {
-          portalWindow.location.href = data.url;
-        } else {
-          // Popup blocked — fall back to same-tab navigation
-          window.location.href = data.url;
-        }
+        portalWindow.location.href = data.url;
+        console.log("[settings:manage-billing] ✓ redirected popup to portal");
       } else {
-        portalWindow?.close();
-        throw new Error("No portal URL returned");
+        portalWindow.close();
+        reportActionError("manage-billing", new Error("No portal URL returned"), { data });
       }
     } catch (err) {
-      portalWindow?.close();
-      toast({
-        title: "Could not open billing portal",
-        description: err instanceof Error ? err.message : "Please try again.",
-        variant: "destructive",
-      });
+      portalWindow.close();
+      reportActionError("manage-billing", err);
     }
     setOpeningPortal(false);
   };
