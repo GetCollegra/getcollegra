@@ -82,11 +82,14 @@ const Profile = () => {
     setFirstName(user.user_metadata?.first_name || "");
 
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
+      if (error) {
+        console.warn("[settings:load-profile] error", error);
+      }
       if (data) {
         setFirstName(data.first_name || "");
         if ((data as any).home_address) setHomeAddress((data as any).home_address);
