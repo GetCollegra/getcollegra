@@ -171,8 +171,7 @@ const Profile = () => {
     try {
       const { error, status } = await supabase
         .from("profiles")
-        .update(payload as any)
-        .eq("id", user.id);
+        .upsert({ id: user.id, email: user.email ?? null, ...payload } as any, { onConflict: "id" });
       if (error) {
         reportActionError("save-profile", error, { status, payload });
       } else {
