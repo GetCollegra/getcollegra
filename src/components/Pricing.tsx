@@ -40,14 +40,9 @@ const Pricing = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="relative bg-card rounded-2xl p-8 shadow-card hover:shadow-elevated transition-shadow duration-300 border-2 border-accent"
           >
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-accent text-accent-foreground text-sm font-semibold px-4 py-1 rounded-full">
-                Most Popular
-              </span>
-            </div>
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                Monthly Access
+                Premium Access
               </h3>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-foreground">$9.99</span>
@@ -57,30 +52,29 @@ const Pricing = () => {
             </div>
 
             <p className="text-muted-foreground mb-8">
-              Cancel anytime. Get full access to all features.
+              Cancel anytime. Everything you need to find, compare, and choose the right college.
             </p>
 
             <ul className="space-y-3 mb-8">
-              <li className="flex items-center gap-3 text-foreground">
-                <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Full AI college match results</span>
-              </li>
-              <li className="flex items-center gap-3 text-foreground">
-                <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Personalized college fit scores</span>
-              </li>
-              <li className="flex items-center gap-3 text-foreground">
-                <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Save & organize colleges</span>
-              </li>
-              <li className="flex items-center gap-3 text-foreground">
-                <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Compare schools side-by-side</span>
-              </li>
-              <li className="flex items-center gap-3 text-foreground">
-                <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                <span>Smart insights for better decisions</span>
-              </li>
+              {[
+                "Full AI-personalized college match list",
+                "Detailed fit scores for every school",
+                "Side-by-side comparison tool",
+                "Interactive campus map & neighborhood insights",
+                "College organizer with notes, tags & checklists",
+                "Cost, ROI & graduation outcome breakdowns",
+                "Admitted student profiles & how you compare",
+                "Travel estimates from your home to each campus",
+                "Smart insights tailored to your goals",
+                "Downloadable personalized college report",
+                "Unlimited quiz retakes as your goals evolve",
+                "Priority access to new features",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3 text-foreground">
+                  <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
 
             <Button variant="hero" size="lg" className="w-full" onClick={() => handlePricingClick("Unlock Full Matches", "Pricing")}>
