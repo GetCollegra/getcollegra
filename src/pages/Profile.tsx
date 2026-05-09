@@ -82,11 +82,14 @@ const Profile = () => {
     setFirstName(user.user_metadata?.first_name || "");
 
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
+      if (error) {
+        console.warn("[settings:load-profile] error", error);
+      }
       if (data) {
         setFirstName(data.first_name || "");
         if ((data as any).home_address) setHomeAddress((data as any).home_address);
@@ -168,8 +171,7 @@ const Profile = () => {
     try {
       const { error, status } = await supabase
         .from("profiles")
-        .update(payload as any)
-        .eq("id", user.id);
+        .upsert({ id: user.id, email: user.email ?? null, ...payload } as any, { onConflict: "id" });
       if (error) {
         reportActionError("save-profile", error, { status, payload });
       } else {
