@@ -468,9 +468,38 @@ const Survey = () => {
           // Ignore storage failures
         }
 
+        // Premium retake: collect previously matched college names so the engine
+        // returns different (but still accurate) schools each retake.
+        let excludeColleges: string[] = [];
+        if (isSubscribed && user) {
+          try {
+            const { data: prior } = await supabase
+              .from("college_matches")
+              .select("college_data")
+              .eq("user_id", user.id)
+              .eq("ai_status", "completed")
+              .order("created_at", { ascending: false })
+              .limit(3);
+            if (Array.isArray(prior)) {
+              const names = new Set<string>();
+              for (const row of prior as any[]) {
+                const cd = Array.isArray(row?.college_data) ? row.college_data : [];
+                for (const c of cd) {
+                  const n = c?.name || c?.collegeName;
+                  if (typeof n === "string" && n.trim()) names.add(n.trim());
+                }
+              }
+              excludeColleges = Array.from(names).slice(0, 20);
+              console.log(`[Survey] Premium retake — excluding ${excludeColleges.length} prior matches`);
+            }
+          } catch (e) {
+            console.warn("[Survey] Failed to load prior matches for exclude list", e);
+          }
+        }
+
         // Fire edge function in background — QuizResults will poll for completion
         supabase.functions.invoke("college-match", {
-          body: { preferences, matchId },
+          body: { preferences, matchId, excludeColleges },
         }).then(({ error: fnError }) => {
           if (fnError) console.error("[Survey] Edge function error:", fnError);
           else console.log("[Survey] Edge function completed for match:", matchId);
