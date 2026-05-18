@@ -144,8 +144,33 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const targetUserId: string | undefined = body?.userId;
+    const requestedUserId: string | undefined = body?.userId;
+
+    // Auth: require a user. If userId requested, must match caller or be admin.
+    const auth = await requireUser(req);
+    if (auth instanceof Response) {
+      const text = await auth.text();
+      return new Response(text, { status: auth.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    let targetUserId: string | undefined = requestedUserId;
+    if (requestedUserId && requestedUserId !== auth.userId) {
+      const { data: isAdmin } = await sb.rpc("has_role", { _user_id: auth.userId, _role: "admin" });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else if (!requestedUserId) {
+      // Full rebuild — admin only
+      const { data: isAdmin } = await sb.rpc("has_role", { _user_id: auth.userId, _role: "admin" });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
     console.log(`[aggregate-cohort] start mode=${targetUserId ? "on-demand" : "full"}`);
+
 
     // ── 1. Pull all users + their cohort key from college_matches (most recent per user) ──
     const { data: allMatches, error: matchErr } = await sb
