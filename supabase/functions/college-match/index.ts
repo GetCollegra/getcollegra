@@ -1125,8 +1125,10 @@ serve(async (req) => {
     console.log("[college-match] matchId:", matchId, "| preferences keys:", raw ? Object.keys(raw).join(",") : "NONE");
 
     // Rate limit only ad-hoc invocations (discover-more)
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("cf-connecting-ip") || "unknown";
+    const clientIp =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
+
     if (!matchId && !(await checkRateLimit(clientIp, "college-match"))) {
       return new Response(JSON.stringify({ error: "Too many requests. Please wait a moment." }), {
         status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
