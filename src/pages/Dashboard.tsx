@@ -911,7 +911,7 @@ const Dashboard = () => {
                     </div>
                     <h3 className="text-lg font-bold text-foreground mb-2">No matches yet</h3>
                     <p className="text-muted-foreground mb-4">Take the college quiz to get your personalized recommendations.</p>
-                    <Button onClick={() => navigate("/survey")} className="bg-gradient-hero text-primary-foreground font-semibold">Take the Quiz</Button>
+                    <Button onClick={() => navigate("/survey")} className="bg-gradient-hero text-primary-foreground font-semibold">Get My Matches</Button>
                   </CardContent>
                 </Card>
               ) : filteredColleges.length === 0 && colleges.length > 0 ? (

@@ -41,7 +41,7 @@ export default function PremiumPaywall() {
           <Crown className="h-3.5 w-3.5" /> Premium Feature
         </Badge>
         <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-          Unlock Collegra Premium
+          Unlock Collegra™ Premium
         </h3>
         <p className="text-muted-foreground max-w-md mx-auto mb-8">
           Get the full toolkit to organize, compare, and make confident college decisions — for just $9.99/month.

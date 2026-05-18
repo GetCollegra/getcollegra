@@ -137,7 +137,7 @@ const Header = () => {
                       href="/survey"
                       className="flex items-center justify-center gap-2 w-full px-5 py-3 min-h-[48px] rounded-full bg-primary text-primary-foreground font-semibold hover:bg-accent transition-colors shadow-soft"
                     >
-                      <Sparkles className="h-4 w-4" /> Take the Quiz
+                      <Sparkles className="h-4 w-4" /> Get My Matches
                     </a>
                   </SheetClose>
                 </div>

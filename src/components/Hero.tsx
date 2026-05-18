@@ -13,7 +13,7 @@ const features = [
 
 const stats = [
   { value: "100+", label: "Colleges Matched" },
-  { value: "Free", label: "To Get Started" },
+  { value: "Free", label: "to Get Started" },
   { value: "5 min", label: "Quick Survey" },
 ];
 
@@ -45,7 +45,7 @@ const Hero = () => {
             className="inline-flex items-center gap-2 bg-white/15 border border-white/30 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-6"
             >
               <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              AI-Powered College Matching
+              Your Path. Your Plan. Your Future.
             </motion.div>
 
             <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.05] mb-6">

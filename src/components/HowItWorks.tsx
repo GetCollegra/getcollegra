@@ -137,7 +137,7 @@ const HowItWorks = () => {
         >
           <Link to="/survey">
             <Button size="lg" className="text-base px-8 py-6 rounded-lg font-semibold shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition-all gap-2">
-              Start My Quiz <ArrowRight className="w-4 h-4" />
+              Start My Search <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>
           <p className="text-sm text-muted-foreground mt-3">Free to start · Takes 5 minutes</p>

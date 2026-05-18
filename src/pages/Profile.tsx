@@ -665,7 +665,7 @@ const Profile = () => {
                       <CreditCard className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-foreground">Collegra Premium</p>
+                      <p className="text-sm font-bold text-foreground">Collegra™ Premium</p>
                       <p className="text-sm text-muted-foreground">$9.99/month</p>
                     </div>
                   </div>
@@ -684,7 +684,7 @@ const Profile = () => {
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    You're on the free plan. Upgrade to Collegra Premium for full access to Compare, Notes, Insights, and Map.
+                    You're on the free plan. Upgrade to Collegra™ Premium for full access to Compare, Notes, Insights, and Map.
                   </p>
                   <Button onClick={() => startCheckout(toast, { isSubscribed })} className="gap-2">
                     <CreditCard className="h-4 w-4" /> Upgrade to Premium — $9.99/mo
