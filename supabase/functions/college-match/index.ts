@@ -1135,13 +1135,13 @@ serve(async (req) => {
       });
     }
 
-    // Check premium status
+    // Check premium status (also require auth)
     let isPremiumUser = false;
+    let authUserId: string | null = null;
     const authHeader = req.headers.get("authorization");
     if (authHeader) {
       const sbAdmin = createClient(supabaseUrl, serviceKey);
       const token = authHeader.replace("Bearer ", "");
-      let authUserId: string | null = null;
       let authUserEmail: string | null = null;
       try {
         const { data: userData, error: userError } = await sbAdmin.auth.getUser(token);
@@ -1172,6 +1172,24 @@ serve(async (req) => {
         }
       }
     }
+
+    // If a matchId is supplied, require auth and verify ownership before any update.
+    if (matchId) {
+      if (!authUserId) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const sbOwn = createClient(supabaseUrl, serviceKey);
+      const { data: ownerRow } = await sbOwn
+        .from("college_matches").select("user_id").eq("id", matchId).maybeSingle();
+      if (!ownerRow || (ownerRow as any).user_id !== authUserId) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
 
     if (!raw || typeof raw !== "object") {
       await updateMatch({ ai_status: "failed", ai_error: "Invalid input: preferences object required" });
