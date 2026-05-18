@@ -26,9 +26,10 @@ serve(async (req) => {
     }
 
     const clientIp =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() ||
       "unknown";
+
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

@@ -93,6 +93,7 @@ serve(async (req) => {
   if (!_authHeader || !_authHeader.toLowerCase().startsWith("bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  let _userId: string | null = null;
   {
     const _token = _authHeader.slice(7).trim();
     const _resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, {
@@ -101,6 +102,8 @@ serve(async (req) => {
     if (!_resp.ok) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const _u = await _resp.json().catch(() => null);
+    _userId = _u?.id ?? null;
   }
 
 
@@ -129,18 +132,25 @@ serve(async (req) => {
 
     const sb = createClient(supabaseUrl, serviceKey);
 
-    // Check if already enhanced (version 2+)
-    const { data: existing } = await sb
+    // Verify ownership of the match record
+    const { data: ownerRow } = await sb
       .from("college_matches")
-      .select("results_version")
+      .select("user_id, results_version")
       .eq("id", matchId)
       .maybeSingle();
 
-    if (existing && (existing as any).results_version >= 2) {
+    if (!ownerRow || (ownerRow as any).user_id !== _userId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if ((ownerRow as any).results_version >= 2) {
       return new Response(JSON.stringify({ enhanced: true, alreadyDone: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     // Build AI prompt
     const top = colleges.slice(0, 5);
