@@ -71,7 +71,7 @@ const Login = () => {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to your Collegra Premium dashboard</p>
+            <p className="text-muted-foreground">Sign in to your Collegra™ dashboard</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5 bg-card rounded-2xl p-8 shadow-card border border-border">

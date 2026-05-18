@@ -87,7 +87,7 @@ const Solution = () => {
         >
           <Link to="/survey">
             <Button variant="hero" size="xl" className="gap-2">
-              Start My Free Survey
+              Get My Matches
               <ArrowRight className="w-5 h-5" />
             </Button>
           </Link>

@@ -135,7 +135,7 @@ const Signup = () => {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Create Your Account</h1>
-            <p className="text-muted-foreground">Start your Collegra Premium experience</p>
+            <p className="text-muted-foreground">Start your Collegra™ experience</p>
           </div>
 
           <form onSubmit={handleSignup} className="space-y-5 bg-card rounded-2xl p-8 shadow-card border border-border">
