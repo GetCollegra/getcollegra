@@ -27,12 +27,13 @@ const MODES: Record<string, string> = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-
   // Require authenticated user
   const _authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
   if (!_authHeader || !_authHeader.toLowerCase().startsWith("bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  let _userId: string | null = null;
+  let _userEmail: string | null = null;
   {
     const _token = _authHeader.slice(7).trim();
     const _resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, {
@@ -41,6 +42,38 @@ Deno.serve(async (req) => {
     if (!_resp.ok) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const _u = await _resp.json().catch(() => null);
+    _userId = _u?.id ?? null;
+    _userEmail = _u?.email ?? null;
+  }
+
+  // Require premium subscription (admins bypass)
+  try {
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const sbAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    let allowed = false;
+    if (_userId) {
+      const { data: roleData } = await sbAdmin.rpc("has_role", { _user_id: _userId, _role: "admin" });
+      if (roleData) allowed = true;
+    }
+    if (!allowed && _userId) {
+      const { data: sub } = await sbAdmin
+        .from("subscribers")
+        .select("subscribed")
+        .eq("user_id", _userId)
+        .maybeSingle();
+      if (sub?.subscribed) allowed = true;
+    }
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: "Premium subscription required" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  } catch (e) {
+    console.error("[essay-helper] premium check failed:", e);
+    return new Response(JSON.stringify({ error: "Subscription check failed" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
@@ -51,6 +84,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const body = await req.json().catch(() => ({}));
     const mode = String(body.mode ?? "").toLowerCase();
