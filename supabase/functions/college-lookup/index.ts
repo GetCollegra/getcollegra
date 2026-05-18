@@ -167,6 +167,22 @@ function applyVerifiedData(
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+
+  // Require authenticated user
+  const _authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+  if (!_authHeader || !_authHeader.toLowerCase().startsWith("bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  {
+    const _token = _authHeader.slice(7).trim();
+    const _resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${_token}`, apikey: Deno.env.get("SUPABASE_ANON_KEY")! },
+    });
+    if (!_resp.ok) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  }
+
   try {
     const { collegeName } = await req.json();
     if (!collegeName || typeof collegeName !== "string" || collegeName.trim().length < 2 || collegeName.trim().length > 200) {
