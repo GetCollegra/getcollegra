@@ -751,8 +751,21 @@ const QuizResults = () => {
           recoveryTriggered = true;
           supabase.functions.invoke("college-match", {
             body: { preferences: recoveryPreferences, matchId: latestMatch.id },
-          }).catch((err) => console.error("[QuizResults] Recovery invoke failed:", err));
+          }).then(({ error: fnError }) => {
+            if (fnError) {
+              console.error("[QuizResults] Recovery invoke error:", fnError);
+              supabase.from("college_matches")
+                .update({ ai_status: "failed", ai_error: `Backend error: ${fnError.message || "matching service unavailable"}` } as any)
+                .eq("id", latestMatch.id).then(() => {});
+            }
+          }).catch((err) => {
+            console.error("[QuizResults] Recovery invoke failed:", err);
+            supabase.from("college_matches")
+              .update({ ai_status: "failed", ai_error: `Backend error: ${err?.message || "matching service unavailable"}` } as any)
+              .eq("id", latestMatch.id).then(() => {});
+          });
         }
+
 
         return latestMatch.id;
       }
