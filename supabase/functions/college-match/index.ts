@@ -1239,15 +1239,9 @@ serve(async (req) => {
       : [];
 
     // ── Step 1: Fetch college data from Scorecard + weight adjustments in parallel ──
+    // (authUserId already resolved above from verified JWT)
     let weightAdj: Record<string, number> | undefined;
-    const authUserId = (() => {
-      try {
-        const token = (authHeader || "").replace("Bearer ", "");
-        const parts = token.split(".");
-        if (parts.length === 3) return JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))).sub;
-      } catch { /* ignore */ }
-      return null;
-    })();
+
 
     const [scorecard, adjResult, cohortSignals] = await Promise.all([
       fetchFromScorecard(prefs),
