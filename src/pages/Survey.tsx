@@ -501,9 +501,23 @@ const Survey = () => {
         supabase.functions.invoke("college-match", {
           body: { preferences, matchId, excludeColleges },
         }).then(({ error: fnError }) => {
-          if (fnError) console.error("[Survey] Edge function error:", fnError);
-          else console.log("[Survey] Edge function completed for match:", matchId);
-        }).catch(err => console.error("[Survey] Edge function call failed:", err));
+          if (fnError) {
+            console.error("[Survey] Edge function error:", fnError);
+            supabase.from("college_matches")
+              .update({ ai_status: "failed", ai_error: `Backend error: ${fnError.message || "matching service unavailable"}` } as any)
+              .eq("id", matchId)
+              .then(() => {});
+          } else {
+            console.log("[Survey] Edge function completed for match:", matchId);
+          }
+        }).catch(err => {
+          console.error("[Survey] Edge function call failed:", err);
+          supabase.from("college_matches")
+            .update({ ai_status: "failed", ai_error: `Backend error: ${err?.message || "matching service unavailable"}` } as any)
+            .eq("id", matchId)
+            .then(() => {});
+        });
+
 
         // Navigate immediately — results page will poll DB
         capture("quiz_completed", { matchId });
