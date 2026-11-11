@@ -74,7 +74,7 @@ serve(async (req) => {
     }
     logStep("Stripe customer lookup done", { customerId: customerId || "new" });
 
-    const origin = req.headers.get("origin") || "https://getcollegra.lovable.app";
+    const origin = req.headers.get("origin") || "https://getcollegra.com";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
